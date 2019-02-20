@@ -13,5 +13,6 @@ int main(int argc, char** argv) {
     find_if_demo();
     CALL_DEMO(MyBinder2nd);
     CALL_DEMO(FunctionChecker);
+    CALL_DEMO(IsPointer);
     return 0;
 }

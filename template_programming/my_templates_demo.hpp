@@ -3,3 +3,4 @@
 
 void MyBinder2nd_demo();
 void FunctionChecker_demo();
+void IsPointer_demo();

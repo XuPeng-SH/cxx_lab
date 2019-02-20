@@ -47,19 +47,6 @@ struct has_##TYPE { \
     static const bool value = sizeof(dummy<C>(0)) == sizeof(_yes); \
 };
 
-/* template<typename C> */
-/* struct has_second_argument { */
-/*     struct _yes {char c;}; */
-/*     struct _no {_yes a[2];}; */
-
-/*     template<typename T> */
-/*         static _no dummy(...); */
-
-/*     template<typename T> */
-/*         static _yes dummy(typename T::second_argument_type); */
-
-/*     static const bool value = sizeof(dummy<C>(0)) == sizeof(_yes); */
-/* }; */
 
 template<typename Operation, typename T>
 class MyBinder2nd : public unary_function<typename Operation::first_argument_type,
@@ -74,4 +61,14 @@ public:
     typename Operation::result_type operator() (const typename Operation::first_argument_type& arg1) const {
         return mOp(arg1, mValue);
     }
+};
+
+template <typename T>
+struct is_pointer {
+    static const bool value = false;
+};
+
+template<typename T>
+struct is_pointer<T*> {
+    static const bool value = true;
 };

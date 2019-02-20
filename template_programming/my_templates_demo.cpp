@@ -29,3 +29,8 @@ START_DEMO(MyBinder2nd)
     std::cout << binder(13) << std::endl;
     std::cout << binder(19) << std::endl;
 END_DEMO;
+
+START_DEMO(IsPointer)
+    typedef const char* StrT;
+    std::cout << is_pointer<StrT>::value << std::endl;
+END_DEMO;
