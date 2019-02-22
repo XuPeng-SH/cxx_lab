@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(MetaProgramming)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DV2" CACHE STRING "Enable V2 Info" FORCE)
+message("${CMAKE_CXX_FLAGS}")
+
 set(LIBSOURCES src/container.cpp
     src/my_templates_demo.cpp)
 
@@ -22,6 +25,8 @@ set(EXESOURCES src/main.cpp)
 add_executable(StaticTesting ${EXESOURCES})
 
 target_compile_features(StaticTesting PRIVATE cxx_std_11)
+
+target_compile_definitions(StaticTesting PRIVATE V3)
 
 target_link_libraries(StaticTesting
     PRIVATE
