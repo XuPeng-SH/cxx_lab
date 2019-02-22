@@ -1,24 +1,36 @@
 cmake_minimum_required(VERSION 3.5)
 project(MetaProgramming)
 
-set(LIBSOURCES src/main.cpp)
+set(LIBSOURCES src/container.cpp
+    src/my_templates_demo.cpp)
 
-add_library(MetaProgrammingLibrary STATIC ${LIBSOURCES})
+add_library(MetaProgrammingStaticLibrary STATIC ${LIBSOURCES})
+target_compile_features(MetaProgrammingStaticLibrary PRIVATE cxx_std_11)
+target_include_directories(MetaProgrammingStaticLibrary
+    PUBLIC
+    ${PROJECT_SOURCE_DIR}/include)
 
-target_compile_features(MetaProgrammingLibrary PRIVATE cxx_std_11)
-
-target_include_directories(MetaProgrammingLibrary
+add_library(MetaProgrammingDynamicLibrary SHARED ${LIBSOURCES})
+target_compile_features(MetaProgrammingDynamicLibrary PRIVATE cxx_std_11)
+target_include_directories(MetaProgrammingDynamicLibrary
     PUBLIC
     ${PROJECT_SOURCE_DIR}/include)
 
 
-set(EXESOURCES src/container.cpp
-    src/my_templates_demo.cpp)
+set(EXESOURCES src/main.cpp)
 
-add_executable(Testing ${EXESOURCES})
+add_executable(StaticTesting ${EXESOURCES})
 
-target_compile_features(Testing PRIVATE cxx_std_11)
+target_compile_features(StaticTesting PRIVATE cxx_std_11)
 
-target_link_libraries(Testing
+target_link_libraries(StaticTesting
     PRIVATE
-    MetaProgrammingLibrary)
+    MetaProgrammingStaticLibrary)
+
+add_executable(SharedTesting ${EXESOURCES})
+
+target_compile_features(SharedTesting PRIVATE cxx_std_11)
+
+target_link_libraries(SharedTesting
+    PRIVATE
+    MetaProgrammingDynamicLibrary)
