@@ -34,3 +34,16 @@ target_compile_features(SharedTesting PRIVATE cxx_std_11)
 target_link_libraries(SharedTesting
     PRIVATE
     MetaProgrammingDynamicLibrary)
+
+#############################################
+############### INSTALL #####################
+#############################################
+
+install(TARGETS MetaProgrammingStaticLibrary
+    DESTINATION lib)
+
+install(TARGETS MetaProgrammingDynamicLibrary
+    DESTINATION lib)
+
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include
+    DESTINATION include)
