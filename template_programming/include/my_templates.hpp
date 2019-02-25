@@ -1,3 +1,4 @@
+#pragma once
 
 template <class Arg1T, class RestT>
 struct unary_function {

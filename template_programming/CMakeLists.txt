@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(MetaProgramming)
 
+add_subdirectory(3rd_party/google-test)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DV2" CACHE STRING "Enable V2 Info" FORCE)
 message("${CMAKE_CXX_FLAGS}")
 
@@ -52,3 +54,8 @@ install(TARGETS MetaProgrammingDynamicLibrary
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include
     DESTINATION include)
+
+enable_testing()
+add_subdirectory(unittests)
+
+add_test(test_all unittests/myTest)
