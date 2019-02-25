@@ -58,4 +58,5 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include
 enable_testing()
 add_subdirectory(unittests)
 
-add_test(test_all unittests/myTest)
+add_test(NAME test_all
+        COMMAND unittests/myTest)

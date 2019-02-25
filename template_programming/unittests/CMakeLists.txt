@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 project(myTest)
 
 add_executable(${PROJECT_NAME} unittests.cpp)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
 
 enable_testing()
 
