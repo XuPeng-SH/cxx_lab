@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(MetaProgramming)
 
-add_subdirectory(3rd_party/google-test)
+# add_subdirectory(3rd_party/google-test)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DV2" CACHE STRING "Enable V2 Info" FORCE)
 message("${CMAKE_CXX_FLAGS}")
