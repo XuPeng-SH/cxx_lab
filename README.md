@@ -1,5 +1,5 @@
-##Lex and YACC examples [exmaples](./yacc_lab)
-###Compile Guide
+## Lex and YACC examples [exmaples](./yacc_lab)
+### Compile Guide
 1. Compile lexer
 ```lex examplex.l```
 2. Compile with yacc
