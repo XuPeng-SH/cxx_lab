@@ -1,10 +1,13 @@
 #include <iostream>
 #include <unistd.h>
+#include "utils.h"
 
 using namespace std;
 
 int main(int argc, char** argv) {
     cout << "hello system lab" << endl;
+
+    redirect_std_streams();
 
     cout << "1. Get system processors number "
         << sysconf(_SC_NPROCESSORS_CONF) << endl;
