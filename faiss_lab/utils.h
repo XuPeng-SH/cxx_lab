@@ -28,8 +28,8 @@ namespace faiss {
     }
 }
 
-void search_index(faiss::Index* index, const string& context, int nq, int k,
+void search_index_test(faiss::Index* index, const string& context, int nq, int k,
         long nb, float *xb, int times, bool do_print = false);
-/* void cpu_to_gpu_test(faiss::gpu::GpuResources* gpu_res, faiss::Index* index, const string& context, */
-/*         long start, long end, long step); */
+void gpu_add_vectors_test(faiss::gpu::GpuResources* gpu_res, const string& context, int times,
+        long start, long end, long step, float* xb, int d);
 void cpu_to_gpu_test(faiss::gpu::GpuResources* gpu_res, faiss::Index* index, const string& context, int times);

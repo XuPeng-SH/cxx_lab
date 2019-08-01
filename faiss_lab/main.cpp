@@ -35,37 +35,24 @@ void demo() {
     STOP_TIMER("ADD CPU XB: ");
 
     cout << "ntotal=" << flat_l2.ntotal << endl;
-    string context = "CPU";
-    int times = 2;
-    search_index(&flat_l2, context, 20, 10, nb, xb, times);
+    int times = 5;
+    search_index_test(&flat_l2, "CpuSearchTest", 20, 10, nb, xb, times);
 
     faiss::Index* cpu_index = &flat_l2;
     faiss::gpu::StandardGpuResources gpu_res;
 
-    /* START_TIMER; */
-    /* auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, 0, cpu_index); */
-    /* STOP_TIMER("Cpu->Gpu: "); */
-    /* cout << "gpu_index is_trained=" << std::boolalpha << gpu_index->is_trained << endl; */
-    /* cout << "gpu_index ntotal=" << std::boolalpha << gpu_index->ntotal << endl; */
-    /* delete gpu_index; */
+    cpu_to_gpu_test(&gpu_res, cpu_index, "CpuToGpuTEST", 5);
 
-    cpu_to_gpu_test(&gpu_res, cpu_index, "CPU->GPU TEST", 5);
+    long start_nb = nb;
+    long step_nb = -100000;
+    long end_nb = 100000;
 
-    long start_nb = 200000;
-    long step_nb = 200000;
-    long end_nb = nb;
+
+    gpu_add_vectors_test(&gpu_res, "GpuAddVectorsTest", 3, start_nb, end_nb, step_nb, xb, d);
 
     faiss::gpu::GpuIndexFlatL2 gpu_index_flat(&gpu_res, d);
-
-    START_TIMER;
     gpu_index_flat.add(nb, xb);
-    STOP_TIMER("gpu index add: ");
-    cout << "gpu_index is_trained=" << std::boolalpha << gpu_index_flat.is_trained << endl;
-    cout << "gpu_index ntotal=" << std::boolalpha << gpu_index_flat.ntotal << endl;
-
-    context = "GPU";
-
-    search_index(&gpu_index_flat, context, 20, 10, nb, xb, times);
+    search_index_test(&gpu_index_flat, "GpuSearchTest", 20, 10, nb, xb, times);
 
     delete [] xb;
     delete [] xq;

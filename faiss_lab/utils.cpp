@@ -4,9 +4,10 @@
 #include <vector>
 #include <faiss/gpu/StandardGpuResources.h>
 #include <faiss/gpu/GpuAutoTune.h>
+#include <faiss/gpu/GpuIndexFlat.h>
 #include <assert.h>
 
-void search_index(faiss::Index* index, const string& context, int nq, int k, long nb, float *xb, int times, bool do_print) {
+void search_index_test(faiss::Index* index, const string& context, int nq, int k, long nb, float *xb, int times, bool do_print) {
     stringstream ss;
     ss << "Search " << context << " nq=" << nq << " topk=" << k << " nb=" << nb;
     INIT_TIMER;
@@ -32,20 +33,32 @@ void search_index(faiss::Index* index, const string& context, int nq, int k, lon
     delete [] I;
     delete [] D;
 }
-/* void cpu_to_gpu_test(faiss::gpu::GpuResources* gpu_res, const string& context, long start, long end, long step, float* xb) { */
-/*     assert(end >= start); */
-/*     assert(step >= 0); */
-/*     INIT_TIMER; */
-/*     for (long nb = start; nb <= end; nb += step) { */
-/*         stringstream ss; */
-/*         ss << context << " nb=" << nb; */
-/*         START_TIMER; */
-/*         auto gpu_index = faiss::gpu::index_cpu_to_gpu(gpu_res, 0, index); */
-/*         ss << " ntotal=" << gpu_index->ntotal; */
-/*         STOP_TIMER(ss.str()); */
-/*         delete gpu_index; */
-/*     } */
-/* } */
+
+void gpu_add_vectors_test(faiss::gpu::GpuResources* gpu_res, const string& context, int times, long start, long end, long step, float* xb, int d) {
+    assert((end >= start && step >= 0) || (end <= start && step <= 0));
+    INIT_TIMER;
+    auto expect_le = [](long lh, long rh) -> bool {
+        return lh <= rh;
+    };
+    auto expect_ge = [](long lh, long rh) -> bool {
+        return lh >= rh;
+    };
+
+    auto func = (start < end) ? expect_le : expect_ge;
+
+    for (auto i=0; i<times; ++i) {
+        /* for (long nb = start; nb<=end; nb += step) { */
+        for (long nb = start; func(nb, end); nb += step) {
+            faiss::gpu::GpuIndexFlatL2 gpu_index_flat(gpu_res, d);
+            stringstream ss;
+            ss << context << " nb=" << nb;
+            START_TIMER;
+            gpu_index_flat.add(nb, xb);
+            ss << " ntotal=" << gpu_index_flat.ntotal;
+            STOP_TIMER(ss.str());
+        }
+    }
+}
 
 void cpu_to_gpu_test(faiss::gpu::GpuResources* gpu_res, faiss::Index* index, const string& context, int times) {
     INIT_TIMER;
