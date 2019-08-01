@@ -7,6 +7,21 @@
 #include <faiss/gpu/GpuIndexFlat.h>
 #include <assert.h>
 
+
+TestData::TestData(int dimension, long size)
+    : d(dimension), nb(size) {
+    xb = new float[d * nb];
+    for(int i = 0; i < nb; i++) {
+        for(int j = 0; j < d; j++) xb[d * i + j] = drand48();
+        xb[d * i] += i / 1000.;
+    }
+}
+
+TestData::~TestData() {
+    delete [] xb;
+}
+
+
 void search_index_test(faiss::Index* index, const string& context, int nq, int k, long nb, float *xb, int times, bool do_print) {
     stringstream ss;
     ss << "Search " << context << " nq=" << nq << " topk=" << k << " nb=" << nb;

@@ -14,48 +14,39 @@ void demo() {
     START_TIMER;
     int d = 512;                            // dimension
     int nb = 1500000;                       // database size
-    int nq = 10000;                        // nb of queries
-    float *xb = new float[d * nb];
-    float *xq = new float[d * nq];
-    for(int i = 0; i < nb; i++) {
-        for(int j = 0; j < d; j++) xb[d * i + j] = drand48();
-        xb[d * i] += i / 1000.;
-    }
-    for(int i = 0; i < nq; i++) {
-        for(int j = 0; j < d; j++) xq[d * i + j] = drand48();
-        xq[d * i] += i / 1000.;
-    }
+    START_TIMER;
+    TestData data(d, nb);
     STOP_TIMER("Create Data: ");
 
     faiss::IndexFlatL2 flat_l2(d);
     cout << std::boolalpha << flat_l2.is_trained << endl;
 
     START_TIMER;
-    flat_l2.add(nb, xb);
+    flat_l2.add(data.nb, data.xb);
     STOP_TIMER("ADD CPU XB: ");
 
     cout << "ntotal=" << flat_l2.ntotal << endl;
     int times = 5;
-    search_index_test(&flat_l2, "CpuSearchTest", 20, 10, nb, xb, times);
+    search_index_test(&flat_l2, "CpuSearchTest", 20, 10, data.nb, data.xb, times);
 
     faiss::Index* cpu_index = &flat_l2;
     faiss::gpu::StandardGpuResources gpu_res;
 
     cpu_to_gpu_test(&gpu_res, cpu_index, "CpuToGpuTEST", 5);
 
-    long start_nb = nb;
+    long start_nb = data.nb;
     long step_nb = -100000;
     long end_nb = 100000;
 
 
-    gpu_add_vectors_test(&gpu_res, "GpuAddVectorsTest", 3, start_nb, end_nb, step_nb, xb, d);
+    gpu_add_vectors_test(&gpu_res, "GpuAddVectorsTest", 3, start_nb, end_nb, step_nb, data.xb, data.d);
 
     faiss::gpu::GpuIndexFlatL2 gpu_index_flat(&gpu_res, d);
-    gpu_index_flat.add(nb, xb);
-    search_index_test(&gpu_index_flat, "GpuSearchTest", 20, 10, nb, xb, times);
+    gpu_index_flat.add(data.nb, data.xb);
+    search_index_test(&gpu_index_flat, "GpuSearchTest", 20, 10, data.nb, data.xb, times);
 
-    delete [] xb;
-    delete [] xq;
+    /* delete [] xb; */
+    /* delete [] xq; */
 }
 
 int main() {

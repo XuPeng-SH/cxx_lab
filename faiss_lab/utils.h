@@ -33,3 +33,13 @@ void search_index_test(faiss::Index* index, const string& context, int nq, int k
 void gpu_add_vectors_test(faiss::gpu::GpuResources* gpu_res, const string& context, int times,
         long start, long end, long step, float* xb, int d);
 void cpu_to_gpu_test(faiss::gpu::GpuResources* gpu_res, faiss::Index* index, const string& context, int times);
+
+struct TestData {
+    TestData(int dimension, long size);
+
+    ~TestData();
+
+    float* xb;
+    long nb;
+    int d;
+};
