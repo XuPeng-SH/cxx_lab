@@ -5,6 +5,9 @@
 #include <faiss/gpu/StandardGpuResources.h>
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/gpu/GpuIndexFlat.h>
+#include <faiss/gpu/GpuIndexIVFQuantizer.h>
+#include <faiss/Clustering.h>
+#include <faiss/OnDiskInvertedLists.h>
 #include <assert.h>
 
 
@@ -86,4 +89,41 @@ void cpu_to_gpu_test(faiss::gpu::GpuResources* gpu_res, faiss::Index* index, con
         STOP_TIMER(ss.str());
         delete gpu_index;
     }
+}
+
+void quantizer_cloner_test() {
+    faiss::gpu::StandardGpuResources gpu_res;
+    int d = 512;
+    auto cpu_index = faiss::index_factory(d, "IVF16384,Flat");
+
+    int nb = 200000;
+    TestData data(d, nb);
+    auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, 0, cpu_index);
+    delete cpu_index;
+
+    gpu_index->train(data.nb, data.xb);
+    gpu_index->add(data.nb, data.xb);
+
+    cout << gpu_index->ntotal << endl;
+    cout << dynamic_cast<faiss::gpu::GpuIndexIVF*>(gpu_index)->getQuantizer()->ntotal << endl;
+
+    cpu_index = faiss::gpu::index_gpu_to_cpu(gpu_index);
+    delete gpu_index;
+
+    cout << cpu_index->ntotal << endl;
+    cout << dynamic_cast<faiss::IndexIVF*>(cpu_index)->quantizer->ntotal << endl;
+
+    faiss::gpu::GpuClonerOptions clone_option;
+    clone_option.storeInvertedList = false;
+
+    gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, 0, cpu_index, &clone_option);
+    auto gpu_ivf_quan = dynamic_cast<faiss::gpu::GpuIndexFlat*>(gpu_index);
+    cout << gpu_ivf_quan->getNumVecs() << endl;
+    cout << gpu_ivf_quan->ntotal << endl;
+    cout << gpu_ivf_quan->d << endl;
+
+    search_index_test(gpu_index, "GpuQuantizerTest", 5, 3, data.nb, data.xb, 2, true);
+    delete gpu_index;
+
+    delete cpu_index;
 }

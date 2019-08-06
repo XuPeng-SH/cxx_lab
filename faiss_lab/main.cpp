@@ -95,6 +95,7 @@ void flat_test() {
 
 int main() {
     faiss::distance_compute_blas_threshold = 800;
+    quantizer_cloner_test();
     flat_test();
     sq8_test();
 }
