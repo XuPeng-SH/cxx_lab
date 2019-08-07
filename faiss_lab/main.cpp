@@ -21,7 +21,9 @@ void sq8_test() {
     TestData data(d, nb);
     STOP_TIMER("Create Data: ");
 
-    auto cpu_index = faiss::index_factory(d, "IVF16384,SQ8");
+    string index_type = "IVF16384,SQ8";
+
+    auto cpu_index = faiss::index_factory(d, index_type.c_str());
 
     {
         faiss::gpu::StandardGpuResources gpu_res;
@@ -30,28 +32,28 @@ void sq8_test() {
 
         START_TIMER;
         gpu_index->train(data.nb, data.xb);
-        STOP_TIMER("GpuSQ8 Build Index");
+        STOP_TIMER(index_type + " Build Index");
 
         START_TIMER;
         gpu_index->add(data.nb, data.xb);
-        STOP_TIMER("GpuSQ8 Add XB");
+        STOP_TIMER(index_type + " Add XB");
         cout << "gpu_index ntotal=" << gpu_index->ntotal << endl;
 
-        search_index_test(gpu_index, "GpuSQ8SearchTest", 200, 100, data.nb, data.xb, 5);
+        search_index_test(gpu_index, "GPU_"+index_type+"_SearchTest", 200, 100, data.nb, data.xb, 5);
 
         START_TIMER;
         cpu_index = faiss::gpu::index_gpu_to_cpu(gpu_index);
-        STOP_TIMER("GpuSQ8GpuToCpu");
+        STOP_TIMER(index_type+"_GpuToCpu");
         delete gpu_index;
 
-        search_index_test(cpu_index, "CpuSQ8SearchTest", 200, 100, data.nb, data.xb, 5);
+        search_index_test(cpu_index, "CPU_"+index_type+"_SearchTest", 200, 100, data.nb, data.xb, 5);
 
     }
     {
         faiss::gpu::StandardGpuResources gpu_res;
         START_TIMER;
         auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, 0, cpu_index);
-        STOP_TIMER("GpuSQ8CpuToGpu");
+        STOP_TIMER("GPU_"+index_type+"_CpuToGpu");
         cout << "gpu_index ntotal=" << gpu_index->ntotal << endl;
         /* this_thread::sleep_for(chrono::seconds(20)); */
         delete gpu_index;
