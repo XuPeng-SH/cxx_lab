@@ -8,52 +8,60 @@
 #include <faiss/AutoTune.h>
 #include <faiss/gpu/GpuAutoTune.h>
 #include <thread>
+#include <sstream>
 
 using namespace std;
 
-void sq8_test() {
+
+void index_test(const string& index_type) {
     int times = 5;
     INIT_TIMER;
     START_TIMER;
     int d = 512;                            // dimension
-    int nb = 1000000;                       // database size
+    int nb = 100000;                       // database size
     START_TIMER;
     TestData data(d, nb);
     STOP_TIMER("Create Data: ");
 
-    string index_type = "IVF16384,SQ8";
+    int gpu_num = 0;
+
+    auto MSG_FUNC = [&](const string& msg) -> string {
+        stringstream ss;
+        ss << index_type << "_" << gpu_num << "_" << msg;
+        return ss.str();
+    };
 
     auto cpu_index = faiss::index_factory(d, index_type.c_str());
 
     {
         faiss::gpu::StandardGpuResources gpu_res;
-        auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, 0, cpu_index);
+        auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index);
         delete cpu_index;
 
         START_TIMER;
         gpu_index->train(data.nb, data.xb);
-        STOP_TIMER(index_type + " Build Index");
+        STOP_TIMER_WITH_FUNC("BuildIndex");
 
         START_TIMER;
         gpu_index->add(data.nb, data.xb);
-        STOP_TIMER(index_type + " Add XB");
+        STOP_TIMER_WITH_FUNC("AddXB");
         cout << "gpu_index ntotal=" << gpu_index->ntotal << endl;
 
-        search_index_test(gpu_index, "GPU_"+index_type+"_SearchTest", 200, 100, data.nb, data.xb, 5);
+        search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), 200, 100, data.nb, data.xb, 5);
 
         START_TIMER;
         cpu_index = faiss::gpu::index_gpu_to_cpu(gpu_index);
-        STOP_TIMER(index_type+"_GpuToCpu");
+        STOP_TIMER_WITH_FUNC("GpuToCpu");
         delete gpu_index;
 
-        search_index_test(cpu_index, "CPU_"+index_type+"_SearchTest", 200, 100, data.nb, data.xb, 5);
+        search_index_test(cpu_index, MSG_FUNC("CPUSearchTest"), 200, 100, data.nb, data.xb, 5);
 
     }
     {
         faiss::gpu::StandardGpuResources gpu_res;
         START_TIMER;
-        auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, 0, cpu_index);
-        STOP_TIMER("GPU_"+index_type+"_CpuToGpu");
+        auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index);
+        STOP_TIMER_WITH_FUNC("CpuToGpu");
         cout << "gpu_index ntotal=" << gpu_index->ntotal << endl;
         /* this_thread::sleep_for(chrono::seconds(20)); */
         delete gpu_index;
@@ -99,5 +107,8 @@ int main() {
     faiss::distance_compute_blas_threshold = 800;
     quantizer_cloner_test();
     flat_test();
-    sq8_test();
+    string index_type = "IVF16384,SQ8";
+    index_test(index_type);
+    index_type = "IVF16384,Flat";
+    index_test(index_type);
 }
