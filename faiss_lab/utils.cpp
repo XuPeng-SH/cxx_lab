@@ -5,9 +5,13 @@
 #include <faiss/gpu/StandardGpuResources.h>
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/gpu/GpuIndexFlat.h>
-#include <faiss/gpu/GpuIndexIVFQuantizer.h>
+/* #include <faiss/gpu/GpuIndexIVFQuantizer.h> */
 #include <faiss/Clustering.h>
 #include <faiss/OnDiskInvertedLists.h>
+#include <gpu/impl/IVFSQ.cuh>
+#include <faiss/gpu/GpuIndexFlat.h>
+#include <faiss/IndexScalarQuantizer.h>
+#include <faiss/gpu/GpuIndexIVFSQ.h>
 #include <assert.h>
 
 
@@ -29,6 +33,7 @@ void search_index_test(faiss::Index* index, const string& context, int nq, int k
     stringstream ss;
     ss << "Search " << context << " nq=" << nq << " topk=" << k << " nb=" << nb;
     INIT_TIMER;
+    faiss::indexIVF_stats.reset();
     long *I = new long[k * nq];
     float *D = new float[k * nq];
     for (auto i=0; i<times; i++) {
@@ -48,6 +53,14 @@ void search_index_test(faiss::Index* index, const string& context, int nq, int k
             }
         }
     }
+    ss.str("");
+    ss << "NQ=" << faiss::indexIVF_stats.nq;
+    ss << " NL=" << faiss::indexIVF_stats.nlist;
+    ss << " ND=" << faiss::indexIVF_stats.ndis;
+    ss << " NH=" << faiss::indexIVF_stats.nheap_updates;
+    ss << " Q=" << faiss::indexIVF_stats.quantization_time;
+    ss << " S=" << faiss::indexIVF_stats.search_time;
+    cout << ss.str() << endl;
     delete [] I;
     delete [] D;
 }
@@ -91,7 +104,137 @@ void cpu_to_gpu_test(faiss::gpu::GpuResources* gpu_res, faiss::Index* index, con
     }
 }
 
+void
+gpu_ivf_sq_test() {
+    INIT_TIMER;
+    TestOptions options;
+    options.d = 4;
+    options.nb = 20;
+    options.index_type = "IVF8,SQ8";
+    options.MakeIndex();
+    auto cpu_index = options.index.get();
+
+    auto MSG_FUNC = [&](const string& msg) -> string {
+        stringstream ss;
+        ss << options.index_type << "_" << options.gpu_num << "_" << msg;
+        return ss.str();
+    };
+
+    auto ivf_sq = dynamic_cast<faiss::IndexIVFScalarQuantizer*>(cpu_index);
+    if (!ivf_sq) {
+        cout << "Expect faiss::IndexIVFScalarQuantizer!" << endl;
+        return;
+    }
+    if (options.nb < 100) {
+        auto lists = ivf_sq->invlists;
+        for (auto i=0; i<ivf_sq->nlist; ++i) {
+            auto numVecs = ivf_sq->get_list_size(i);
+            auto ids = lists->get_ids(i);
+            cout << "CpuIDS[" << i << "]=";
+            for (auto j=0; j<numVecs; ++j) {
+                cout << " " << *(ids+j);
+            }
+            cout << endl;
+        }
+        for (auto i=0; i<ivf_sq->nlist; ++i) {
+            auto numVecs = ivf_sq->get_list_size(i);
+            auto codes = lists->get_codes(i);
+            cout << "CpuData[" << i << "]=";
+            for (auto j=0; j<numVecs*ivf_sq->d; ++j) {
+                cout << " " << (unsigned)(*(codes+j));
+            }
+            cout << endl;
+        }
+    }
+
+    faiss::gpu::StandardGpuResources gpu_res;
+    faiss::gpu::CpuToGpuClonerOptions clone_option;
+    clone_option.readonly = true;
+    auto gpu_index = faiss::gpu::cpu_to_gpu(&gpu_res, 0, ivf_sq, &clone_option);
+    auto sq = dynamic_cast<faiss::gpu::GpuIndexIVFSQ*>(gpu_index);
+    if (options.nb < 100) {
+        sq->dump();
+    }
+    delete gpu_index;
+
+    START_TIMER;
+    gpu_index = faiss::gpu::cpu_to_gpu(&gpu_res, 0, ivf_sq, &clone_option);
+    STOP_TIMER_WITH_FUNC("ReadonlyCpuToGpu")
+
+    cout << gpu_index->ntotal << endl;
+
+    delete gpu_index;
+
+}
+
+void
+ivf_sq_test() {
+#if 0
+    TestOptions options;
+    options.d = 128;
+    options.nb = 20;
+    options.index_type = "IVF10,SQ8";
+    options.MakeIndex();
+    auto cpu_index = options.index.get();
+
+    auto ivf_sq = dynamic_cast<faiss::IndexIVFScalarQuantizer*>(cpu_index);
+    if (!ivf_sq) {
+        cout << "Expect faiss::IndexIVFScalarQuantizer!" << endl;
+        return;
+    }
+
+    faiss::gpu::StandardGpuResources gpu_res;
+    /* auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, 0, cpu_index); */
+    /* delete cpu_index; */
+
+    auto quan_gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, 0, ivf_sq->quantizer);
+    auto flat_quan_gpu_index = dynamic_cast<faiss::gpu::GpuIndexFlat*>(quan_gpu_index);
+
+    faiss::gpu::IndicesOptions indicesOptions = faiss::gpu::INDICES_64_BIT;
+    auto gpu_core = std::make_shared<faiss::gpu::IVFSQ>(&gpu_res, flat_quan_gpu_index->getGpuData(),
+            ivf_sq->sq.code_size, true, indicesOptions, faiss::gpu::Device);
+
+
+    auto lists = ivf_sq->invlists;
+
+    for (auto i=0; i<ivf_sq->nlist; ++i) {
+        auto numVecs = ivf_sq->get_list_size(i);
+        cout << "numVecs[" << i << "]=" << numVecs << endl;
+        gpu_core->addCodeVectorsFromCpu(
+                i, lists->get_codes(i), lists->get_ids(i), numVecs
+                );
+    }
+
+
+    for (auto i=0; i<gpu_core->getNumLists(); ++i) {
+        cout << "GpunumVecs[" << i << "]=" << gpu_core->getListLength(i) << endl;
+    }
+    for (auto i=0; i<ivf_sq->nlist; ++i) {
+        auto numVecs = ivf_sq->get_list_size(i);
+        auto ids = lists->get_ids(i);
+        cout << "CpuIDS[" << i << "]=";
+        for (auto j=0; j<numVecs; ++j) {
+            cout << " " << *(ids+j);
+        }
+        cout << endl;
+    }
+
+    for (auto i=0; i<gpu_core->getNumLists(); ++i) {
+        auto indices = gpu_core->getListIndices(i);
+        cout << "GpuIDS[" << i << "]=";
+        for (auto& indice : indices) {
+            cout << " " << indice;
+        }
+        cout << endl;
+
+    }
+
+    delete quan_gpu_index;
+#endif
+}
+
 void quantizer_cloner_test() {
+#if 0
     faiss::gpu::StandardGpuResources gpu_res;
     int d = 512;
     auto cpu_index = faiss::index_factory(d, "IVF16384,Flat");
@@ -126,4 +269,5 @@ void quantizer_cloner_test() {
     delete gpu_index;
 
     delete cpu_index;
+#endif
 }

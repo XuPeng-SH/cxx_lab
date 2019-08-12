@@ -1,73 +1,67 @@
 #include "utils.h"
-#include <faiss/index_io.h>
-#include <faiss/IndexFlat.h>
-#include <faiss/gpu/StandardGpuResources.h>
-#include <faiss/gpu/GpuIndex.h>
-#include <faiss/gpu/GpuIndexFlat.h>
-#include <faiss/utils.h>
-#include <faiss/AutoTune.h>
-#include <faiss/gpu/GpuAutoTune.h>
-#include <thread>
-#include <sstream>
 
 using namespace std;
-
-
-void index_test(const string& index_type) {
-    int times = 5;
+void index_test(TestOptions& options) {
     INIT_TIMER;
-    START_TIMER;
-    int d = 512;                            // dimension
-    int nb = 100000;                       // database size
-    START_TIMER;
-    TestData data(d, nb);
-    STOP_TIMER("Create Data: ");
+    if (!options.data) {
+        START_TIMER;
+        options.MakeData();
+        STOP_TIMER("Create Data: ");
+        if (!options.data) {
+            cout << "Invalid TestOptions" << endl;
+            return;
+        }
+    }
 
-    int gpu_num = 0;
+    int times = options.search_times;
+    int gpu_num = options.gpu_num;
+    auto data = options.data;
 
     auto MSG_FUNC = [&](const string& msg) -> string {
         stringstream ss;
-        ss << index_type << "_" << gpu_num << "_" << msg;
+        ss << options.index_type << "_" << gpu_num << "_" << msg;
         return ss.str();
     };
 
-    auto cpu_index = faiss::index_factory(d, index_type.c_str());
+    auto cpu_index = options.index;
 
     {
         faiss::gpu::StandardGpuResources gpu_res;
-        auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index);
-        delete cpu_index;
+        faiss::gpu::GpuClonerOptions clone_option;
+        clone_option.useFloat16 = options.useFloat16;
+        clone_option.useFloat16CoarseQuantizer = options.useFloat16;
+        cpu_to_gpu_test(&gpu_res, cpu_index.get(), MSG_FUNC("CpuToGpuTEST"), 5);
+        START_TIMER;
+        auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index.get(), &clone_option);
+        STOP_TIMER_WITH_FUNC("CpuToGpu");
+
+        auto ivf = dynamic_cast<faiss::gpu::GpuIndexIVF*>(gpu_index);
+        if(ivf) {
+            ivf->setNumProbes(options.nprobe);
+        }
+        auto cpu_ivf = dynamic_cast<faiss::IndexIVF*>(gpu_index);
+        if (cpu_ivf){
+            cout << "Warning: Expect GPU Index!" << endl;
+            cpu_ivf->nprobe = options.nprobe;
+        }
+
+        search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), options.nq, options.k, data->nb, data->xb, times);
 
         START_TIMER;
-        gpu_index->train(data.nb, data.xb);
-        STOP_TIMER_WITH_FUNC("BuildIndex");
-
-        START_TIMER;
-        gpu_index->add(data.nb, data.xb);
-        STOP_TIMER_WITH_FUNC("AddXB");
-        cout << "gpu_index ntotal=" << gpu_index->ntotal << endl;
-
-        search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), 200, 100, data.nb, data.xb, 5);
-
-        START_TIMER;
-        cpu_index = faiss::gpu::index_gpu_to_cpu(gpu_index);
+        auto temp_cpu_index = faiss::gpu::index_gpu_to_cpu(gpu_index);
         STOP_TIMER_WITH_FUNC("GpuToCpu");
         delete gpu_index;
 
-        search_index_test(cpu_index, MSG_FUNC("CPUSearchTest"), 200, 100, data.nb, data.xb, 5);
+        cpu_ivf = dynamic_cast<faiss::IndexIVF*>(temp_cpu_index);
+        if (cpu_ivf){
+            cpu_ivf->nprobe = options.nprobe;
+        }
 
+        if (cpu_ivf) {
+            search_index_test(temp_cpu_index, MSG_FUNC("CPUSearchTest"), options.nq, options.k, data->nb, data->xb, times);
+        }
+        delete temp_cpu_index;
     }
-    {
-        faiss::gpu::StandardGpuResources gpu_res;
-        START_TIMER;
-        auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index);
-        STOP_TIMER_WITH_FUNC("CpuToGpu");
-        cout << "gpu_index ntotal=" << gpu_index->ntotal << endl;
-        /* this_thread::sleep_for(chrono::seconds(20)); */
-        delete gpu_index;
-    }
-
-    delete cpu_index;
 }
 
 void flat_test() {
@@ -86,7 +80,7 @@ void flat_test() {
     flat_l2.add(data.nb, data.xb);
     STOP_TIMER("ADD CPU XB: ");
 
-    search_index_test(&flat_l2, "CpuSearchTest", 200, 100, data.nb, data.xb, times);
+    /* search_index_test(&flat_l2, "CpuSearchTest", 100, 100, data.nb, data.xb, times); */
 
     faiss::gpu::StandardGpuResources gpu_res;
 
@@ -100,15 +94,43 @@ void flat_test() {
 
     faiss::gpu::GpuIndexFlatL2 gpu_index_flat(&gpu_res, d);
     gpu_index_flat.add(data.nb, data.xb);
-    search_index_test(&gpu_index_flat, "GpuSearchTest", 200, 100, data.nb, data.xb, times);
+    /* search_index_test(&gpu_index_flat, "GpuSearchTest", 100, 100, data.nb, data.xb, times); */
 }
 
-int main() {
+int main(int argc, char** argv) {
+    gpu_ivf_sq_test();
+    /* ivf_sq_test(); */
+    /* flat_test(); */
+    return 0;
+    TestOptions options;
+    if (argc >= 2) {
+       options.nb = atoi(*(argv+1));
+    }
+
+    /* options.index.reset(faiss::read_index("/tmp/ivf_index")); */
+    /* options.d = options.index->d; */
+    /* options.nb = options.index->ntotal; */
+
     faiss::distance_compute_blas_threshold = 800;
-    quantizer_cloner_test();
-    flat_test();
-    string index_type = "IVF16384,SQ8";
-    index_test(index_type);
-    index_type = "IVF16384,Flat";
-    index_test(index_type);
+    auto gpu_nums = faiss::gpu::getNumDevices();
+    options.search_times = 5;
+    vector<bool> float16_options  = {false};
+    /* vector<string> indice_type = {"IVF16384,SQ8", "IVF16384,Flat", "Flat"}; */
+    /* vector<string> indice_type = {"IVF16384,Flat", "Flat"}; */
+    vector<string> indice_type = {"IVF16384,SQ8"};
+    /* vector<string> indice_type = {"IVF16384,SQ8", "IVF16384,Flat"}; */
+    for(auto& index_type : indice_type) {
+        options.index_type = index_type;
+        options.MakeIndex(true);
+        for (auto i=0; i<gpu_nums; ++i) {
+            options.gpu_num = i;
+            for(auto use_float16 : float16_options) {
+                options.useFloat16 = use_float16;
+                cout << (use_float16?"Use Float16---------":"Use Float32--------------") << endl;
+                index_test(options);
+            }
+        }
+    }
+
+    faiss::write_index(options.index.get(), "/tmp/ivf_index");
 }
