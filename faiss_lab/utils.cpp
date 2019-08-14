@@ -43,14 +43,18 @@ void search_index_test(faiss::Index* index, const string& context, int nq, int k
         if (do_print) {
             printf("I=\n");
             for(int i = 0; i < nq; i++) {
-                for(int j = 0; j < k; j++) printf("%5ld ", I[i * k + j]);
+                for(int j = 0; j < k; j++) {
+                    if (I[i * k + j] != -1) {
+                        printf("%5ld ", I[i * k + j]);
+                    }
+                }
                 printf("\n");
             }
-            printf("D=\n");
-            for(int i = 0; i < nq; i++) {
-                for(int j = 0; j < k; j++) printf("%5f ", D[i * k + j]);
-                printf("\n");
-            }
+            /* printf("D=\n"); */
+            /* for(int i = 0; i < nq; i++) { */
+            /*     for(int j = 0; j < k; j++) printf("%5f ", D[i * k + j]); */
+            /*     printf("\n"); */
+            /* } */
         }
     }
     ss.str("");
