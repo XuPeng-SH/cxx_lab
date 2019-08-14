@@ -1,3 +1,4 @@
+#include <gflags/gflags.h>
 #include "utils.h"
 
 using namespace std;
@@ -97,23 +98,49 @@ void flat_test() {
     /* search_index_test(&gpu_index_flat, "GpuSearchTest", 100, 100, data.nb, data.xb, times); */
 }
 
+DEFINE_int32(dim, 512, "# of vecs");
+DEFINE_int32(nq, 10, "# of queries");
+DEFINE_int32(nb, 0, "# of add vecs");
+DEFINE_int32(nprobe, 1, "# nprobe");
+DEFINE_int32(k, 10, "# topk");
+DEFINE_string(index_type, "IVF16384,SQ8", "index type");
+DEFINE_string(input, "", "input index filename");
+DEFINE_bool(use_float16, false, "use float16");
+DEFINE_bool(verbose, false, "verbose");
+DEFINE_int32(search_times, 5, "# search times");
+DEFINE_int32(gpu_num, 0, "# gpu num");
+DEFINE_int32(threshold, 800, "# use blas threshold");
+
 int main(int argc, char** argv) {
-    gpu_ivf_sq_test();
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
+    TestOptions options;
+    if (FLAGS_input != "") {
+        options.index.reset(faiss::read_index(FLAGS_input.c_str()));
+        options.d = options.index->d;
+        options.nb = options.index->ntotal;
+    } else {
+        options.d = FLAGS_dim;
+        options.nb = FLAGS_nb;
+    }
+    options.nq = FLAGS_nq;
+    options.nprobe = FLAGS_nprobe;
+    options.index_type = FLAGS_index_type;
+    options.k = FLAGS_k;
+    options.useFloat16 = FLAGS_use_float16;
+    options.gpu_num = FLAGS_gpu_num;
+    options.search_times = FLAGS_search_times;
+    options.verbose = FLAGS_verbose;
+    /* gpu_ivf_sq_test(); */
     /* ivf_sq_test(); */
     /* flat_test(); */
-    return 0;
-    TestOptions options;
-    if (argc >= 2) {
-       options.nb = atoi(*(argv+1));
-    }
+    /* return 0; */
 
-    /* options.index.reset(faiss::read_index("/tmp/ivf_index")); */
-    /* options.d = options.index->d; */
-    /* options.nb = options.index->ntotal; */
+    faiss::distance_compute_blas_threshold = FLAGS_threshold;
 
-    faiss::distance_compute_blas_threshold = 800;
+    options.MakeIndex();
+    index_test(options);
+#if 0
     auto gpu_nums = faiss::gpu::getNumDevices();
-    options.search_times = 5;
     vector<bool> float16_options  = {false};
     /* vector<string> indice_type = {"IVF16384,SQ8", "IVF16384,Flat", "Flat"}; */
     /* vector<string> indice_type = {"IVF16384,Flat", "Flat"}; */
@@ -133,4 +160,5 @@ int main(int argc, char** argv) {
     }
 
     faiss::write_index(options.index.get(), "/tmp/ivf_index");
+#endif
 }

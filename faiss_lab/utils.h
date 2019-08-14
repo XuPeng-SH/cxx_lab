@@ -64,6 +64,7 @@ struct TestOptions {
     int nq = 1;
     int k = 1024;
     int nprobe = 64;
+    bool verbose = false;
     bool useFloat16 = false;
     string index_type = "IVF16384,Flat";
     shared_ptr<TestData> data = nullptr;

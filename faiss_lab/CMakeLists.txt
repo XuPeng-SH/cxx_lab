@@ -29,6 +29,7 @@ set(faiss_lab_libs
     # /home/xupeng/github/milvus/cpp/cmake_build/faiss_ep-prefix/src/faiss_ep/lib/libfaiss.a
     # /home/xupeng/github/milvus/cpp/cmake_build/lapack_ep-prefix/src/lapack_ep/lib/liblapack.a
     # /home/xupeng/github/milvus/cpp/cmake_build/openblas_ep-prefix/src/openblas_ep/libopenblas.a
+    gflags
     gfortran
     cudart
     cublas
