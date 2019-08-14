@@ -76,6 +76,9 @@ struct TestOptions {
     }
 
     void MakeIndex(bool force = false) {
+        if (index) {
+            index->verbose = verbose;
+        }
         if (index && !force) return;
         auto MSG_FUNC = [&](const string& msg) -> string {
             stringstream ss;
@@ -111,6 +114,7 @@ struct TestOptions {
         delete gpu_index;
 
         index.reset(cpu_index);
+        index->verbose = verbose;
     }
 };
 
