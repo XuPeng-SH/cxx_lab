@@ -31,6 +31,7 @@ void index_test(TestOptions& options) {
         faiss::gpu::GpuClonerOptions clone_option;
         clone_option.useFloat16 = options.useFloat16;
         clone_option.useFloat16CoarseQuantizer = options.useFloat16;
+        clone_option.storeInCpu = false;
         cpu_to_gpu_test(&gpu_res, cpu_index.get(), MSG_FUNC("CpuToGpuTEST"), 5);
         START_TIMER;
         auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index.get(), &clone_option);
@@ -46,7 +47,7 @@ void index_test(TestOptions& options) {
             cpu_ivf->nprobe = options.nprobe;
         }
 
-        search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), options.nq, options.k, data->nb, data->xb, times);
+        search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, true);
 
         START_TIMER;
         auto temp_cpu_index = faiss::gpu::index_gpu_to_cpu(gpu_index);
@@ -59,7 +60,7 @@ void index_test(TestOptions& options) {
         }
 
         if (cpu_ivf) {
-            search_index_test(temp_cpu_index, MSG_FUNC("CPUSearchTest"), options.nq, options.k, data->nb, data->xb, times);
+            search_index_test(temp_cpu_index, MSG_FUNC("CPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, true);
         }
         delete temp_cpu_index;
     }
@@ -137,7 +138,7 @@ int main(int argc, char** argv) {
 
     faiss::distance_compute_blas_threshold = FLAGS_threshold;
 
-    options.MakeIndex();
+    options.MakeIndex(true);
     index_test(options);
 #if 0
     auto gpu_nums = faiss::gpu::getNumDevices();

@@ -32,6 +32,7 @@ TestData::~TestData() {
 void search_index_test(faiss::Index* index, const string& context, int nq, int k, long nb, float *xb, int times, bool do_print) {
     stringstream ss;
     ss << "Search " << context << " nq=" << nq << " topk=" << k << " nb=" << nb;
+    index->display();
     INIT_TIMER;
     faiss::indexIVF_stats.reset();
     long *I = new long[k * nq];

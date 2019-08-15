@@ -95,7 +95,7 @@ struct TestOptions {
         faiss::gpu::StandardGpuResources gpu_res;
         auto cpu_index = faiss::index_factory(d, index_type.c_str());
         faiss::gpu::GpuClonerOptions clone_option;
-        clone_option.useFloat16 = true;
+        /* clone_option.useFloat16 = true; */
         auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index, &clone_option);
 
         delete cpu_index;
