@@ -47,7 +47,7 @@ void index_test(TestOptions& options) {
             cpu_ivf->nprobe = options.nprobe;
         }
 
-        search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, true);
+        search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, false);
 
         START_TIMER;
         auto temp_cpu_index = faiss::gpu::index_gpu_to_cpu(gpu_index);
@@ -60,7 +60,7 @@ void index_test(TestOptions& options) {
         }
 
         if (cpu_ivf) {
-            search_index_test(temp_cpu_index, MSG_FUNC("CPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, true);
+            search_index_test(temp_cpu_index, MSG_FUNC("CPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, false);
         }
         delete temp_cpu_index;
     }
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
 
     faiss::distance_compute_blas_threshold = FLAGS_threshold;
 
-    options.MakeIndex(true);
+    options.MakeIndex();
     index_test(options);
 #if 0
     auto gpu_nums = faiss::gpu::getNumDevices();
@@ -160,6 +160,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    faiss::write_index(options.index.get(), "/tmp/ivf_index");
 #endif
+    /* faiss::write_index(options.index.get(), "/home/xupeng/data/indexes/ivfflat_100m"); */
 }
