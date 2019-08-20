@@ -20,7 +20,7 @@ void index_test(TestFactory& options) {
 
     auto MSG_FUNC = [&](const string& msg) -> string {
         stringstream ss;
-        ss << options.index_type << "_" << gpu_num << "_" << msg;
+        ss << "gpu" << gpu_num << "_" << msg;
         return ss.str();
     };
 

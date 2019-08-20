@@ -32,7 +32,7 @@ TestData::~TestData() {
 void search_index_test(faiss::Index* index, const string& context, int nq, int k, long nb, float *xb, int times, bool do_print) {
     stringstream ss;
     ss << "Search " << context << " nq=" << nq << " topk=" << k << " nb=" << nb;
-    index->display();
+    /* index->display(); */
     INIT_TIMER;
     faiss::indexIVF_stats.reset();
     long *I = new long[k * nq];
@@ -121,7 +121,7 @@ gpu_ivf_sq_test() {
 
     auto MSG_FUNC = [&](const string& msg) -> string {
         stringstream ss;
-        ss << options.index_type << "_" << options.gpu_num << "_" << msg;
+        ss << options.gpu_num << "_" << msg;
         return ss.str();
     };
 
