@@ -56,7 +56,7 @@ struct TestData {
     int d;
 };
 
-struct TestOptions {
+struct TestFactory {
     int search_times = 1;
     int gpu_num = 0;
     int d = 512;
@@ -66,9 +66,19 @@ struct TestOptions {
     int nprobe = 64;
     bool verbose = false;
     bool useFloat16 = false;
+    bool readonly = true;
+    string output = "";
     string index_type = "IVF16384,Flat";
     shared_ptr<TestData> data = nullptr;
     shared_ptr<faiss::Index> index = nullptr;
+
+    void Serialize() {
+        if(!index || output == "") {
+            return;
+        }
+
+        faiss::write_index(index.get(), output.c_str());
+    }
 
     void MakeData() {
         if(data) return;
@@ -113,8 +123,17 @@ struct TestOptions {
         STOP_TIMER_WITH_FUNC("GpuToCpu");
         delete gpu_index;
 
+        if (readonly) {
+            auto ivf = dynamic_cast<faiss::IndexIVF*>(cpu_index);
+            if (ivf) {
+                ivf->to_readonly();
+            }
+        }
+
         index.reset(cpu_index);
         index->verbose = verbose;
+
+        Serialize();
     }
 };
 
@@ -131,3 +150,5 @@ void quantizer_cloner_test();
 void ivf_sq_test();
 
 void gpu_ivf_sq_test();
+
+void inverted_list_test(TestFactory&);

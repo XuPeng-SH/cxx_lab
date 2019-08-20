@@ -2,14 +2,14 @@
 #include "utils.h"
 
 using namespace std;
-void index_test(TestOptions& options) {
+void index_test(TestFactory& options) {
     INIT_TIMER;
     if (!options.data) {
         START_TIMER;
         options.MakeData();
         STOP_TIMER("Create Data: ");
         if (!options.data) {
-            cout << "Invalid TestOptions" << endl;
+            cout << "Invalid TestFactory" << endl;
             return;
         }
     }
@@ -47,22 +47,25 @@ void index_test(TestOptions& options) {
             cpu_ivf->nprobe = options.nprobe;
         }
 
+        cout << "nlist=" << ivf->getNumLists()<< endl;
+
         search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, false);
 
+        delete gpu_index;
+#if 0
         START_TIMER;
         auto temp_cpu_index = faiss::gpu::index_gpu_to_cpu(gpu_index);
         STOP_TIMER_WITH_FUNC("GpuToCpu");
-        delete gpu_index;
 
-        cpu_ivf = dynamic_cast<faiss::IndexIVF*>(temp_cpu_index);
+#endif
+        cpu_ivf = dynamic_cast<faiss::IndexIVF*>(cpu_index.get());
         if (cpu_ivf){
             cpu_ivf->nprobe = options.nprobe;
         }
 
         if (cpu_ivf) {
-            search_index_test(temp_cpu_index, MSG_FUNC("CPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, false);
+            search_index_test(cpu_index.get(), MSG_FUNC("CPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, false);
         }
-        delete temp_cpu_index;
     }
 }
 
@@ -106,15 +109,17 @@ DEFINE_int32(nprobe, 1, "# nprobe");
 DEFINE_int32(k, 10, "# topk");
 DEFINE_string(index_type, "IVF16384,SQ8", "index type");
 DEFINE_string(input, "", "input index filename");
+DEFINE_string(output, "", "output index filename");
 DEFINE_bool(use_float16, false, "use float16");
 DEFINE_bool(verbose, false, "verbose");
+DEFINE_bool(readonly, true, "readonly");
 DEFINE_int32(search_times, 5, "# search times");
 DEFINE_int32(gpu_num, 0, "# gpu num");
 DEFINE_int32(threshold, 800, "# use blas threshold");
 
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    TestOptions options;
+    TestFactory options;
     if (FLAGS_input != "") {
         options.index.reset(faiss::read_index(FLAGS_input.c_str()));
         options.d = options.index->d;
@@ -131,6 +136,8 @@ int main(int argc, char** argv) {
     options.gpu_num = FLAGS_gpu_num;
     options.search_times = FLAGS_search_times;
     options.verbose = FLAGS_verbose;
+    options.readonly = FLAGS_readonly;
+    options.output = FLAGS_output;
     /* gpu_ivf_sq_test(); */
     /* ivf_sq_test(); */
     /* flat_test(); */
@@ -140,6 +147,7 @@ int main(int argc, char** argv) {
 
     options.MakeIndex();
     index_test(options);
+    /* inverted_list_test(options); */
 #if 0
     auto gpu_nums = faiss::gpu::getNumDevices();
     vector<bool> float16_options  = {false};
