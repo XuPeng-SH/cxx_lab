@@ -72,12 +72,41 @@ struct TestFactory {
     shared_ptr<TestData> data = nullptr;
     shared_ptr<faiss::Index> index = nullptr;
 
+    ~TestFactory() {
+        cout << "\033[1;31m" << IndexInfo() << "\033[0m" << endl;
+        Serialize();
+    }
+
     void Serialize() {
         if(!index || output == "") {
             return;
         }
 
         faiss::write_index(index.get(), output.c_str());
+        cout << "-------> " << "\033[1;32m" << output << "\033[0m" << endl;
+    }
+
+    bool IsReadOnlyIndex() {
+        auto ivf = dynamic_pointer_cast<faiss::IndexIVF>(index);
+        if (!ivf) {
+            return false;
+        }
+        return ivf->is_readonly();
+    }
+
+    std::string IndexInfo() const {
+        auto name = typeid(*(index.get())).name();
+        auto ivf = dynamic_pointer_cast<faiss::IndexIVF>(index);
+        stringstream ss;
+        ss << name;
+        if (ivf) {
+            ss << ",IVF" << ivf->invlists->nlist;
+            ss << "," << (ivf->is_readonly()?"RO":"WR");
+            ss << ",NP" << ivf->nprobe;
+        }
+        ss << ",D" << index->d;
+        ss << ",N" << index->ntotal;
+        return ss.str();
     }
 
     void MakeData() {
@@ -132,8 +161,6 @@ struct TestFactory {
 
         index.reset(cpu_index);
         index->verbose = verbose;
-
-        Serialize();
     }
 };
 

@@ -47,8 +47,6 @@ void index_test(TestFactory& options) {
             cpu_ivf->nprobe = options.nprobe;
         }
 
-        cout << "nlist=" << ivf->getNumLists()<< endl;
-
         search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, false);
 
         delete gpu_index;
