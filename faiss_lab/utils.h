@@ -68,9 +68,19 @@ struct TestFactory {
     bool useFloat16 = false;
     bool readonly = true;
     string output = "";
+    string input = "";
     string index_type = "IVF16384,Flat";
     shared_ptr<TestData> data = nullptr;
     shared_ptr<faiss::Index> index = nullptr;
+
+    TestFactory(const string& fname = "") : input(fname) {
+        if (fname == "") return;
+        index.reset(faiss::read_index(input.c_str()));
+        d = index->d;
+        nb = index->ntotal;
+        cout << "\033[1;32m" << input << "\033[0m ----------->" << endl;
+        cout << "\033[1;31m" << IndexInfo() << "\033[0m" << endl;
+    }
 
     ~TestFactory() {
         cout << "\033[1;31m" << IndexInfo() << "\033[0m" << endl;

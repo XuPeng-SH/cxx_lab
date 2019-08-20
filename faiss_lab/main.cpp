@@ -117,12 +117,8 @@ DEFINE_int32(threshold, 800, "# use blas threshold");
 
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    TestFactory options;
-    if (FLAGS_input != "") {
-        options.index.reset(faiss::read_index(FLAGS_input.c_str()));
-        options.d = options.index->d;
-        options.nb = options.index->ntotal;
-    } else {
+    TestFactory options(FLAGS_input);
+    if (options.input == "") {
         options.d = FLAGS_dim;
         options.nb = FLAGS_nb;
     }
