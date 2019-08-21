@@ -47,7 +47,9 @@ void index_test(TestFactory& options) {
             cpu_ivf->nprobe = options.nprobe;
         }
 
-        search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, false);
+        bool do_print = options.nq * options.k <= 200;
+
+        search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, do_print);
 
         delete gpu_index;
 #if 0
@@ -62,7 +64,7 @@ void index_test(TestFactory& options) {
         }
 
         if (cpu_ivf) {
-            search_index_test(cpu_index.get(), MSG_FUNC("CPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, false);
+            search_index_test(cpu_index.get(), MSG_FUNC("CPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, do_print);
         }
     }
 }

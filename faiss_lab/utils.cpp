@@ -97,12 +97,18 @@ void gpu_add_vectors_test(faiss::gpu::GpuResources* gpu_res, const string& conte
 }
 
 void cpu_to_gpu_test(faiss::gpu::GpuResources* gpu_res, faiss::Index* index, const string& context, int times) {
+    faiss::gpu::CpuToGpuClonerOptions clone_option;
+    clone_option.readonly = false;
+    auto sq_index = dynamic_cast<faiss::IndexIVFScalarQuantizer*>(index);
+    if (sq_index) {
+        clone_option.readonly = true;
+    }
     INIT_TIMER;
     for (auto i = 0; i <= times; i += 1) {
         stringstream ss;
         ss << context;
         START_TIMER;
-        auto gpu_index = faiss::gpu::index_cpu_to_gpu(gpu_res, 0, index);
+        auto gpu_index = faiss::gpu::cpu_to_gpu(gpu_res, 0, index, &clone_option);
         ss << " ntotal=" << gpu_index->ntotal;
         STOP_TIMER(ss.str());
         delete gpu_index;
@@ -113,9 +119,10 @@ void
 gpu_ivf_sq_test() {
     INIT_TIMER;
     TestFactory options;
-    options.d = 4;
-    options.nb = 20;
-    options.index_type = "IVF8,SQ8";
+    options.d = 512;
+    options.nb = 1000000;
+    options.index_type = "IVF16384,SQ8";
+    options.output = "/home/xupeng/data/indexes/sq_1m_16384_512_wr";
     options.MakeIndex();
     auto cpu_index = options.index.get();
 
