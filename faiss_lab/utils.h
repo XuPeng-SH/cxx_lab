@@ -18,6 +18,7 @@
 
 using namespace std;
 
+#if 0
 #define TIMING
 
 #ifdef TIMING
@@ -36,6 +37,7 @@ using namespace std;
 #define INIT_TIMER
 #define START_TIMER
 #define STOP_TIMER(name)
+#endif
 #endif
 
 namespace faiss {
