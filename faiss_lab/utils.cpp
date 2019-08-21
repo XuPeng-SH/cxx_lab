@@ -96,7 +96,7 @@ void gpu_add_vectors_test(faiss::gpu::GpuResources* gpu_res, const string& conte
     }
 }
 
-void cpu_to_gpu_test(faiss::gpu::GpuResources* gpu_res, faiss::Index* index, const string& context, int times) {
+void cpu_to_gpu_test(faiss::gpu::GpuResources* gpu_res, int gpu_num, faiss::Index* index, const string& context, int times) {
     faiss::gpu::GpuClonerOptions clone_option;
     clone_option.allInGpu = false;
     auto sq_index = dynamic_cast<faiss::IndexIVFScalarQuantizer*>(index);
@@ -108,7 +108,7 @@ void cpu_to_gpu_test(faiss::gpu::GpuResources* gpu_res, faiss::Index* index, con
         stringstream ss;
         ss << context;
         START_TIMER;
-        auto gpu_index = faiss::gpu::index_cpu_to_gpu(gpu_res, 0, index, &clone_option);
+        auto gpu_index = faiss::gpu::index_cpu_to_gpu(gpu_res, gpu_num, index, &clone_option);
         ss << " ntotal=" << gpu_index->ntotal;
         STOP_TIMER(ss.str());
         delete gpu_index;

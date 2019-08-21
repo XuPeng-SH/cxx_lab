@@ -32,7 +32,7 @@ void index_test(TestFactory& options) {
         clone_option.useFloat16 = options.useFloat16;
         clone_option.useFloat16CoarseQuantizer = options.useFloat16;
         clone_option.storeInCpu = false;
-        cpu_to_gpu_test(&gpu_res, cpu_index.get(), MSG_FUNC("CpuToGpuTEST"), 5);
+        cpu_to_gpu_test(&gpu_res, options.gpu_num, cpu_index.get(), MSG_FUNC("CpuToGpuTEST"), 5);
         START_TIMER;
         auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index.get(), &clone_option);
         STOP_TIMER_WITH_FUNC("CpuToGpu");
@@ -90,7 +90,7 @@ void flat_test() {
     faiss::gpu::StandardGpuResources gpu_res;
 
     faiss::Index* cpu_index = &flat_l2;
-    cpu_to_gpu_test(&gpu_res, cpu_index, "CpuToGpuTEST", 5);
+    cpu_to_gpu_test(&gpu_res, 0, cpu_index, "CpuToGpuTEST", 5);
 
     long start_nb = data.nb;
     long step_nb = -100000;
