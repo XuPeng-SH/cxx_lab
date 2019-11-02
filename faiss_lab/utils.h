@@ -3,11 +3,15 @@
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <faiss/index_factory.h>
 #include <faiss/index_io.h>
 #include <faiss/IndexFlat.h>
+#include <faiss/gpu/GpuClonerOptions.h>
+#include <faiss/gpu/GpuCloner.h>
 #include <faiss/gpu/StandardGpuResources.h>
 #include <faiss/gpu/GpuIndex.h>
 #include <faiss/gpu/GpuIndexFlat.h>
+#include <faiss/gpu/GpuIndexIVFSQHybrid.h>
 #include <faiss/utils.h>
 #include <faiss/AutoTune.h>
 #include <faiss/gpu/GpuAutoTune.h>
@@ -18,7 +22,7 @@
 
 using namespace std;
 
-#if 0
+#if 1
 #define TIMING
 
 #ifdef TIMING

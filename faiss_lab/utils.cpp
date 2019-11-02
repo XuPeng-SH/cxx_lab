@@ -8,7 +8,7 @@
 /* #include <faiss/gpu/GpuIndexIVFQuantizer.h> */
 #include <faiss/Clustering.h>
 #include <faiss/OnDiskInvertedLists.h>
-#include <gpu/impl/IVFSQ.cuh>
+/* #include <gpu/impl/IVFSQ.cuh> */
 #include <faiss/gpu/GpuIndexFlat.h>
 #include <faiss/IndexScalarQuantizer.h>
 #include <faiss/gpu/GpuIndexIVFSQ.h>
@@ -163,10 +163,10 @@ gpu_ivf_sq_test() {
     faiss::gpu::GpuClonerOptions clone_option;
     clone_option.allInGpu = true;
     auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, 0, ivf_sq, &clone_option);
-    auto sq = dynamic_cast<faiss::gpu::GpuIndexIVFSQ*>(gpu_index);
-    if (options.nb < 100) {
-        sq->dump();
-    }
+    /* auto sq = dynamic_cast<faiss::gpu::GpuIndexIVFSQ*>(gpu_index); */
+    /* if (options.nb < 100) { */
+    /*     sq->dump(); */
+    /* } */
     delete gpu_index;
 
     START_TIMER;
@@ -245,6 +245,7 @@ ivf_sq_test() {
 #endif
 }
 
+#if 0
 void inverted_list_test(TestFactory& factory) {
     auto ivf_index = dynamic_pointer_cast<faiss::IndexIVF>(factory.index);
     if (!ivf_index) {
@@ -329,6 +330,7 @@ void inverted_list_test(TestFactory& factory) {
 
     delete loaded_index;
 }
+#endif
 
 void quantizer_cloner_test() {
 #if 0

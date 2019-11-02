@@ -31,34 +31,58 @@ void index_test(TestFactory& options) {
         faiss::gpu::GpuClonerOptions clone_option;
         clone_option.useFloat16 = options.useFloat16;
         clone_option.useFloat16CoarseQuantizer = options.useFloat16;
-        clone_option.storeInCpu = false;
+        clone_option.storeInCpu = true;
         cpu_to_gpu_test(&gpu_res, options.gpu_num, cpu_index.get(), MSG_FUNC("CpuToGpuTEST"), 5);
         START_TIMER;
-        auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index.get(), &clone_option);
+
+        faiss::IndexComposition index_composition;
+        index_composition.index = cpu_index.get();
+        index_composition.quantizer = nullptr;
+        index_composition.mode = 1;  // copy all
+
+        auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, &index_composition, &clone_option);
+        /* auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index.get(), &clone_option); */
         STOP_TIMER_WITH_FUNC("CpuToGpu");
 
-        auto ivf = dynamic_cast<faiss::gpu::GpuIndexIVF*>(gpu_index);
-        if(ivf) {
-            ivf->setNumProbes(options.nprobe);
-        }
-        auto cpu_ivf = dynamic_cast<faiss::IndexIVF*>(gpu_index);
-        if (cpu_ivf){
-            cout << "Warning: Expect GPU Index!" << endl;
+        faiss::Index* search_index = nullptr;
+
+        auto hybrid = dynamic_cast<faiss::gpu::GpuIndexIVFSQHybrid*>(gpu_index);
+        if(hybrid && index_composition.mode == 1) {
+            cout << "Hybrid...... " << index_composition.mode << endl;
+            auto cpu_ivf = dynamic_cast<faiss::IndexIVF*>(cpu_index.get());
+            delete gpu_index;
+            gpu_index = nullptr;
+            delete cpu_ivf->quantizer;
+            cpu_ivf->quantizer = index_composition.quantizer;
+            search_index = cpu_ivf;
             cpu_ivf->nprobe = options.nprobe;
         }
-
+        else {
+            auto ivf = dynamic_cast<faiss::gpu::GpuIndexIVF*>(gpu_index);
+            if(ivf) {
+                ivf->setNumProbes(options.nprobe);
+            }
+            auto cpu_ivf = dynamic_cast<faiss::IndexIVF*>(gpu_index);
+            if (cpu_ivf){
+                cout << "Warning: Expect GPU Index!" << endl;
+                cpu_ivf->nprobe = options.nprobe;
+            }
+            search_index = gpu_index;
+        }
         bool do_print = options.nq * options.k <= 200;
 
-        search_index_test(gpu_index, MSG_FUNC("GPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, do_print);
+        search_index_test(search_index, MSG_FUNC("GPUSearchTest"), options.nq, options.k, data->nb, data->xb, times, do_print);
 
-        delete gpu_index;
+        if (gpu_index) {
+            delete gpu_index;
+        }
 #if 0
         START_TIMER;
         auto temp_cpu_index = faiss::gpu::index_gpu_to_cpu(gpu_index);
         STOP_TIMER_WITH_FUNC("GpuToCpu");
 
 #endif
-        cpu_ivf = dynamic_cast<faiss::IndexIVF*>(cpu_index.get());
+        auto cpu_ivf = dynamic_cast<faiss::IndexIVF*>(cpu_index.get());
         if (cpu_ivf){
             cpu_ivf->nprobe = options.nprobe;
         }
