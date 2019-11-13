@@ -1,0 +1,34 @@
+
+#include <string>
+#include <iostream>
+
+#include <grpc++/server_builder.h>
+
+#include "demo.grpc.pb.h"
+
+using namespace std;
+using namespace grpc;
+using namespace demo::grpc;
+
+class ServiceImpl final : public MyService {
+    virtual Status Get(ClientContext* context, const QueryParam& request, Index* response) override {
+        cout << "request.index_type=" << request.index_type() << endl;
+        response->set_index_name("IndexName");
+        response->set_index_type(request.index_type());
+        return Status::OK;
+    }
+};
+
+void run_server() {
+    string addr("0.0.0.0:5666");
+
+    ServiceImpl service;
+    ServiceBuilder builder;
+    builder.AddListeningPort(addr, InsecureServerCredentials());
+    builder.RegisterService(&service);
+    std::unique_ptr<Server> server(builder.BuildAndStart());
+
+     std::cout << "Server listening on " << server_address << std::endl;
+
+     server->Wait();
+}

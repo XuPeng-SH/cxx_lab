@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package demo;
+
+import "google/protobuf/struct.proto";
+
+message Config {
+    string host = 1;
+    string port = 2;
+    string tracer_library = 3;
+    google.protobuf.Struct tracer_configuration = 4;
+}
