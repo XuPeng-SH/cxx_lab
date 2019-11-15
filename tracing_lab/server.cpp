@@ -10,13 +10,17 @@
 #include <grpc++/server_context.h>
 #include <opentracing/mocktracer/tracer.h>
 #include <unistd.h>
+#include <vector>
+#include <memory>
 
 #include "demo.grpc.pb.h"
 #include "text_map_carrier.h"
+#include "interceptor.h"
 
 using namespace std;
 using namespace grpc;
 using namespace demo::grpc;
+
 
 void ServerCallB(std::shared_ptr<opentracing::Tracer> tracer, const opentracing::SpanContext& ctx) {
     auto span = tracer->StartSpan(__func__, {ChildOf(&ctx)});
@@ -39,49 +43,25 @@ public:
     explicit ServiceImpl(std::shared_ptr<opentracing::Tracer> tracer) : tracer_(tracer) {}
     Status Get(::grpc::ServerContext* context,
             const ::demo::grpc::QueryParam* request, ::demo::grpc::Index* response) override {
-        auto metadata = context->client_metadata();
-        std::unordered_map<std::string, std::string> text_map;
-        for (auto each : metadata) {
-            cout << "[KV] " << each.first << " : " << each.second << endl;
-            if (each.first == "demo-span-context") {
-                text_map[string(each.first.data(), each.first.length())] = string(each.second.data(), each.second.length());
-                /* text_map[each.first.data()] = "XP"; //each.second.data(); */
-            }
-        }
+        /* auto& value = span_maybe.value(); */
+        /* assert(span_maybe); */
 
-        /* text_map["demo-span-context"] = "xxx"; */
-        /* text_map["demo-span-context"] = "wOSveAifBtJA3xtZS7QTRQAAAAA="; */
-        for (auto i : text_map) {
-            std::cout << i.first << ": ";
-            std::cout << i.second << std::endl;
-        }
+        /* auto a = span_maybe->get(); */
 
-        /* std::unordered_map<std::string, std::string> text_map = {"demo-span-context", metadata["demo-span-context"]}; */
-        TextMapCarrier carrier{text_map};
-        auto span_maybe = tracer_->Extract(carrier);
-        std::cout << "HasValue: \"" << span_maybe.has_value() << "\"\n";
-        auto& value = span_maybe.value();
-        /* std::cout << "TracerID: \"" << span_maybe.value()->ToTraceID() << "\"\n"; */
-        /* std::cout << "Example error message: \"" << span_maybe.value()->ToSpanID() << "\"\n"; */
-        /* std::cout << "2Example error message: \"" << span_maybe.error().message() << "\"\n"; */
-        assert(span_maybe);
+        /* auto span = tracer_->StartSpan("ServerGet", {ChildOf(span_maybe->get())}); */
+        /* span->SetTag("method", __func__); */
+        /* usleep(500); */
 
-        auto a = span_maybe->get();
-
-        auto span = tracer_->StartSpan("ServerGet", {ChildOf(span_maybe->get())});
-        span->SetTag("method", __func__);
-        usleep(500);
-
-        ServerCallA(tracer_, span->context());
+        /* ServerCallA(tracer_, span->context()); */
 
         cout << "request.index_type=" << request->index_type() << endl;
         response->set_index_name("IndexName");
         response->set_index_type(request->index_type());
-        span->Log({
-                {"name", "IndexName"},
-                {"type", request->index_type()}
-                });
-        span->Finish();
+        /* span->Log({ */
+        /*         {"name", "IndexName"}, */
+        /*         {"type", request->index_type()} */
+        /*         }); */
+        /* span->Finish(); */
         return Status::OK;
     }
 
@@ -96,6 +76,16 @@ void run_server(Configuration::Ptr configuration) {
     ServerBuilder builder;
     builder.AddListeningPort(addr, InsecureServerCredentials());
     builder.RegisterService(&service);
+
+    using InterceptorI = experimental::ServerInterceptorFactoryInterface;
+    using InterceptorIPtr = std::unique_ptr<InterceptorI>;
+    vector<InterceptorIPtr> creators;
+    /* vector<std::unique_ptr<experimental::ServerInterceptorFactoryInterface>> creators; */
+    creators.push_back(std::unique_ptr<experimental::ServerInterceptorFactoryInterface>(
+                new SpanInterceptorFactory(configuration->tracer)));
+
+    builder.experimental().SetInterceptorCreators(std::move(creators));
+
     std::unique_ptr<Server> server(builder.BuildAndStart());
 
     std::cout << "Server listening on " << addr << std::endl;
