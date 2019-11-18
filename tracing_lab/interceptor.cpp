@@ -15,6 +15,10 @@ void SpanInterceptor::Intercept(experimental::InterceptorBatchMethods* methods) 
         cout << "experimental::InterceptionHookPoints::POST_RECV_INITIAL_METADATA ..." << endl;
         std::unordered_map<std::string, std::string> text_map;
         auto* map = methods->GetRecvInitialMetadata();
+        /* for (auto kv : *map) { */
+        /*     cout << string(kv.first.data(), kv.first.length()) << " : " */
+        /*         << string(kv.second.data(), kv.second.length()) << endl; */
+        /* } */
         auto context_kv = map->find("demo-span-context");
         if (context_kv != map->end()) {
             text_map[string(context_kv->first.data(), context_kv->first.length())] =
@@ -28,6 +32,7 @@ void SpanInterceptor::Intercept(experimental::InterceptorBatchMethods* methods) 
     } else if (methods->QueryInterceptionHookPoint(
                   experimental::InterceptionHookPoints::PRE_SEND_MESSAGE)) {
         cout << "experimental::InterceptionHookPoints::PRE_SEND_MESSAGE ..." << endl;
+        span_->SetTag("error", true);
         span_->Finish();
     }
 

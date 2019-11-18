@@ -53,6 +53,7 @@ public:
         /* usleep(500); */
 
         /* ServerCallA(tracer_, span->context()); */
+        /* my_context = TracerManager->get_active_context(context); */
 
         cout << "request.index_type=" << request->index_type() << endl;
         response->set_index_name("IndexName");
