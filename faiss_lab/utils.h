@@ -22,7 +22,7 @@
 
 using namespace std;
 
-#if 1
+#if 0
 #define TIMING
 
 #ifdef TIMING
@@ -90,7 +90,7 @@ struct TestFactory {
 
     ~TestFactory() {
         cout << "\033[1;31m" << IndexInfo() << "\033[0m" << endl;
-        Serialize();
+        /* Serialize(); */
     }
 
     void Serialize() {

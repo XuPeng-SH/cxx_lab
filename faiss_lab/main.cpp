@@ -166,6 +166,7 @@ int main(int argc, char** argv) {
     faiss::distance_compute_blas_threshold = FLAGS_threshold;
 
     options.MakeIndex();
+    options.Serialize();
     index_test(options);
     /* inverted_list_test(options); */
 #if 0
