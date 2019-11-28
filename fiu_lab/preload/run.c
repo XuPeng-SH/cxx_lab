@@ -6,8 +6,13 @@
 #include <unistd.h>
 
 static void __attribute__((constructor)) run_init(void) {
-    /* std::cout << "Hello run_init" << std::endl; */
-    /* printf("Hello run_init\n"); */
+    char* fifo_env;
+    fifo_env = getenv("FIFO_ENV");
+    if (fifo_env && *fifo_env != '\0') {
+        perror(fifo_env);
+    } else {
+        /* perror("fifo_env empty"); */
+    }
 }
 
 static __thread void* (*malloc_orig) (size_t size) = NULL;

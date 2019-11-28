@@ -4,6 +4,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 # option(FIU_ENABLE "select to enable fiu" TRUE)
 
+add_subdirectory(preload)
+
 aux_source_directory(./ source_files)
 aux_source_directory(./src fiu_src)
 
