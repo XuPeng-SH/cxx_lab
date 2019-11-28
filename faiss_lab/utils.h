@@ -8,17 +8,21 @@
 #include <faiss/gpu/StandardGpuResources.h>
 #include <faiss/gpu/GpuIndex.h>
 #include <faiss/gpu/GpuIndexFlat.h>
-#include <faiss/utils.h>
+#include <faiss/utils/utils.h>
 #include <faiss/AutoTune.h>
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/IndexIVF.h>
 #include <faiss/gpu/GpuIndexIVF.h>
+#include <faiss/index_factory.h>
+#include <faiss/gpu/GpuClonerOptions.h>
+#include <faiss/gpu/GpuCloner.h>
+#include <faiss/utils/distances.h>
 #include <thread>
 #include <sstream>
 
 using namespace std;
 
-#if 0
+#if 1
 #define TIMING
 
 #ifdef TIMING
@@ -145,9 +149,10 @@ struct TestFactory {
 
         faiss::gpu::StandardGpuResources gpu_res;
         auto cpu_index = faiss::index_factory(d, index_type.c_str());
-        faiss::gpu::GpuClonerOptions clone_option;
+        /* faiss::gpu::GpuClonerOptions clone_option; */
         /* clone_option.useFloat16 = true; */
-        auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index, &clone_option);
+        auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index);
+        /* auto gpu_index = faiss::gpu::index_cpu_to_gpu(&gpu_res, gpu_num, cpu_index, &clone_option); */
 
         delete cpu_index;
 

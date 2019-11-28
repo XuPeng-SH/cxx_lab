@@ -139,7 +139,8 @@ int main(int argc, char** argv) {
     /* flat_test(); */
     /* return 0; */
 
-    faiss::distance_compute_blas_threshold = FLAGS_threshold;
+    faiss::distance_compute_blas_threshold = 800;
+    /* faiss::distance_compute_blas_threshold = FLAGS_threshold; */
 
     options.MakeIndex();
     index_test(options);
