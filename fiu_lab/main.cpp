@@ -16,7 +16,7 @@ bool has_table(const string& name) {
     void *buffer[100];
     char** strings;
     nptrs = backtrace(buffer, 100);
-    printf("backtrace() returned %d addresses\n", nptrs);
+    /* printf("backtrace() returned %d addresses\n", nptrs); */
     /* backtrace_symbols_fd(buffer, nptrs, 1); */
     strings = backtrace_symbols(buffer, nptrs);
     if (strings == NULL) {
@@ -24,8 +24,8 @@ bool has_table(const string& name) {
        exit(EXIT_FAILURE);
     }
 
-    for (int j = 0; j < nptrs; j++)
-       printf("[%d]: %s\n", j, strings[j]);
+    /* for (int j = 0; j < nptrs; j++) */
+    /*    printf("[%d]: %s\n", j, strings[j]); */
 
     free(strings);
     fiu_return_on("has_table", false);
