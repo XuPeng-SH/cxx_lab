@@ -53,3 +53,7 @@ public:
     FunctionExprAST(PrototypeExprAST* proto, ExprAST* body) :
         proto_(proto), body_(body) {}
 };
+
+ExprAST* Error(const char* str);
+PrototypeExprAST* ErrorP(const char* str);
+FunctionExprAST* ErrorF(const char* str);
