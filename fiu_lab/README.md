@@ -87,5 +87,13 @@
     - 脚本控制错误点:
       ```bash
       # 启动错误名为 error_point 的注入错误
-      >>> fiu-run -c 'enable name=error_point' executable_file
+      >>> fiu-ctrl -c 'enable name=$fault_name' $pid
       ```
+ 4. 启动程序
+    ```bash
+    # 使用 fiu-run 启动程序
+    >>> fiu-run -c 'enable name=$fault_name' $executable_file ... $argv
+
+    # 使用 fiu-ls 查看运行 fiu-run 的程序
+    >>> fiu-ls
+    ```
