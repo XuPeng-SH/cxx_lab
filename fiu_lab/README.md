@@ -88,7 +88,7 @@ fiu_fail("fault_name");
 # 启动错误名为 error_point 的注入错误
 >>> fiu-ctrl -c 'enable name=$fault_name' $pid
 ```
-**启动程序**
+> **启动程序**
 ```bash
 # 使用 fiu-run 启动程序
 >>> fiu-run -c 'enable name=$fault_name' $executable_file ... $argv
