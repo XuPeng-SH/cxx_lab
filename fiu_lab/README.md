@@ -53,11 +53,11 @@ assert(file_fits("tmpfile") == false);
 
 ## 使用libfiu
 > **安装**
-- Debian 和 Ubuntu 用户可以直接安装
+Debian 和 Ubuntu 用户可以直接安装
 ```bash
 >>> apt-get install libfiu-dev fiu-utils
 ```
-- 源码安装
+源码安装
 ```bash
 >>> git clone https://github.com/albertito/libfiu
 >>> cd libfiu
