@@ -66,28 +66,28 @@ assert(file_fits("tmpfile") == false);
 ```
 
 > **错误注入**
-1. 在需要注入错误的文件加入 `#include <fiu-local.h>`
-2. 使用 core API 注入错误
+**在需要注入错误的文件加入 `#include <fiu-local.h>`**
+**使用 core API 注入错误**
 ```cpp
 fiu_return_on("fault_name", -1);
 fiu_exit_on("fault_name");
 fiu_fail("fault_name");
  ```
-错误注入点的名字带有层级关系:
+错误注入点的名字带有层级关系
 ```
 "db/insert/*" ==> "db/insert/memtable", "db/insert/immutable", ...
 "server/grpc/*" ==> "server/grpc/drop_table", "server/grpc/create_table", ...
 ```
-3. 使用 control API 控制错误
-- `fiu_enable()`: 强制打开错误
-- `fiu_enable_random()`: 随机打开错误
-- `fiu_enable_external()`: `External` 函数返回值满足条件时打开错误
-- 脚本控制错误点:
+**使用 control API 控制错误**
+`fiu_enable()`: 强制打开错误
+`fiu_enable_random()`: 随机打开错误
+`fiu_enable_external()`: `External` 函数返回值满足条件时打开错误
+脚本控制错误点
 ```bash
 # 启动错误名为 error_point 的注入错误
 >>> fiu-ctrl -c 'enable name=$fault_name' $pid
 ```
-4. 启动程序
+**启动程序**
 ```bash
 # 使用 fiu-run 启动程序
 >>> fiu-run -c 'enable name=$fault_name' $executable_file ... $argv
