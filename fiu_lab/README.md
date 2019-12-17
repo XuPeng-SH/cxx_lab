@@ -78,7 +78,8 @@ fiu_fail("fault_name");
 "db/insert/*" ==> "db/insert/memtable", "db/insert/immutable", ...
 "server/grpc/*" ==> "server/grpc/drop_table", "server/grpc/create_table", ...
 ```
-**使用 control API 控制错误**
+> **使用 control API 控制错误**
+
 `fiu_enable()`: 强制打开错误
 `fiu_enable_random()`: 随机打开错误
 `fiu_enable_external()`: `External` 函数返回值满足条件时打开错误
