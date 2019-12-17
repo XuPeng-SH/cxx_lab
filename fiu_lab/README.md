@@ -67,6 +67,7 @@ Debian 和 Ubuntu 用户可以直接安装
 ```
 
 > **错误注入**
+
 **在需要注入错误的文件加入 `#include <fiu-local.h>`**
 **使用 core API 注入错误**
 ```cpp
@@ -74,7 +75,7 @@ fiu_return_on("fault_name", -1);
 fiu_exit_on("fault_name");
 fiu_fail("fault_name");
  ```
-错误注入点的名字带有层级关系
+**错误注入点的名字带有层级关系**
 ```
 "db/insert/*" ==> "db/insert/memtable", "db/insert/immutable", ...
 "server/grpc/*" ==> "server/grpc/drop_table", "server/grpc/create_table", ...
