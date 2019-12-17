@@ -11,12 +11,11 @@ aux_source_directory(./src fiu_src)
 
 include_directories(src)
 include_directories(/usr/include)
-include_directories(/usr/local/cuda/include)
-include_directories(/home/xupeng/github/libfiu/libfiu/)
+include_directories(/usr/include/)
 
-link_directories(/usr/local/cuda/lib64
+link_directories(
                  /usr/lib/gcc/x86_64-linux-gnu/5/
-                 /home/xupeng/github/libfiu/libfiu)
+                 /usr/lib/)
 
 set(src ${source_files} ${fiu_src})
 

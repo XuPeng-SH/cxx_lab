@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     string fail_info = "this is error msg";
     fiu_init(0);
     /* fiu_enable("has_table", 1, const_cast<char*>(fail_info.c_str()), 0); */
-    fiu_enable_external("has_table", 1, const_cast<char*>(fail_info.c_str()), 0, callback);
+    /* fiu_enable_external("has_table", 1, const_cast<char*>(fail_info.c_str()), 0, callback); */
 
     if (has_table("")) {
         cout << "Has table" << endl;
