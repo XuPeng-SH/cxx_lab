@@ -10,13 +10,13 @@ set(LIBSOURCES src/container.cpp
     src/my_templates_demo.cpp)
 
 add_library(MetaProgrammingStaticLibrary STATIC ${LIBSOURCES})
-target_compile_features(MetaProgrammingStaticLibrary PRIVATE cxx_std_11)
+target_compile_features(MetaProgrammingStaticLibrary PRIVATE cxx_std_17)
 target_include_directories(MetaProgrammingStaticLibrary
     PUBLIC
     ${PROJECT_SOURCE_DIR}/include)
 
 add_library(MetaProgrammingDynamicLibrary SHARED ${LIBSOURCES})
-target_compile_features(MetaProgrammingDynamicLibrary PRIVATE cxx_std_11)
+target_compile_features(MetaProgrammingDynamicLibrary PRIVATE cxx_std_17)
 target_include_directories(MetaProgrammingDynamicLibrary
     PUBLIC
     ${PROJECT_SOURCE_DIR}/include)
@@ -26,7 +26,7 @@ set(EXESOURCES src/main.cpp)
 
 add_executable(StaticTesting ${EXESOURCES})
 
-target_compile_features(StaticTesting PRIVATE cxx_std_11)
+target_compile_features(StaticTesting PRIVATE cxx_std_17)
 
 target_compile_definitions(StaticTesting PRIVATE V3)
 
@@ -36,7 +36,7 @@ target_link_libraries(StaticTesting
 
 add_executable(SharedTesting ${EXESOURCES})
 
-target_compile_features(SharedTesting PRIVATE cxx_std_11)
+target_compile_features(SharedTesting PRIVATE cxx_std_17)
 
 target_link_libraries(SharedTesting
     PRIVATE
