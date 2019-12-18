@@ -37,6 +37,7 @@ int main() {
 
     Serializer<int>::type::serialize(int_val);
     Serializer<const char*>::type::serialize(char_val);
+    Serialize<int>(int_val);
 
     return 0;
 }
