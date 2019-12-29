@@ -6,12 +6,14 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <chrono>
+#include <thread>
 #include <map>
 
 using namespace std;
 using namespace leveldb;
 
 void mock_data(DB* db, size_t num, string pre="") {
+  cout << __func__ << " num=" << num << " pre=" << pre << endl;
 
   auto write_options = WriteOptions();
 
@@ -44,7 +46,8 @@ void load_all(DB* db, map<string, string>& dict) {
     delete it;
 }
 
-void search(DB* db, size_t n, string pre="", bool debug=false) {
+void search_seg(DB* db, size_t n, string pre="") {
+    bool debug = false;
     auto rop = ReadOptions();
     auto start = chrono::high_resolution_clock::now();
     string value;
@@ -60,7 +63,65 @@ void search(DB* db, size_t n, string pre="", bool debug=false) {
     cout << __func__ << " takes " << chrono::duration<double, std::milli>(end-start).count() << " ms" << endl;
 }
 
+void make_segments(const string& db_path_prefix, size_t n, map<string, DB*>& db_map) {
+    Options options;
+    options.create_if_missing = true;
+    for (auto i=0; i<n; ++i) {
+        auto segment_name = db_path_prefix+"segment_"+to_string(i);
+        DB *db;
+        DB::Open(options, segment_name, &db);
+        db_map[segment_name] = db;
+    }
+}
+
+void destroy_segments(map<string, DB*>& db_map) {
+    for (auto& kv: db_map) {
+        /* cout << kv.first << endl; */
+        delete kv.second;
+    }
+}
+
 int main(int argc, char** argv) {
+
+    map<string, DB*> db_map;
+    vector<std::thread> threads;
+    make_segments("/home/xupeng/data/ldb", 100, db_map);
+
+    auto start = chrono::high_resolution_clock::now();
+    /* std::for_each(db_map.begin(), db_map.end(), [&](const std::pair<string, DB*>& it_pair) { */
+    /*     /1* mock_data(it_pair.second, 100000, it_pair.first + ":"); *1/ */
+    /*     std::thread t = std::thread(mock_data, it_pair.second, 100000, it_pair.first + ":"); */
+    /*     threads.push_back(std::move(t)); */
+    /* }); */
+
+    /* for (auto& t : threads) { */
+    /*     if (t.joinable()) */
+    /*         t.join(); */
+    /* } */
+
+    auto end = chrono::high_resolution_clock::now();
+    cout << "mock all data takes " << chrono::duration<double, std::milli>(end-start).count() << " ms" << endl;
+    threads.clear();
+
+    start = chrono::high_resolution_clock::now();
+    std::for_each(db_map.begin(), db_map.end(), [&](const std::pair<string, DB*>& it_pair) {
+        auto pre = it_pair.first + ":";
+        /* search_seg(it_pair.second, 100000, pre); */
+        std::thread t = std::thread(search_seg, it_pair.second, 10000, pre);
+        threads.push_back(std::move(t));
+    });
+    for (auto& t : threads) {
+        if (t.joinable())
+            t.join();
+    }
+    end = chrono::high_resolution_clock::now();
+    cout << "search_seg all data takes " << chrono::duration<double, std::milli>(end-start).count() << " ms" << endl;
+    threads.clear();
+
+
+    destroy_segments(db_map);
+
+    return 0;
     DB *db;
     Options options;
     options.create_if_missing = true;
@@ -69,7 +130,7 @@ int main(int argc, char** argv) {
     /* mock_data(db, 50000000, "5:"); */
     /* map<string, string> dict; */
     /* load_all(db, dict); */
-    search(db, 10000, "", false);
+    search_seg(db, 10000, "");
     /* string key = "name"; */
     /* string value = "xp"; */
     /* auto woptions = WriteOptions(); */
