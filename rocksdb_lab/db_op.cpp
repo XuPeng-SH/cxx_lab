@@ -6,7 +6,7 @@
 #include <algorithm>
 
 void mock_data(DB* db, ColumnFamilyHandle* handle, size_t num, string pre) {
-  cout << __func__ << " num=" << num << " pre=" << pre << endl;
+  /* cout << __func__ << " num=" << num << " pre=" << pre << endl; */
 
   auto write_options = WriteOptions();
 
@@ -21,7 +21,7 @@ void mock_data(DB* db, ColumnFamilyHandle* handle, size_t num, string pre) {
       }
   }
   auto end = chrono::high_resolution_clock::now();
-  cout << __func__ << " takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+  cout << __func__ << " CF=" << handle->GetName() << " takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
 }
 
 void load_all(DB* db, ColumnFamilyHandle* handle, map<string, string>& dict) {
@@ -31,7 +31,7 @@ void load_all(DB* db, ColumnFamilyHandle* handle, map<string, string>& dict) {
     auto start = chrono::high_resolution_clock::now();
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         ++count;
-        dict[it->key().ToString()] = it->value().ToString();
+        /* dict[it->key().ToString()] = it->value().ToString(); */
     }
     cout << count << " loaded" << endl;
     auto end = chrono::high_resolution_clock::now();
@@ -39,8 +39,7 @@ void load_all(DB* db, ColumnFamilyHandle* handle, map<string, string>& dict) {
     delete it;
 }
 
-/* void search_seg(DB* db, ColumnFamilyHandle* handle, size_t n, string pre) { */
-void search_seg(DB* db, size_t n, string pre) {
+void search_seg(DB* db, ColumnFamilyHandle* handle, size_t n, string pre) {
     bool debug = false;
     auto rop = ReadOptions();
     auto start = chrono::high_resolution_clock::now();
@@ -48,27 +47,26 @@ void search_seg(DB* db, size_t n, string pre) {
     string key_prefix = pre + "mock_prefix_user_key:";
     for (auto i=0; i<n; ++i) {
         auto key = key_prefix + to_string(i);
-        db->Get(rop, key, &value);
-        /* db->Get(rop, handle, key, &value); */
+        db->Get(rop, handle, key, &value);
         if (debug)
             cout << "key, value = " << key << ", " << value << endl;
     }
     cout << n << " checked" << endl;
     auto end = chrono::high_resolution_clock::now();
-    cout << __func__ << " takes " << chrono::duration<double, std::milli>(end-start).count() << " ms" << endl;
+    cout << __func__ << " CF=" << handle->GetName() << " takes " << chrono::duration<double, std::milli>(end-start).count() << " ms" << endl;
 }
 
 void make_segments(const string& db_path_prefix, size_t n, map<string, DB*>& db_map,
         HandleMapT& handles_map) {
 
     Options options;
-    options.create_if_missing = true;
+    /* options.create_if_missing = true; */
     for (auto i=0; i<n; ++i) {
         std::vector<string> cf_names;
         std::vector<ColumnFamilyDescriptor> column_families;
         std::vector<ColumnFamilyHandle*> handles;
         auto segment_name = db_path_prefix+"segment_"+to_string(i);
-        DB::ListColumnFamilies(DBOptions(), segment_name, &cf_names);
+        DB::ListColumnFamilies(options, segment_name, &cf_names);
         DB *db;
         for (auto& name : cf_names) {
             column_families.push_back(ColumnFamilyDescriptor(name, ColumnFamilyOptions()));
@@ -95,16 +93,18 @@ void destroy_segments(map<string, DB*>& db_map, HandleMapT& handles_map) {
     }
 }
 
-void mock_segments_data(map<string, DB*>& db_map, HandleMapT& handles_map, size_t size, const string& prefix, bool async) {
+void mock_segments_data(map<string, DB*>& db_map, HandleSelectorT& handle_selectors, size_t size, const string& prefix, bool async) {
     vector<std::thread> threads;
+    ColumnFamilyHandle* using_handle;
     auto start = chrono::high_resolution_clock::now();
     std::for_each(db_map.begin(), db_map.end(), [&](const std::pair<string, DB*>& it_pair) {
         auto prefix_key = it_pair.first + (prefix != "" ? ":" + prefix : "");
-        vector<ColumnFamilyHandle*>& handles = handles_map[it_pair.first];
+        auto& handle = handle_selectors[it_pair.first];
+        using_handle = handle;
         if (!async) {
-            mock_data(it_pair.second, handles[0], size, prefix_key);
+            mock_data(it_pair.second, handle, size, prefix_key);
         } else {
-            std::thread t = std::thread(mock_data, it_pair.second, handles[0], size, prefix_key);
+            std::thread t = std::thread(mock_data, it_pair.second, handle, size, prefix_key);
             threads.push_back(std::move(t));
         }
     });
@@ -115,19 +115,20 @@ void mock_segments_data(map<string, DB*>& db_map, HandleMapT& handles_map, size_
     }
 
     auto end = chrono::high_resolution_clock::now();
-    cout << __func__  << " takes " << chrono::duration<double, std::milli>(end-start).count() << " ms" << endl;
+    cout << __func__ <<  " CF=" << using_handle->GetName()  << " takes " << chrono::duration<double, std::milli>(end-start).count() << " ms" << endl;
     threads.clear();
 }
 
-void search_segments(map<string, DB*>& db_map, size_t size, const string& prefix, bool async) {
+void search_segments(map<string, DB*>& db_map, HandleSelectorT& selectors, size_t size, const string& prefix, bool async) {
     vector<std::thread> threads;
     auto start = chrono::high_resolution_clock::now();
     std::for_each(db_map.begin(), db_map.end(), [&](const std::pair<string, DB*>& it_pair) {
         auto pre = it_pair.first + (prefix != "" ? ":" + prefix : "");
+        auto& handle = selectors[it_pair.first];
         if (!async) {
-            search_seg(it_pair.second, size, pre);
+            search_seg(it_pair.second, handle, size, pre);
         } else {
-            std::thread t = std::thread(search_seg, it_pair.second, size, pre);
+            std::thread t = std::thread(search_seg, it_pair.second, handle, size, pre);
             threads.push_back(std::move(t));
         }
     });
