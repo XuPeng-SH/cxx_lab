@@ -41,7 +41,7 @@ void column_family_demo() {
 
     ColumnFamilyOptions cf_options(options);
     ColumnFamilyHandle* handle;
-    s = db->CreateColumnFamily(cf_options, "sxxecond_cf", &handle);
+    s = db->CreateColumnFamily(cf_options, "extra", &handle);
     cout << s.ToString() << endl;
 
     if (s.ok())
