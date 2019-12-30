@@ -5,8 +5,7 @@
 #include <thread>
 #include <algorithm>
 
-void mock_data(DB* db, size_t num, string pre) {
-/* void mock_data(DB* db, ColumnFamilyHandle* handle, size_t num, string pre) { */
+void mock_data(DB* db, ColumnFamilyHandle* handle, size_t num, string pre) {
   cout << __func__ << " num=" << num << " pre=" << pre << endl;
 
   auto write_options = WriteOptions();
@@ -16,8 +15,7 @@ void mock_data(DB* db, size_t num, string pre) {
   auto start = chrono::high_resolution_clock::now();
   for (auto i=0; i<num; ++i) {
       auto strnum = to_string(i);
-      db->Put(write_options, key_prefix + strnum, val_prefix + strnum);
-      /* db->Put(write_options, handle, key_prefix + strnum, val_prefix + strnum); */
+      db->Put(write_options, handle, key_prefix + strnum, val_prefix + strnum);
       if (i % 5000000 == 0 && i > 0) {
           cout << "handling the " << i << " th" << endl;
       }
@@ -97,15 +95,16 @@ void destroy_segments(map<string, DB*>& db_map, HandleMapT& handles_map) {
     }
 }
 
-void mock_segments_data(map<string, DB*>& db_map, size_t size, const string& prefix, bool async) {
+void mock_segments_data(map<string, DB*>& db_map, HandleMapT& handles_map, size_t size, const string& prefix, bool async) {
     vector<std::thread> threads;
     auto start = chrono::high_resolution_clock::now();
     std::for_each(db_map.begin(), db_map.end(), [&](const std::pair<string, DB*>& it_pair) {
         auto prefix_key = it_pair.first + (prefix != "" ? ":" + prefix : "");
+        vector<ColumnFamilyHandle*>& handles = handles_map[it_pair.first];
         if (!async) {
-            mock_data(it_pair.second, size, prefix_key);
+            mock_data(it_pair.second, handles[0], size, prefix_key);
         } else {
-            std::thread t = std::thread(mock_data, it_pair.second, size, prefix_key);
+            std::thread t = std::thread(mock_data, it_pair.second, handles[0], size, prefix_key);
             threads.push_back(std::move(t));
         }
     });

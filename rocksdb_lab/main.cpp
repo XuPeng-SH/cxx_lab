@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     make_segments(FLAGS_path, FLAGS_segments, db_map, handles_map);
 
     if (FLAGS_mock)
-        mock_segments_data(db_map, FLAGS_nb, FLAGS_prefix, FLAGS_async);
+        mock_segments_data(db_map, handles_map, FLAGS_nb, FLAGS_prefix, FLAGS_async);
 
     if (FLAGS_search)
         search_segments(db_map, FLAGS_nq, FLAGS_prefix, FLAGS_async);
