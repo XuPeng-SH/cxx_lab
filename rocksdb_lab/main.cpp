@@ -9,6 +9,7 @@
 #include <thread>
 #include <map>
 #include <gflags/gflags.h>
+#include "cf.h"
 
 using namespace std;
 using namespace rocksdb;
@@ -138,6 +139,9 @@ DEFINE_bool(search, false, "search data");
 DEFINE_int32(nq, 100, "n query");
 
 int main(int argc, char** argv) {
+    column_family_demo();
+
+    return 0;
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     cout << "\n======== Config Block Start =================\n";
     cout << "path: " << FLAGS_path << "\n";
