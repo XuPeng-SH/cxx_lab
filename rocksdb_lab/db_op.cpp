@@ -6,6 +6,7 @@
 #include <algorithm>
 
 void mock_data(DB* db, size_t num, string pre) {
+/* void mock_data(DB* db, ColumnFamilyHandle* handle, size_t num, string pre) { */
   cout << __func__ << " num=" << num << " pre=" << pre << endl;
 
   auto write_options = WriteOptions();
@@ -16,6 +17,7 @@ void mock_data(DB* db, size_t num, string pre) {
   for (auto i=0; i<num; ++i) {
       auto strnum = to_string(i);
       db->Put(write_options, key_prefix + strnum, val_prefix + strnum);
+      /* db->Put(write_options, handle, key_prefix + strnum, val_prefix + strnum); */
       if (i % 5000000 == 0 && i > 0) {
           cout << "handling the " << i << " th" << endl;
       }
@@ -24,9 +26,9 @@ void mock_data(DB* db, size_t num, string pre) {
   cout << __func__ << " takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
 }
 
-void load_all(DB* db, map<string, string>& dict) {
+void load_all(DB* db, ColumnFamilyHandle* handle, map<string, string>& dict) {
     size_t count = 0;
-    rocksdb::Iterator* it = db->NewIterator(rocksdb::ReadOptions());
+    rocksdb::Iterator* it = db->NewIterator(rocksdb::ReadOptions(), handle);
     dict.clear();
     auto start = chrono::high_resolution_clock::now();
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
@@ -39,6 +41,7 @@ void load_all(DB* db, map<string, string>& dict) {
     delete it;
 }
 
+/* void search_seg(DB* db, ColumnFamilyHandle* handle, size_t n, string pre) { */
 void search_seg(DB* db, size_t n, string pre) {
     bool debug = false;
     auto rop = ReadOptions();
@@ -48,6 +51,7 @@ void search_seg(DB* db, size_t n, string pre) {
     for (auto i=0; i<n; ++i) {
         auto key = key_prefix + to_string(i);
         db->Get(rop, key, &value);
+        /* db->Get(rop, handle, key, &value); */
         if (debug)
             cout << "key, value = " << key << ", " << value << endl;
     }
@@ -56,18 +60,37 @@ void search_seg(DB* db, size_t n, string pre) {
     cout << __func__ << " takes " << chrono::duration<double, std::milli>(end-start).count() << " ms" << endl;
 }
 
-void make_segments(const string& db_path_prefix, size_t n, map<string, DB*>& db_map) {
+void make_segments(const string& db_path_prefix, size_t n, map<string, DB*>& db_map,
+        HandleMapT& handles_map) {
+
     Options options;
     options.create_if_missing = true;
     for (auto i=0; i<n; ++i) {
+        std::vector<string> cf_names;
+        std::vector<ColumnFamilyDescriptor> column_families;
+        std::vector<ColumnFamilyHandle*> handles;
         auto segment_name = db_path_prefix+"segment_"+to_string(i);
+        DB::ListColumnFamilies(DBOptions(), segment_name, &cf_names);
         DB *db;
-        DB::Open(options, segment_name, &db);
+        for (auto& name : cf_names) {
+            column_families.push_back(ColumnFamilyDescriptor(name, ColumnFamilyOptions()));
+        }
+        Status s;
+        s = DB::Open(options, segment_name, column_families, &handles, &db);
+        if (!s.ok())
+            cout << s.ToString() << endl;
+        assert(s.ok());
         db_map[segment_name] = db;
+        handles_map[segment_name] = move(handles);
     }
 }
 
-void destroy_segments(map<string, DB*>& db_map) {
+void destroy_segments(map<string, DB*>& db_map, HandleMapT& handles_map) {
+    for (auto& kv: handles_map) {
+        for (auto& handle: kv.second) {
+            delete handle;
+        }
+    }
     for (auto& kv: db_map) {
         /* cout << kv.first << endl; */
         delete kv.second;

@@ -39,7 +39,8 @@ int main(int argc, char** argv) {
     cout << "======== Config Block End   =================\n" << endl;
 
     map<string, DB*> db_map;
-    make_segments(FLAGS_path, FLAGS_segments, db_map);
+    HandleMapT handles_map;
+    make_segments(FLAGS_path, FLAGS_segments, db_map, handles_map);
 
     if (FLAGS_mock)
         mock_segments_data(db_map, FLAGS_nb, FLAGS_prefix, FLAGS_async);
@@ -47,7 +48,7 @@ int main(int argc, char** argv) {
     if (FLAGS_search)
         search_segments(db_map, FLAGS_nq, FLAGS_prefix, FLAGS_async);
 
-    destroy_segments(db_map);
+    destroy_segments(db_map, handles_map);
 
     return 0;
 }

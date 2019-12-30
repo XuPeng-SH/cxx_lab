@@ -39,6 +39,7 @@ void column_family_demo() {
 
     cout << "====================================" << endl;
 
+    // Add CF extra
     ColumnFamilyOptions cf_options(options);
     ColumnFamilyHandle* handle;
     s = db->CreateColumnFamily(cf_options, "extra", &handle);
@@ -52,6 +53,7 @@ void column_family_demo() {
         cout << handle->GetID() << endl;
     }
 
+    // Delete CF extra
     handle = handles.back();
     handles.pop_back();
     s = db->DropColumnFamily(handle);
