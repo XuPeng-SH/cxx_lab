@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package db.grpc;
+
+message Status {
+    int32 code = 1;
+    string error_message = 2;
+}
+
+message CreateTableParam {
+    string name = 1;
+    int32 dimension = 2;
+}
+
+message Table {
+    int64 id = 1;
+    string name = 2;
+    int32 dimension = 3;
+}
+
+message CreateTableResponse {
+    Status status = 1;
+    Table table = 2;
+}
+
+service DBService {
+    rpc CreateTable(CreateTableParam) returns (CreateTableResponse) {}
+}
