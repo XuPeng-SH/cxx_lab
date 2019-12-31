@@ -27,8 +27,10 @@ protected:
 };
 
 
-class StringMixin {
+template <typename FieldT>
+class LengthMixin {
 public:
+    using ValueT = typename FieldT::ValueT;
     static constexpr size_t MAX_LENGTH = 1024;
 
     int MaxLength() const { return max_length_; }
@@ -36,7 +38,6 @@ public:
 
     bool SetMaxLength(int length) {
         if (length < 0 || length < min_length_ || length > MAX_LENGTH) {
-            /* std::cerr << __func__ << " Invalid Length: " << length << endl; */
             return false;
         }
         max_length_ = length;
@@ -45,14 +46,13 @@ public:
 
     bool SetMinLength(int length) {
         if (length < 0 || length > max_length_) {
-            /* std::cerr << __func__ << " Invalid Length: " << length << endl; */
             return false;
         }
         min_length_ = length;
         return true;
     }
 
-    bool Validate(const std::string& value) const {
+    bool Validate(const ValueT& value) const {
         return value.size() >= min_length_ && value.size() <= max_length_;
     }
 
@@ -115,29 +115,24 @@ protected:
     T value_;
 };
 
-using BooleanField = TypedField<bool>;
-
-template <typename T>
-class NumericField : public MinMaxMixin<TypedField<T>>, public TypedField<T> {
+template <template<class> class Mixin, typename ValueT>
+class WithMixinTypedField : public Mixin<TypedField<ValueT>>, public TypedField<ValueT> {
 public:
-    using MixinT = MinMaxMixin<TypedField<T>>;
-    using BaseT = TypedField<T>;
+    using BaseT = TypedField<ValueT>;
+    using MixinT = Mixin<BaseT>;
 
     bool Validate() const override {
         return MixinT::Validate(BaseT::value_);
     }
 };
 
+template <typename ValueT>
+using NumericField = WithMixinTypedField<MinMaxMixin, ValueT>;
+
 using IntField = NumericField<int>;
 using FloatField = NumericField<float>;
 using DoubleField = NumericField<double>;
+using StringField = WithMixinTypedField<LengthMixin, std::string>;
+using BooleanField = TypedField<bool>;
 
-class StringField : public StringMixin, public TypedField<std::string> {
-public:
-    using MixinT = StringMixin;
-    using BaseT = TypedField<std::string>;
-
-    bool Validate() const override {
-        return MixinT::Validate(value_);
-    }
-};
+using BooleanField = TypedField<bool>;
