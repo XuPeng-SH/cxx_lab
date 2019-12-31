@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <limits>
 
 
 
@@ -58,12 +59,47 @@ public:
 protected:
     int max_length_ = MAX_LENGTH;
     int min_length_ = 0;
+};
 
+
+template <typename FieldT>
+class MinMaxMixin {
+public:
+    using ValueT = typename FieldT::ValueT;
+
+    const ValueT& MaxLimit() const { return max_v_; }
+    const ValueT& MinLimit() const { return min_v_; }
+
+    bool SetMinLimit(const ValueT& value) {
+        if (value > max_v_) {
+            return false;
+        }
+        min_v_ = value;
+        return true;
+    }
+
+    bool SetMaxLimit(const ValueT& value) {
+        if (value < min_v_) {
+            return false;
+        }
+        max_v_ = value;
+        return true;
+    }
+
+    bool Validate(const ValueT& value) const {
+        return value >= min_v_ && value <= max_v_;
+    }
+
+protected:
+    ValueT max_v_ = std::numeric_limits<ValueT>::max();
+    ValueT min_v_ = std::numeric_limits<ValueT>::min();
 };
 
 template <typename T>
 class TypedField : public Raw {
 public:
+    using ValueT = T;
+
     bool SetValue(const T& val) {
         if (HasValue() && IsReadonly()) {
             return false;
@@ -80,13 +116,27 @@ protected:
 };
 
 using BooleanField = TypedField<bool>;
-using IntField = TypedField<int>;
-using FloatField = TypedField<float>;
-using DoubleField = TypedField<double>;
+
+template <typename T>
+class NumericField : public MinMaxMixin<TypedField<T>>, public TypedField<T> {
+public:
+    using MixinT = MinMaxMixin<TypedField<T>>;
+    using BaseT = TypedField<T>;
+
+    bool Validate() const override {
+        return MixinT::Validate(BaseT::value_);
+    }
+};
+
+using IntField = NumericField<int>;
+using FloatField = NumericField<float>;
+using DoubleField = NumericField<double>;
 
 class StringField : public StringMixin, public TypedField<std::string> {
 public:
     using MixinT = StringMixin;
+    using BaseT = TypedField<std::string>;
+
     bool Validate() const override {
         return MixinT::Validate(value_);
     }
