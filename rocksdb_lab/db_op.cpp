@@ -60,7 +60,7 @@ void make_segments(const string& db_path_prefix, size_t n, map<string, DB*>& db_
         HandleMapT& handles_map) {
 
     Options options;
-    /* options.create_if_missing = true; */
+    options.create_if_missing = true;
     for (auto i=0; i<n; ++i) {
         std::vector<string> cf_names;
         std::vector<ColumnFamilyDescriptor> column_families;

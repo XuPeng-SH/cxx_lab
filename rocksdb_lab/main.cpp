@@ -51,8 +51,7 @@ int main(int argc, char** argv) {
         for (auto& kv: handles_map) {
             bool found = false;
             for (auto& handle : kv.second) {
-                cout << "FLAGS_mcf=" << FLAGS_mcf << endl;
-                cout << "handle_name=" << handle->GetName() << endl;
+                /* cout << "handle_name=" << handle->GetName() << endl; */
                 if (handle->GetName() == FLAGS_mcf) {
                     selector[kv.first] = handle;
                     found = true;
@@ -67,6 +66,7 @@ int main(int argc, char** argv) {
 
                 if (s.ok()) {
                     kv.second.push_back(handle);
+                    selector[kv.first] = handle;
                 } else {
                     cout << s.ToString() << endl;
                 }
@@ -77,6 +77,7 @@ int main(int argc, char** argv) {
     }
 
     if (FLAGS_search) {
+        bool ret = false;
         HandleSelectorT selector;
         for (auto& kv: handles_map) {
             map<string, string> dict;
@@ -86,10 +87,15 @@ int main(int argc, char** argv) {
                     break;
                 }
             }
+            if (selector.find(kv.first) == selector.end()) {
+                cout << "Cannot find CF " << kv.first << endl;
+                ret = true;
+                break;
+            }
             load_all(db_map[kv.first], selector[kv.first], dict);
         }
-        search_segments(db_map, selector, FLAGS_nq, FLAGS_prefix, FLAGS_async);
-
+        if (!ret)
+            search_segments(db_map, selector, FLAGS_nq, FLAGS_prefix, FLAGS_async);
     }
 
     destroy_segments(db_map, handles_map);
