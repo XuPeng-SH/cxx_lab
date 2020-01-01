@@ -6,21 +6,18 @@
 #include <limits>
 
 
-
 template <typename T>
-class Raw {
+class TypedField {
 public:
-    using FieldT = T;
-    using ValueT = typename FieldT::ValueT;
-    virtual ~Raw() {};
+    using ValueT = T;
+    virtual ~TypedField() {};
 
-    Raw& SetReadonly(bool ro) {readonly_ = ro;}
-    Raw& SetRequired(bool req) {required_ = req;}
+    TypedField& SetReadonly(bool ro) {readonly_ = ro;}
+    TypedField& SetRequired(bool req) {required_ = req;}
 
     bool HasValue() const { return initialized_; }
     bool IsReadonly() const { return readonly_; }
     bool IsRequried() const { return required_; }
-
 
     virtual bool Validate() const {return true;};
 
@@ -33,7 +30,7 @@ public:
         return true;
     }
 
-    const T& GetValue() const {return value_;}
+    const ValueT& GetValue() const {return value_;}
 
 protected:
     bool fixed_ = false;
@@ -116,12 +113,6 @@ public:
 protected:
     ValueT max_v_ = std::numeric_limits<ValueT>::max();
     ValueT min_v_ = std::numeric_limits<ValueT>::min();
-};
-
-template <typename T>
-class TypedField : public Raw<TypedField<T>> {
-public:
-    using ValueT = T;
 };
 
 template <template<class> class Mixin, typename ValueT>
