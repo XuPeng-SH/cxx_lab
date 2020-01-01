@@ -91,7 +91,56 @@ void tt(void* value) {
 
 int main(int argc, char** argv) {
     auto schema = std::make_shared<DocSchema>();
+
+    LongField age_field;
+    LongField likes_field;
+    FloatField score_field;
+    StringField uid_field;
+    uid_field.SetMaxLength(20);
+    uid_field.SetMinLength(10);
+    schema->AddLongField("age", age_field)
+           .AddLongField("likes", likes_field)
+           .AddFloatField("score", score_field)
+           .AddStringField("uid", uid_field)
+           .Build();
     cout << schema->Dump() << endl;
+
+    vector<Doc> docs;
+
+    auto t_start = chrono::high_resolution_clock::now();
+    for (auto i=0; i<1000000; ++i) {
+        LongField this_pk;
+        this_pk.SetValue(123434343);
+        this_pk.Build();
+        Doc mydoc(this_pk, schema);
+        LongField age;
+        age.SetValue(20);
+        age.Build();
+        LongField likes;
+        likes.SetValue(243433);
+        likes.Build();
+        FloatField score;
+        score.SetValue(67.5);
+        score.Build();
+        StringField uid;
+        uid.SetMaxLength(20);
+        uid.SetValue("123234343");
+        uid.Build();
+
+        mydoc.AddLongField("age", age)
+             .AddLongField("likes", likes)
+             .AddFloatField("score", score)
+             .AddStringField("uid", uid)
+             .Build();
+
+        /* cout << mydoc.Dump() << endl; */
+        docs.push_back(std::move(mydoc));
+    }
+    auto t_end = chrono::high_resolution_clock::now();
+    cout << "Create " << docs.size() << " docs ";
+    cout << "takes " << chrono::duration<double, std::milli>(t_end-t_start).count() << " ms" << endl;
+
+    return 0;
 
     LongField lf1;
     LongField lf2;

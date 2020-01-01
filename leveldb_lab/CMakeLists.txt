@@ -16,7 +16,7 @@ link_directories(/usr/lib/gcc/x86_64-linux-gnu/5/
     )
 
 set(src ${source_files})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -fPIC")
 
 add_executable(leveldb_lab ${src})
 

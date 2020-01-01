@@ -13,6 +13,9 @@ public:
     static const char* PrimaryKeyName;
 
     DocSchema(const PrimaryKeyT& pk = PrimaryKeyT());
+    DocSchema(PrimaryKeyT&& pk);
+
+    DocSchema(DocSchema&& other);
 
     virtual DocSchema& AddLongField(const std::string& name, const LongField& field);
     virtual DocSchema& AddFloatField(const std::string& name, const FloatField& field);
@@ -45,6 +48,7 @@ class Doc : public DocSchema {
 public:
     using BaseT = DocSchema;
     Doc(const PrimaryKeyT& pk, const std::shared_ptr<DocSchema> schema);
+    Doc(PrimaryKeyT&& pk, const std::shared_ptr<DocSchema> schema);
 
     DocSchema& AddLongField(const std::string& name, const LongField& field) override;
     DocSchema& AddFloatField(const std::string& name, const FloatField& field) override;

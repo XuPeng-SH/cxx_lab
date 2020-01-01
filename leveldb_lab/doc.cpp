@@ -13,6 +13,19 @@ DocSchema::DocSchema(const PrimaryKeyT& pk) {
     AddLongField(PrimaryKeyName, pk);
 }
 
+DocSchema::DocSchema(PrimaryKeyT&& pk) {
+    AddLongField(PrimaryKeyName, pk);
+}
+
+DocSchema::DocSchema(DocSchema&& other)
+: fields_schema_(std::move(other.fields_schema_)),
+  long_fields_(std::move(other.long_fields_)),
+  float_fields_(std::move(other.float_fields_)),
+  string_fields_(std::move(other.string_fields_)),
+  fixed_(other.fixed_)
+{
+}
+
 bool DocSchema::Build() {
     fixed_ = true;
     return true;
@@ -95,6 +108,13 @@ std::string DocSchema::Dump() const {
 }
 
 Doc::Doc(const PrimaryKeyT& pk, const std::shared_ptr<DocSchema> schema)
+: DocSchema(pk), schema_(schema)
+{
+    assert(pk.HasBuilt());
+    assert(schema->HasBuilt());
+}
+
+Doc::Doc(PrimaryKeyT&& pk, const std::shared_ptr<DocSchema> schema)
 : DocSchema(pk), schema_(schema)
 {
     assert(pk.HasBuilt());
