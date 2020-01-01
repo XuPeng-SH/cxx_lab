@@ -166,7 +166,7 @@ public:
         return MixinT::Validate(BaseT::value_);
     }
 
-    ThisT& Build() {
+    ThisT& Build() override {
         BaseT::Build();
         MixinT::Build();
         return *this;
