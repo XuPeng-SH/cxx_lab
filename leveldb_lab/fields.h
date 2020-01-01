@@ -61,6 +61,12 @@ protected:
     int min_length_ = 0;
 };
 
+template <typename FieldT>
+class VectorLengthMixin : public LengthMixin<FieldT> {
+public:
+    using ValueT = typename FieldT::ValueT;
+    static constexpr size_t MAX_LENGTH = std::numeric_limits<size_t>::max();
+};
 
 template <typename FieldT>
 class MinMaxMixin {
@@ -133,6 +139,9 @@ using IntField = NumericField<int>;
 using FloatField = NumericField<float>;
 using DoubleField = NumericField<double>;
 using StringField = WithMixinTypedField<LengthMixin, std::string>;
-using BooleanField = TypedField<bool>;
+template <typename ElementT>
+using VectorField = WithMixinTypedField<VectorLengthMixin, std::vector<ElementT>>;
+
+using FloatVectorField = VectorField<float>;
 
 using BooleanField = TypedField<bool>;
