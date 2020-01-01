@@ -145,3 +145,14 @@ using VectorField = WithMixinTypedField<VectorLengthMixin, std::vector<ElementT>
 using FloatVectorField = VectorField<float>;
 
 using BooleanField = TypedField<bool>;
+
+class FieldFactory {
+public:
+    template <typename ElementT>
+    static VectorField<ElementT> BuildVectorField(size_t dimension) {
+        VectorField<ElementT> vf;
+        vf.SetMaxLength(dimension);
+        vf.SetMinLength(dimension);
+        return std::move(vf);
+    }
+};
