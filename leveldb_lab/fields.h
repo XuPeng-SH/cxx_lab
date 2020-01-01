@@ -4,12 +4,14 @@
 #include <vector>
 #include <map>
 #include <limits>
+#include <iostream>
 
 
 template <typename T>
 class TypedField {
 public:
     using ValueT = T;
+    using ThisT = TypedField<T>;
     virtual ~TypedField() {};
 
     TypedField& SetReadonly(bool ro) {readonly_ = ro;}
@@ -18,11 +20,19 @@ public:
     bool HasValue() const { return initialized_; }
     bool IsReadonly() const { return readonly_; }
     bool IsRequried() const { return required_; }
+    bool HasBuilt() const { return fixed_; }
 
     virtual bool Validate() const {return true;};
+    virtual ThisT& Build() {
+        if (HasValue()) {
+            fixed_ = true;
+        }
+        return *this;
+    }
 
     bool SetValue(const ValueT& val) {
-        if (HasValue() && IsReadonly()) {
+        if (HasBuilt() && IsReadonly()) {
+            std::cerr << "Error: Readonly field has been built but set value again!" << std::endl;
             return false;
         }
         initialized_ = true;
@@ -51,7 +61,12 @@ public:
     int MinLength() const { return min_length_; }
 
     bool SetMaxLength(int length) {
+        if (fixed_) {
+            std::cerr << "Error: field has been built but set max length again!" << std::endl;
+            return false;
+        }
         if (length < 0 || length < min_length_ || length > MAX_LENGTH) {
+            std::cerr << "Error: invalid max length!" << std::endl;
             return false;
         }
         max_length_ = length;
@@ -59,7 +74,12 @@ public:
     }
 
     bool SetMinLength(int length) {
+        if (fixed_) {
+            std::cerr << "Error: field has been built but set min length again!" << std::endl;
+            return false;
+        }
         if (length < 0 || length > max_length_) {
+            std::cerr << "Error: invalid min length!" << std::endl;
             return false;
         }
         min_length_ = length;
@@ -70,7 +90,12 @@ public:
         return value.size() >= min_length_ && value.size() <= max_length_;
     }
 
+    void Build() {
+        fixed_ = true;
+    }
+
 protected:
+    bool fixed_ = false;
     int max_length_ = MAX_LENGTH;
     int min_length_ = 0;
 };
@@ -91,7 +116,12 @@ public:
     const ValueT& MinLimit() const { return min_v_; }
 
     bool SetMinLimit(const ValueT& value) {
+        if (fixed_) {
+            std::cerr << "Error: field has been built but set min limit again!" << std::endl;
+            return false;
+        }
         if (value > max_v_) {
+            std::cerr << "Error: invalid min value!" << std::endl;
             return false;
         }
         min_v_ = value;
@@ -99,7 +129,12 @@ public:
     }
 
     bool SetMaxLimit(const ValueT& value) {
+        if (fixed_) {
+            std::cerr << "Error: field has been built but set max limit again!" << std::endl;
+            return false;
+        }
         if (value < min_v_) {
+            std::cerr << "Error: invalid max value!" << std::endl;
             return false;
         }
         max_v_ = value;
@@ -110,7 +145,12 @@ public:
         return value >= min_v_ && value <= max_v_;
     }
 
+    void Build() {
+        fixed_ = true;
+    }
+
 protected:
+    bool fixed_ = false;
     ValueT max_v_ = std::numeric_limits<ValueT>::max();
     ValueT min_v_ = std::numeric_limits<ValueT>::min();
 };
@@ -120,9 +160,16 @@ class WithMixinTypedField : public Mixin<TypedField<ValueT>>, public TypedField<
 public:
     using BaseT = TypedField<ValueT>;
     using MixinT = Mixin<BaseT>;
+    using ThisT = WithMixinTypedField;
 
     bool Validate() const override {
         return MixinT::Validate(BaseT::value_);
+    }
+
+    ThisT& Build() {
+        BaseT::Build();
+        MixinT::Build();
+        return *this;
     }
 };
 
