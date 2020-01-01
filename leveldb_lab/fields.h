@@ -177,6 +177,7 @@ template <typename ValueT>
 using NumericField = WithMixinTypedField<MinMaxMixin, ValueT>;
 
 using IntField = NumericField<int>;
+using LongField = NumericField<long>;
 using FloatField = NumericField<float>;
 using DoubleField = NumericField<double>;
 using StringField = WithMixinTypedField<LengthMixin, std::string>;
