@@ -1,5 +1,6 @@
 #include "doc.h"
 #include <sstream>
+#include <assert.h>
 
 const char* DocSchema::PrimaryKeyName = "_id";
 const int DocSchema::LongFieldIdx = 0;
@@ -8,12 +9,13 @@ const int DocSchema::FloatFieldIdx = 2;
 const int DocSchema::PrimaryKeyIdx = 0;
 
 
-DocSchema::DocSchema() {
-    AddLongField(PrimaryKeyName, LongField());
+DocSchema::DocSchema(const PrimaryKeyT& pk) {
+    AddLongField(PrimaryKeyName, pk);
 }
 
-DocSchema& DocSchema::Build() {
+bool DocSchema::Build() {
     fixed_ = true;
+    return true;
 }
 
 DocSchema& DocSchema::AddLongField(const std::string& name, const LongField& field) {
@@ -92,14 +94,56 @@ std::string DocSchema::Dump() const {
     return ss.str();
 }
 
-Doc::Doc(const Doc::PrimaryKeyT& pk)
+Doc::Doc(const PrimaryKeyT& pk, const std::shared_ptr<DocSchema> schema)
+: DocSchema(pk), schema_(schema)
 {
-    AddPkField(pk);
+    assert(pk.HasBuilt());
+    assert(schema->HasBuilt());
 }
 
-Doc& Doc::AddPkField(const PrimaryKeyT& pk) {
-    long_fields_ = {pk};
-    auto idx = SchemaT::PrimaryKeyIdx;
-    name_fields_map_[SchemaT::PrimaryKeyName] = {idx, 0};
-    return *this;
+bool Doc::Build() {
+    if (fields_schema_.size() != schema_->fields_schema_.size()) {
+        std::cerr << "Error: Cannot build doc due to incomplete fields" << std::endl;
+        return false;
+    }
+    return BaseT::Build();
+}
+
+DocSchema& Doc::AddLongField(const std::string& name, const LongField& field) {
+    if (!field.HasBuilt()) {
+        std::cerr << "Error: field \'" << name << "\' is building" << std::endl;
+        assert(false);
+    }
+    auto it_schema = schema_->fields_schema_.find(name);
+    if (it_schema == schema_->fields_schema_.end()) {
+        std::cerr << "Error: Cannot add long field \'" << name << "\'" << std::endl;
+        assert(false);
+    }
+    return BaseT::AddLongField(name, field);
+}
+
+DocSchema& Doc::AddFloatField(const std::string& name, const FloatField& field) {
+    if (!field.HasBuilt()) {
+        std::cerr << "Error: field \'" << name << "\' is building" << std::endl;
+        assert(false);
+    }
+    auto it_schema = schema_->fields_schema_.find(name);
+    if (it_schema == schema_->fields_schema_.end()) {
+        std::cerr << "Error: Cannot add float field \'" << name << "\'" << std::endl;
+        assert(false);
+    }
+    return BaseT::AddFloatField(name, field);
+}
+
+DocSchema& Doc::AddStringField(const std::string& name, const StringField& field) {
+    if (!field.HasBuilt()) {
+        std::cerr << "Error: field \'" << name << "\' is building" << std::endl;
+        assert(false);
+    }
+    auto it_schema = schema_->fields_schema_.find(name);
+    if (it_schema == schema_->fields_schema_.end()) {
+        std::cerr << "Error: Cannot add string field \'" << name << "\'" << std::endl;
+        assert(false);
+    }
+    return BaseT::AddStringField(name, field);
 }

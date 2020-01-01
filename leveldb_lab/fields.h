@@ -5,6 +5,7 @@
 #include <map>
 #include <limits>
 #include <iostream>
+#include <assert.h>
 
 
 template <typename T>
@@ -24,9 +25,11 @@ public:
 
     virtual bool Validate() const {return true;};
     virtual ThisT& Build() {
-        if (HasValue()) {
-            fixed_ = true;
+        if (!HasValue()) {
+            std::cerr << "Error: Build field" << std::endl;
+            assert(false);
         }
+        fixed_ = true;
         return *this;
     }
 

@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 #include <type_traits>
-
+#include <memory>
 
 class Doc;
 class DocSchema {
@@ -12,17 +12,22 @@ public:
     using PrimaryKeyT = LongField;
     static const char* PrimaryKeyName;
 
-    DocSchema();
-    DocSchema& AddLongField(const std::string& name, const LongField& field);
-    DocSchema& AddFloatField(const std::string& name, const FloatField& field);
-    DocSchema& AddStringField(const std::string& name, const StringField& field);
+    DocSchema(const PrimaryKeyT& pk = PrimaryKeyT());
 
-    std::string Dump() const;
-    DocSchema& Build();
+    virtual DocSchema& AddLongField(const std::string& name, const LongField& field);
+    virtual DocSchema& AddFloatField(const std::string& name, const FloatField& field);
+    virtual DocSchema& AddStringField(const std::string& name, const StringField& field);
+
+    virtual std::string Dump() const;
+    virtual bool Build();
 
     bool HasBuilt() const { return fixed_; }
 
-private:
+    const PrimaryKeyT& GetPK() const { return long_fields_[PrimaryKeyIdx]; }
+
+    virtual ~DocSchema() {}
+
+protected:
     friend class Doc;
     static const int LongFieldIdx;
     static const int StringFieldIdx;
@@ -36,48 +41,17 @@ private:
     bool fixed_ = false;
 };
 
-class Doc {
+class Doc : public DocSchema {
 public:
-    using SchemaT = DocSchema;
-    using PrimaryKeyT = SchemaT::PrimaryKeyT;
+    using BaseT = DocSchema;
+    Doc(const PrimaryKeyT& pk, const std::shared_ptr<DocSchema> schema);
 
-    Doc(const PrimaryKeyT& pk);
+    DocSchema& AddLongField(const std::string& name, const LongField& field) override;
+    DocSchema& AddFloatField(const std::string& name, const FloatField& field) override;
+    DocSchema& AddStringField(const std::string& name, const StringField& field) override;
 
-    const PrimaryKeyT& GetPK() const { return long_fields_[SchemaT::PrimaryKeyIdx]; }
-
-    /* Doc& AddLongField(const LongField& field); */
+    bool Build() override;
 
 private:
-    Doc& AddPkField(const PrimaryKeyT& pk);
-
-    std::vector<LongField> long_fields_;
-    std::vector<StringField> string_fields_;
-    std::vector<FloatField> float_fields_;
-    std::map<std::string, std::pair<int, size_t>> name_fields_map_;
+    std::shared_ptr<DocSchema> schema_;
 };
-
-
-/* Doc& Doc::AddLongField(const std::string& field_name, const LongField& field) { */
-/*     auto it = name_fields_map_.find(field_name); */
-/*     if (it != name_fields_map_.end()) { */
-/*         auto& pos = it->second; */
-/*         auto& idx = std::get<0>(pos); */
-/*         auto& offset = std::get<1>(pos); */
-/*         if (idx == LongFieldIdx) { */
-/*         } else if (idx == FloatField) { */
-/*             float_fields_[offset] = field; */
-/*         } else if (idx == StringFieldIdx) { */
-/*             string_fields_[offset] = field; */
-/*         } */
-/*         return *this; */
-/*     } */
-
-/*     if (idx == LongFieldIdx) { */
-/*         long_fields_[offset] = field; */
-/*     } else if (idx == FloatField) { */
-/*         float_fields_[offset] = field; */
-/*     } else if (idx == StringFieldIdx) { */
-/*         string_fields_[offset] = field; */
-/*     } */
-/*     return *this; */
-/* } */

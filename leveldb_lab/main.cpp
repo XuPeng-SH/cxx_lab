@@ -90,25 +90,41 @@ void tt(void* value) {
 }
 
 int main(int argc, char** argv) {
-    DocSchema schema;
-    cout << schema.Dump() << endl;
+    auto schema = std::make_shared<DocSchema>();
+    cout << schema->Dump() << endl;
 
     LongField lf1;
     LongField lf2;
-    schema.AddLongField("age", lf1);
-    schema.AddLongField("income", lf2);
+    schema->AddLongField("age", lf1);
+    schema->AddLongField("income", lf2);
+    lf1.SetValue(20000);
+    lf1.Build();
+    lf2.SetValue(20332);
+    lf2.Build();
 
     StringField sf1;
     sf1.SetMaxLength(20);
     sf1.SetMinLength(10);
 
-    schema.AddStringField("uid", sf1);
+    schema->AddStringField("uid", sf1);
+    schema->AddStringField("age", sf1);
+    sf1.SetValue("123234334ssd");
+    sf1.Build();
 
-    schema.AddStringField("age", sf1);
+    cout << schema->Dump() << endl;
+    schema->Build();
+    cout << schema->Dump() << endl;
 
-    cout << schema.Dump() << endl;
-    schema.Build();
-    cout << schema.Dump() << endl;
+    auto doc1 = Doc(lf1, schema);
+    cout << doc1.GetPK().GetValue() << endl;
+    cout << doc1.Build() << endl;
+
+    doc1.AddStringField("uid", sf1);
+    doc1.AddStringField("age", sf1);
+    cout << doc1.Build() << endl;
+    doc1.AddLongField("income", lf2);
+    cout << doc1.Build() << endl;
+
     return 0;
     BooleanField bf;
 
@@ -164,8 +180,6 @@ int main(int argc, char** argv) {
     pk.SetValue(1234);
     pk.Build();
 
-    auto doc1 = Doc(pk);
-    cout << doc1.GetPK().GetValue() << endl;
 
 
     return 0;
