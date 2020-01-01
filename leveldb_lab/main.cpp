@@ -8,6 +8,10 @@
 #include <chrono>
 #include <thread>
 #include <map>
+#include <type_traits>
+
+#include "fields.h"
+#include "doc.h"
 
 using namespace std;
 using namespace leveldb;
@@ -81,7 +85,90 @@ void destroy_segments(map<string, DB*>& db_map) {
     }
 }
 
+void tt(void* value) {
+    cout << *(int*)value << endl;
+}
+
 int main(int argc, char** argv) {
+    DocSchema schema;
+    cout << schema.Dump() << endl;
+
+    LongField lf1;
+    LongField lf2;
+    schema.AddLongField("age", lf1);
+    schema.AddLongField("income", lf2);
+
+    StringField sf1;
+    sf1.SetMaxLength(20);
+    sf1.SetMinLength(10);
+
+    schema.AddStringField("uid", sf1);
+
+    schema.AddStringField("age", sf1);
+
+    cout << schema.Dump() << endl;
+    schema.Build();
+    cout << schema.Dump() << endl;
+    return 0;
+    BooleanField bf;
+
+    bf.SetReadonly(true);
+    bf.SetValue(true);
+    bf.SetValue(false);
+
+    cout << std::boolalpha;
+    cout << bf.GetValue() << endl;
+
+    bf.Build();
+    bf.SetValue(false);
+
+    StringField sf;
+    sf.SetMaxLength(5);
+    sf.SetValue("1234567");
+    cout << "sf validate " << sf.Validate() << endl;
+    sf.SetValue("567");
+    cout << "sf validate " << sf.Validate() << endl;
+    cout << "sf validate " << sf.GetValue() << endl;
+
+    IntField inf;
+    inf.SetMaxLimit(10);
+
+    inf.SetValue(20);
+    cout << "inf Validate " << inf.Validate() << endl;
+
+    inf.SetValue(5);
+    cout << "inf Validate " << inf.Validate() << endl;
+
+    FloatVectorField vf;
+    vector<float> v = {1,2,3,4, 5, 6, 7, 8, 9};
+    vf.SetValue(v);
+    cout << "vf Validate " << vf.Validate() << endl;
+
+    vf.SetMaxLength(10);
+    vf.SetMinLength(10);
+    cout << "vf Validate " << vf.Validate() << endl;
+    vf.Build();
+
+    vf.SetMaxLength(10);
+    vf.SetMinLength(8);
+    cout << "vf Validate " << vf.Validate() << endl;
+
+    auto vf2 = FieldFactory::BuildVectorField<float>(10);
+    vf2.SetValue(v);
+    cout << "vf2 Validate " << vf2.Validate() << endl;
+
+    vf2.SetValue({1.0,2.0,3,4,5,6,7,8,9,10});
+    cout << "vf2 Validate " << vf2.Validate() << endl;
+
+    Doc::PrimaryKeyT pk;
+    pk.SetValue(1234);
+    pk.Build();
+
+    auto doc1 = Doc(pk);
+    cout << doc1.GetPK().GetValue() << endl;
+
+
+    return 0;
 
     map<string, DB*> db_map;
     vector<std::thread> threads;
