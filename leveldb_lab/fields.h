@@ -7,8 +7,11 @@
 
 
 
+template <typename T>
 class Raw {
 public:
+    using FieldT = T;
+    using ValueT = typename FieldT::ValueT;
     virtual ~Raw() {};
 
     Raw& SetReadonly(bool ro) {readonly_ = ro;}
@@ -18,12 +21,26 @@ public:
     bool IsReadonly() const { return readonly_; }
     bool IsRequried() const { return required_; }
 
+
     virtual bool Validate() const {return true;};
 
+    bool SetValue(const ValueT& val) {
+        if (HasValue() && IsReadonly()) {
+            return false;
+        }
+        initialized_ = true;
+        value_ = val;
+        return true;
+    }
+
+    const T& GetValue() const {return value_;}
+
 protected:
+    bool fixed_ = false;
     bool initialized_ = false;
     bool readonly_ = false;
     bool required_ = false;
+    ValueT value_;
 };
 
 
@@ -102,23 +119,9 @@ protected:
 };
 
 template <typename T>
-class TypedField : public Raw {
+class TypedField : public Raw<TypedField<T>> {
 public:
     using ValueT = T;
-
-    bool SetValue(const T& val) {
-        if (HasValue() && IsReadonly()) {
-            return false;
-        }
-        initialized_ = true;
-        value_ = val;
-        return true;
-    }
-
-    const T& GetValue() const {return value_;}
-
-protected:
-    T value_;
 };
 
 template <template<class> class Mixin, typename ValueT>
