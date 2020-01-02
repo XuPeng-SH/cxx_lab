@@ -7,6 +7,7 @@ const int DocSchema::LongFieldIdx = 0;
 const int DocSchema::StringFieldIdx = 1;
 const int DocSchema::FloatFieldIdx = 2;
 const int DocSchema::PrimaryKeyIdx = 0;
+const int DocSchema::FloatVectorFieldIdx = 3;
 
 
 DocSchema::DocSchema(const PrimaryKeyT& pk) {
@@ -82,6 +83,24 @@ DocSchema& DocSchema::AddStringField(const std::string& name, const StringField&
     return *this;
 }
 
+DocSchema& DocSchema::AddFloatVectorField(const std::string& name, const FloatVectorField& field) {
+    if (HasBuilt()) {
+        std::cerr << "Warn: doc schema has already built" << std::endl;
+        return *this;
+    }
+
+    auto it = fields_schema_.find(name);
+    if (it != fields_schema_.end()) {
+        std::cerr << "Warn: " << name << " has already existed. Skip this add" << std::endl;
+        return *this;
+    }
+
+    size_t offset = float_vector_fields_.size();
+    float_vector_fields_.push_back(field);
+    fields_schema_[name] = {FloatVectorFieldIdx, offset};
+    return *this;
+}
+
 std::string DocSchema::Dump() const {
     std::stringstream ss;
     ss << "DocSchema: " << (HasBuilt()?"[Built]":"[BUILDING]")  << "\n";
@@ -97,6 +116,8 @@ std::string DocSchema::Dump() const {
             ss << "FloatField ";
         } else if (idx == StringFieldIdx) {
             ss << "StringField ";
+        } else if (idx == FloatVectorFieldIdx) {
+            ss << "FloatVectorField ";
         }
 
         if (idx == LongFieldIdx && offset == 0) {
@@ -166,4 +187,17 @@ DocSchema& Doc::AddStringField(const std::string& name, const StringField& field
         assert(false);
     }
     return BaseT::AddStringField(name, field);
+}
+
+DocSchema& Doc::AddFloatVectorField(const std::string& name, const FloatVectorField& field) {
+    if (!field.HasBuilt()) {
+        std::cerr << "Error: field \'" << name << "\' is building" << std::endl;
+        assert(false);
+    }
+    auto it_schema = schema_->fields_schema_.find(name);
+    if (it_schema == schema_->fields_schema_.end()) {
+        std::cerr << "Error: Cannot add string field \'" << name << "\'" << std::endl;
+        assert(false);
+    }
+    return BaseT::AddFloatVectorField(name, field);
 }

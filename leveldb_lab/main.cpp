@@ -96,19 +96,26 @@ int main(int argc, char** argv) {
     LongField likes_field;
     FloatField score_field;
     StringField uid_field;
+    FloatVectorField vec_field;
+
     uid_field.SetMaxLength(20);
     uid_field.SetMinLength(10);
+
+    vec_field.SetMaxLength(4);
+    vec_field.SetMinLength(4);
+
     schema->AddLongField("age", age_field)
            .AddLongField("likes", likes_field)
            .AddFloatField("score", score_field)
            .AddStringField("uid", uid_field)
+           .AddFloatVectorField("vec", vec_field)
            .Build();
     cout << schema->Dump() << endl;
 
     vector<Doc> docs;
 
     auto t_start = chrono::high_resolution_clock::now();
-    for (auto i=0; i<1000000; ++i) {
+    for (auto i=0; i<10000; ++i) {
         LongField this_pk;
         this_pk.SetValue(123434343);
         this_pk.Build();
@@ -127,10 +134,15 @@ int main(int argc, char** argv) {
         uid.SetValue("123234343");
         uid.Build();
 
+        FloatVectorField fvec;
+        fvec.SetValue({1,2,3,4});
+        fvec.Build();
+
         mydoc.AddLongField("age", age)
              .AddLongField("likes", likes)
              .AddFloatField("score", score)
              .AddStringField("uid", uid)
+             .AddFloatVectorField("vec", fvec)
              .Build();
 
         /* cout << mydoc.Dump() << endl; */

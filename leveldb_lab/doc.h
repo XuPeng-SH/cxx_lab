@@ -20,6 +20,7 @@ public:
     virtual DocSchema& AddLongField(const std::string& name, const LongField& field);
     virtual DocSchema& AddFloatField(const std::string& name, const FloatField& field);
     virtual DocSchema& AddStringField(const std::string& name, const StringField& field);
+    virtual DocSchema& AddFloatVectorField(const std::string& name, const FloatVectorField& field);
 
     virtual std::string Dump() const;
     virtual bool Build();
@@ -36,11 +37,13 @@ protected:
     static const int StringFieldIdx;
     static const int FloatFieldIdx;
     static const int PrimaryKeyIdx;
+    static const int FloatVectorFieldIdx;
 
     std::map<std::string, std::pair<int, size_t>> fields_schema_;
     std::vector<LongField> long_fields_;
     std::vector<FloatField> float_fields_;
     std::vector<StringField> string_fields_;
+    std::vector<FloatVectorField> float_vector_fields_;
     bool fixed_ = false;
 };
 
@@ -53,6 +56,7 @@ public:
     DocSchema& AddLongField(const std::string& name, const LongField& field) override;
     DocSchema& AddFloatField(const std::string& name, const FloatField& field) override;
     DocSchema& AddStringField(const std::string& name, const StringField& field) override;
+    DocSchema& AddFloatVectorField(const std::string& name, const FloatVectorField& field) override;
 
     bool Build() override;
 

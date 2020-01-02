@@ -24,6 +24,7 @@ set(lab_libs
     leveldb
     gflags
     pthread
+    snappy
     )
 
 target_link_libraries(leveldb_lab ${lab_libs})
