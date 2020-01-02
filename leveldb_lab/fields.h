@@ -7,6 +7,12 @@
 #include <iostream>
 #include <sstream>
 #include <assert.h>
+#include <typeinfo>
+#include <type_traits>
+
+
+template <typename T>
+struct TypeWrapper {};
 
 
 template <typename T>
@@ -14,6 +20,7 @@ class TypedField {
 public:
     using ValueT = T;
     using ThisT = TypedField<T>;
+    using TypeInfoT = TypeWrapper<ValueT>;
 
     TypedField() = delete;
     TypedField(const std::string& name) : name_(name) {}
@@ -27,9 +34,14 @@ public:
     bool HasValue() const { return initialized_; }
     bool IsReadonly() const { return readonly_; }
     bool IsRequried() const { return required_; }
+    bool IsUnique() const { return unique_; }
     bool HasBuilt() const { return fixed_; }
 
     const std::string& Name() const { return name_; }
+
+    static const char* FieldTypeName() {
+        return TypeInfoT::name;
+    }
 
     virtual bool Validate() const {return true;};
     virtual ThisT& Build() {
@@ -51,12 +63,32 @@ public:
         return true;
     }
 
-    /* const ValueT& GetValue() const {return value_;} */
+    const ValueT& GetValue() const {return value_;}
 
-    /* std::string&& Dump() const { */
-    /*     std::stringstream ss; */
-    /*     ss << "" */
-    /* } */
+    virtual std::string DumpValue() const {
+        return "";
+    }
+
+    virtual std::map<std::string, std::string> ToMap() const {
+        std::map<std::string, std::string> map_result;
+        map_result["RO"] = IsReadonly() ? "RO" : "";
+        map_result["UNIQUE"] = IsUnique() ? "UNIQUE" : "";
+        map_result["REQURIED"] = IsRequried() ? "REQURIED" : "";
+        map_result["VALUE"] = DumpValue();
+
+        return map_result;
+    }
+
+    virtual std::string Dump() const {
+        std::stringstream ss;
+        auto attrs_map = ToMap();
+        ss << "<" << FieldTypeName() <<  "field \'" << name_ << "\'>\n";
+        for (auto& kv: attrs_map) {
+            if (kv.second == "") continue;
+            ss << "  "  << kv.first << ": " << kv.second << "\n";
+        }
+        return ss.str();
+    }
 
 protected:
     std::string name_;
@@ -194,16 +226,66 @@ public:
 };
 
 template <typename ValueT>
-using NumericField = WithMixinTypedField<MinMaxMixin, ValueT>;
+class NumericField : public WithMixinTypedField<MinMaxMixin, ValueT> {
+public:
+    using BaseT = WithMixinTypedField<MinMaxMixin, ValueT>;
 
-using IntField = NumericField<int>;
+    NumericField(const std::string& name) : BaseT::ThisT(name) {}
+
+    std::string DumpValue() const override{
+        std::stringstream ss;
+        ss << BaseT::GetValue();
+        return ss.str();
+    }
+};
+
+template <>
+struct TypeWrapper<long> {
+    static constexpr const char* name = "LongField";
+};
 using LongField = NumericField<long>;
-using FloatField = NumericField<float>;
-using DoubleField = NumericField<double>;
-using StringField = WithMixinTypedField<LengthMixin, std::string>;
-template <typename ElementT>
-using VectorField = WithMixinTypedField<VectorLengthMixin, std::vector<ElementT>>;
 
+template <>
+struct TypeWrapper<float> {
+    static constexpr const char* name = "FloatField";
+};
+using FloatField = NumericField<float>;
+
+template <>
+struct TypeWrapper<std::string> {
+    static constexpr const char* name = "StringField";
+};
+
+class StringField : public WithMixinTypedField<LengthMixin, std::string> {
+public:
+    using BaseT = WithMixinTypedField<LengthMixin, std::string>;
+
+    StringField(const std::string& name) : BaseT::ThisT(name) {}
+
+    std::string DumpValue() const override{
+        return BaseT::GetValue();
+    }
+};
+
+template <typename ElementT>
+class VectorField : public WithMixinTypedField<VectorLengthMixin, std::vector<ElementT>> {
+public:
+    using BaseT = WithMixinTypedField<VectorLengthMixin, std::vector<ElementT>>;
+
+    VectorField(const std::string& name) : BaseT::ThisT(name) {}
+    std::string DumpValue() const override{
+        std::stringstream ss;
+        for (auto& v : BaseT::value_) {
+            ss << v << " ";
+        }
+        return ss.str();
+    }
+};
+
+template <>
+struct TypeWrapper<std::vector<float>> {
+    static constexpr const char* name = "FloatVectorField";
+};
 using FloatVectorField = VectorField<float>;
 
 using BooleanField = TypedField<bool>;

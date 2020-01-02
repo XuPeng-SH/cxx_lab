@@ -104,6 +104,14 @@ int main(int argc, char** argv) {
     vec_field.SetMaxLength(4);
     vec_field.SetMinLength(4);
 
+    vec_field.SetValue({1,2,3,4});
+    uid_field.SetValue("dsdsdsds");
+    age_field.SetValue(123344);
+
+    cout << vec_field.Dump() << endl;
+    cout << uid_field.Dump() << endl;
+    cout << age_field.Dump() << endl;
+
     schema->AddLongField(age_field)
            .AddLongField(likes_field)
            .AddFloatField(score_field)
