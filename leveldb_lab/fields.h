@@ -288,6 +288,10 @@ struct TypeWrapper<std::vector<float>> {
 };
 using FloatVectorField = VectorField<float>;
 
+template <>
+struct TypeWrapper<bool> {
+    static constexpr const char* name = "BooleanField";
+};
 using BooleanField = TypedField<bool>;
 
 class FieldFactory {
