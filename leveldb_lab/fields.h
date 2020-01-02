@@ -5,6 +5,7 @@
 #include <map>
 #include <limits>
 #include <iostream>
+#include <sstream>
 #include <assert.h>
 
 
@@ -13,15 +14,22 @@ class TypedField {
 public:
     using ValueT = T;
     using ThisT = TypedField<T>;
+
+    TypedField() = delete;
+    TypedField(const std::string& name) : name_(name) {}
+
     virtual ~TypedField() {};
 
     TypedField& SetReadonly(bool ro) {readonly_ = ro;}
     TypedField& SetRequired(bool req) {required_ = req;}
+    TypedField& SetUnique(bool uni) {unique_ = uni;}
 
     bool HasValue() const { return initialized_; }
     bool IsReadonly() const { return readonly_; }
     bool IsRequried() const { return required_; }
     bool HasBuilt() const { return fixed_; }
+
+    const std::string& Name() const { return name_; }
 
     virtual bool Validate() const {return true;};
     virtual ThisT& Build() {
@@ -43,13 +51,20 @@ public:
         return true;
     }
 
-    const ValueT& GetValue() const {return value_;}
+    /* const ValueT& GetValue() const {return value_;} */
+
+    /* std::string&& Dump() const { */
+    /*     std::stringstream ss; */
+    /*     ss << "" */
+    /* } */
 
 protected:
+    std::string name_;
     bool fixed_ = false;
     bool initialized_ = false;
     bool readonly_ = false;
     bool required_ = false;
+    bool unique_ = false;
     ValueT value_;
 };
 
@@ -164,6 +179,8 @@ public:
     using BaseT = TypedField<ValueT>;
     using MixinT = Mixin<BaseT>;
     using ThisT = WithMixinTypedField;
+
+    WithMixinTypedField(const std::string& name) : BaseT::ThisT(name) {}
 
     bool Validate() const override {
         return MixinT::Validate(BaseT::value_);

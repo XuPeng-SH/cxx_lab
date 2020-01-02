@@ -11,11 +11,13 @@ const int DocSchema::FloatVectorFieldIdx = 3;
 
 
 DocSchema::DocSchema(const PrimaryKeyT& pk) {
-    AddLongField(PrimaryKeyName, pk);
+    assert(pk.Name() == PrimaryKeyName);
+    AddLongField(pk);
 }
 
 DocSchema::DocSchema(PrimaryKeyT&& pk) {
-    AddLongField(PrimaryKeyName, pk);
+    assert(pk.Name() == PrimaryKeyName);
+    AddLongField(pk);
 }
 
 DocSchema::DocSchema(DocSchema&& other)
@@ -32,11 +34,12 @@ bool DocSchema::Build() {
     return true;
 }
 
-DocSchema& DocSchema::AddLongField(const std::string& name, const LongField& field) {
+DocSchema& DocSchema::AddLongField(const LongField& field) {
     if (HasBuilt()) {
         std::cerr << "Warn: doc schema has already built" << std::endl;
         return *this;
     }
+    auto& name = field.Name();
     auto it = fields_schema_.find(name);
     if (it != fields_schema_.end()) {
         std::cerr << "Warn: " << name << " has already existed. Skip this add" << std::endl;
@@ -49,11 +52,12 @@ DocSchema& DocSchema::AddLongField(const std::string& name, const LongField& fie
     return *this;
 }
 
-DocSchema& DocSchema::AddFloatField(const std::string& name, const FloatField& field) {
+DocSchema& DocSchema::AddFloatField(const FloatField& field) {
     if (HasBuilt()) {
         std::cerr << "Warn: doc schema has already built" << std::endl;
         return *this;
     }
+    auto& name = field.Name();
     auto it = fields_schema_.find(name);
     if (it != fields_schema_.end()) {
         std::cerr << "Warn: " << name << " has already existed. Skip this add" << std::endl;
@@ -66,11 +70,13 @@ DocSchema& DocSchema::AddFloatField(const std::string& name, const FloatField& f
     return *this;
 }
 
-DocSchema& DocSchema::AddStringField(const std::string& name, const StringField& field) {
+DocSchema& DocSchema::AddStringField(const StringField& field) {
     if (HasBuilt()) {
         std::cerr << "Warn: doc schema has already built" << std::endl;
         return *this;
     }
+
+    auto& name = field.Name();
     auto it = fields_schema_.find(name);
     if (it != fields_schema_.end()) {
         std::cerr << "Warn: " << name << " has already existed. Skip this add" << std::endl;
@@ -83,12 +89,13 @@ DocSchema& DocSchema::AddStringField(const std::string& name, const StringField&
     return *this;
 }
 
-DocSchema& DocSchema::AddFloatVectorField(const std::string& name, const FloatVectorField& field) {
+DocSchema& DocSchema::AddFloatVectorField(const FloatVectorField& field) {
     if (HasBuilt()) {
         std::cerr << "Warn: doc schema has already built" << std::endl;
         return *this;
     }
 
+    auto& name = field.Name();
     auto it = fields_schema_.find(name);
     if (it != fields_schema_.end()) {
         std::cerr << "Warn: " << name << " has already existed. Skip this add" << std::endl;
@@ -150,7 +157,8 @@ bool Doc::Build() {
     return BaseT::Build();
 }
 
-DocSchema& Doc::AddLongField(const std::string& name, const LongField& field) {
+DocSchema& Doc::AddLongField(const LongField& field) {
+    auto& name = field.Name();
     if (!field.HasBuilt()) {
         std::cerr << "Error: field \'" << name << "\' is building" << std::endl;
         assert(false);
@@ -160,10 +168,11 @@ DocSchema& Doc::AddLongField(const std::string& name, const LongField& field) {
         std::cerr << "Error: Cannot add long field \'" << name << "\'" << std::endl;
         assert(false);
     }
-    return BaseT::AddLongField(name, field);
+    return BaseT::AddLongField(field);
 }
 
-DocSchema& Doc::AddFloatField(const std::string& name, const FloatField& field) {
+DocSchema& Doc::AddFloatField(const FloatField& field) {
+    auto& name = field.Name();
     if (!field.HasBuilt()) {
         std::cerr << "Error: field \'" << name << "\' is building" << std::endl;
         assert(false);
@@ -173,10 +182,11 @@ DocSchema& Doc::AddFloatField(const std::string& name, const FloatField& field) 
         std::cerr << "Error: Cannot add float field \'" << name << "\'" << std::endl;
         assert(false);
     }
-    return BaseT::AddFloatField(name, field);
+    return BaseT::AddFloatField(field);
 }
 
-DocSchema& Doc::AddStringField(const std::string& name, const StringField& field) {
+DocSchema& Doc::AddStringField(const StringField& field) {
+    auto& name = field.Name();
     if (!field.HasBuilt()) {
         std::cerr << "Error: field \'" << name << "\' is building" << std::endl;
         assert(false);
@@ -186,10 +196,11 @@ DocSchema& Doc::AddStringField(const std::string& name, const StringField& field
         std::cerr << "Error: Cannot add string field \'" << name << "\'" << std::endl;
         assert(false);
     }
-    return BaseT::AddStringField(name, field);
+    return BaseT::AddStringField(field);
 }
 
-DocSchema& Doc::AddFloatVectorField(const std::string& name, const FloatVectorField& field) {
+DocSchema& Doc::AddFloatVectorField(const FloatVectorField& field) {
+    auto& name = field.Name();
     if (!field.HasBuilt()) {
         std::cerr << "Error: field \'" << name << "\' is building" << std::endl;
         assert(false);
@@ -199,5 +210,5 @@ DocSchema& Doc::AddFloatVectorField(const std::string& name, const FloatVectorFi
         std::cerr << "Error: Cannot add string field \'" << name << "\'" << std::endl;
         assert(false);
     }
-    return BaseT::AddFloatVectorField(name, field);
+    return BaseT::AddFloatVectorField(field);
 }

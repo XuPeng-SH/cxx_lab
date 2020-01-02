@@ -12,15 +12,15 @@ public:
     using PrimaryKeyT = LongField;
     static const char* PrimaryKeyName;
 
-    DocSchema(const PrimaryKeyT& pk = PrimaryKeyT());
+    DocSchema(const PrimaryKeyT& pk = PrimaryKeyT(PrimaryKeyName));
     DocSchema(PrimaryKeyT&& pk);
 
     DocSchema(DocSchema&& other);
 
-    virtual DocSchema& AddLongField(const std::string& name, const LongField& field);
-    virtual DocSchema& AddFloatField(const std::string& name, const FloatField& field);
-    virtual DocSchema& AddStringField(const std::string& name, const StringField& field);
-    virtual DocSchema& AddFloatVectorField(const std::string& name, const FloatVectorField& field);
+    virtual DocSchema& AddLongField(const LongField& field);
+    virtual DocSchema& AddFloatField(const FloatField& field);
+    virtual DocSchema& AddStringField(const StringField& field);
+    virtual DocSchema& AddFloatVectorField(const FloatVectorField& field);
 
     virtual std::string Dump() const;
     virtual bool Build();
@@ -53,10 +53,10 @@ public:
     Doc(const PrimaryKeyT& pk, const std::shared_ptr<DocSchema> schema);
     Doc(PrimaryKeyT&& pk, const std::shared_ptr<DocSchema> schema);
 
-    DocSchema& AddLongField(const std::string& name, const LongField& field) override;
-    DocSchema& AddFloatField(const std::string& name, const FloatField& field) override;
-    DocSchema& AddStringField(const std::string& name, const StringField& field) override;
-    DocSchema& AddFloatVectorField(const std::string& name, const FloatVectorField& field) override;
+    DocSchema& AddLongField(const LongField& field) override;
+    DocSchema& AddFloatField(const FloatField& field) override;
+    DocSchema& AddStringField(const StringField& field) override;
+    DocSchema& AddFloatVectorField(const FloatVectorField& field) override;
 
     bool Build() override;
 

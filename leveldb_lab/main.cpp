@@ -92,11 +92,11 @@ void tt(void* value) {
 int main(int argc, char** argv) {
     auto schema = std::make_shared<DocSchema>();
 
-    LongField age_field;
-    LongField likes_field;
-    FloatField score_field;
-    StringField uid_field;
-    FloatVectorField vec_field;
+    LongField age_field("age");
+    LongField likes_field("likes");
+    FloatField score_field("score");
+    StringField uid_field("uid");
+    FloatVectorField vec_field("vec");
 
     uid_field.SetMaxLength(20);
     uid_field.SetMinLength(10);
@@ -104,11 +104,11 @@ int main(int argc, char** argv) {
     vec_field.SetMaxLength(4);
     vec_field.SetMinLength(4);
 
-    schema->AddLongField("age", age_field)
-           .AddLongField("likes", likes_field)
-           .AddFloatField("score", score_field)
-           .AddStringField("uid", uid_field)
-           .AddFloatVectorField("vec", vec_field)
+    schema->AddLongField(age_field)
+           .AddLongField(likes_field)
+           .AddFloatField(score_field)
+           .AddStringField(uid_field)
+           .AddFloatVectorField(vec_field)
            .Build();
     cout << schema->Dump() << endl;
 
@@ -116,33 +116,33 @@ int main(int argc, char** argv) {
 
     auto t_start = chrono::high_resolution_clock::now();
     for (auto i=0; i<10000; ++i) {
-        LongField this_pk;
+        LongField this_pk(DocSchema::PrimaryKeyName);
         this_pk.SetValue(123434343);
         this_pk.Build();
         Doc mydoc(this_pk, schema);
-        LongField age;
+        LongField age("age");
         age.SetValue(20);
         age.Build();
-        LongField likes;
+        LongField likes("likes");
         likes.SetValue(243433);
         likes.Build();
-        FloatField score;
+        FloatField score("score");
         score.SetValue(67.5);
         score.Build();
-        StringField uid;
+        StringField uid("uid");
         uid.SetMaxLength(20);
         uid.SetValue("123234343");
         uid.Build();
 
-        FloatVectorField fvec;
+        FloatVectorField fvec("vec");
         fvec.SetValue({1,2,3,4});
         fvec.Build();
 
-        mydoc.AddLongField("age", age)
-             .AddLongField("likes", likes)
-             .AddFloatField("score", score)
-             .AddStringField("uid", uid)
-             .AddFloatVectorField("vec", fvec)
+        mydoc.AddLongField(age)
+             .AddLongField(likes)
+             .AddFloatField(score)
+             .AddStringField(uid)
+             .AddFloatVectorField(fvec)
              .Build();
 
         /* cout << mydoc.Dump() << endl; */
@@ -154,96 +154,6 @@ int main(int argc, char** argv) {
 
     return 0;
 
-    LongField lf1;
-    LongField lf2;
-    schema->AddLongField("age", lf1);
-    schema->AddLongField("income", lf2);
-    lf1.SetValue(20000);
-    lf1.Build();
-    lf2.SetValue(20332);
-    lf2.Build();
-
-    StringField sf1;
-    sf1.SetMaxLength(20);
-    sf1.SetMinLength(10);
-
-    schema->AddStringField("uid", sf1);
-    schema->AddStringField("age", sf1);
-    sf1.SetValue("123234334ssd");
-    sf1.Build();
-
-    cout << schema->Dump() << endl;
-    schema->Build();
-    cout << schema->Dump() << endl;
-
-    auto doc1 = Doc(lf1, schema);
-    cout << doc1.GetPK().GetValue() << endl;
-    cout << doc1.Build() << endl;
-
-    doc1.AddStringField("uid", sf1);
-    doc1.AddStringField("age", sf1);
-    cout << doc1.Build() << endl;
-    doc1.AddLongField("income", lf2);
-    cout << doc1.Build() << endl;
-
-    return 0;
-    BooleanField bf;
-
-    bf.SetReadonly(true);
-    bf.SetValue(true);
-    bf.SetValue(false);
-
-    cout << std::boolalpha;
-    cout << bf.GetValue() << endl;
-
-    bf.Build();
-    bf.SetValue(false);
-
-    StringField sf;
-    sf.SetMaxLength(5);
-    sf.SetValue("1234567");
-    cout << "sf validate " << sf.Validate() << endl;
-    sf.SetValue("567");
-    cout << "sf validate " << sf.Validate() << endl;
-    cout << "sf validate " << sf.GetValue() << endl;
-
-    IntField inf;
-    inf.SetMaxLimit(10);
-
-    inf.SetValue(20);
-    cout << "inf Validate " << inf.Validate() << endl;
-
-    inf.SetValue(5);
-    cout << "inf Validate " << inf.Validate() << endl;
-
-    FloatVectorField vf;
-    vector<float> v = {1,2,3,4, 5, 6, 7, 8, 9};
-    vf.SetValue(v);
-    cout << "vf Validate " << vf.Validate() << endl;
-
-    vf.SetMaxLength(10);
-    vf.SetMinLength(10);
-    cout << "vf Validate " << vf.Validate() << endl;
-    vf.Build();
-
-    vf.SetMaxLength(10);
-    vf.SetMinLength(8);
-    cout << "vf Validate " << vf.Validate() << endl;
-
-    auto vf2 = FieldFactory::BuildVectorField<float>(10);
-    vf2.SetValue(v);
-    cout << "vf2 Validate " << vf2.Validate() << endl;
-
-    vf2.SetValue({1.0,2.0,3,4,5,6,7,8,9,10});
-    cout << "vf2 Validate " << vf2.Validate() << endl;
-
-    Doc::PrimaryKeyT pk;
-    pk.SetValue(1234);
-    pk.Build();
-
-
-
-    return 0;
 
     map<string, DB*> db_map;
     vector<std::thread> threads;
