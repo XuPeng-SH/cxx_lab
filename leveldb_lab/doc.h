@@ -63,3 +63,21 @@ public:
 private:
     std::shared_ptr<DocSchema> schema_;
 };
+
+class Helper {
+public:
+    template <typename ElementT>
+    static VectorField<ElementT> BuildVectorField(size_t dimension) {
+        VectorField<ElementT> vf;
+        vf.SetMaxLength(dimension);
+        vf.SetMinLength(dimension);
+        return std::move(vf);
+    }
+
+    static DocSchema::PrimaryKeyT&& NewPK(typename DocSchema::PrimaryKeyT::ValueT value) {
+        auto field = DocSchema::PrimaryKeyT(DocSchema::PrimaryKeyName);
+        field.SetValue(value);
+        field.Build();
+        return std::move(field);
+    }
+};

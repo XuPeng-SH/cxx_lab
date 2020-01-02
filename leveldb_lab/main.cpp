@@ -92,9 +92,6 @@ void tt(void* value) {
 int main(int argc, char** argv) {
     auto schema = std::make_shared<DocSchema>();
 
-    LongField age_field("age");
-    LongField likes_field("likes");
-    FloatField score_field("score");
     StringField uid_field("uid");
     FloatVectorField vec_field("vec");
 
@@ -104,17 +101,9 @@ int main(int argc, char** argv) {
     vec_field.SetMaxLength(4);
     vec_field.SetMinLength(4);
 
-    vec_field.SetValue({1,2,3,4});
-    uid_field.SetValue("dsdsdsds");
-    age_field.SetValue(123344);
-
-    cout << vec_field.Dump() << endl;
-    cout << uid_field.Dump() << endl;
-    cout << age_field.Dump() << endl;
-
-    schema->AddLongField(age_field)
-           .AddLongField(likes_field)
-           .AddFloatField(score_field)
+    schema->AddLongField(LongField("age"))
+           .AddLongField(LongField("likes"))
+           .AddFloatField(FloatField("score"))
            .AddStringField(uid_field)
            .AddFloatVectorField(vec_field)
            .Build();
@@ -124,9 +113,7 @@ int main(int argc, char** argv) {
 
     auto t_start = chrono::high_resolution_clock::now();
     for (auto i=0; i<10000; ++i) {
-        LongField this_pk(DocSchema::PrimaryKeyName);
-        this_pk.SetValue(123434343);
-        this_pk.Build();
+        auto&& this_pk = Helper::NewPK(12345333);
         Doc mydoc(this_pk, schema);
         LongField age("age");
         age.SetValue(20);

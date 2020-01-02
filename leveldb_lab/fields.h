@@ -225,10 +225,11 @@ public:
     }
 };
 
-template <typename ValueT>
-class NumericField : public WithMixinTypedField<MinMaxMixin, ValueT> {
+template <typename T>
+class NumericField : public WithMixinTypedField<MinMaxMixin, T> {
 public:
-    using BaseT = WithMixinTypedField<MinMaxMixin, ValueT>;
+    using BaseT = WithMixinTypedField<MinMaxMixin, T>;
+    using ValueT = T;
 
     NumericField(const std::string& name) : BaseT::ThisT(name) {}
 
@@ -293,14 +294,3 @@ struct TypeWrapper<bool> {
     static constexpr const char* name = "BooleanField";
 };
 using BooleanField = TypedField<bool>;
-
-class FieldFactory {
-public:
-    template <typename ElementT>
-    static VectorField<ElementT> BuildVectorField(size_t dimension) {
-        VectorField<ElementT> vf;
-        vf.SetMaxLength(dimension);
-        vf.SetMinLength(dimension);
-        return std::move(vf);
-    }
-};
