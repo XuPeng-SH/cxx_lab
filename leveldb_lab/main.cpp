@@ -115,29 +115,12 @@ int main(int argc, char** argv) {
     for (auto i=0; i<10000; ++i) {
         auto&& this_pk = Helper::NewPK(12345333);
         Doc mydoc(this_pk, schema);
-        LongField age("age");
-        age.SetValue(20);
-        age.Build();
-        LongField likes("likes");
-        likes.SetValue(243433);
-        likes.Build();
-        FloatField score("score");
-        score.SetValue(67.5);
-        score.Build();
-        StringField uid("uid");
-        uid.SetMaxLength(20);
-        uid.SetValue("123234343");
-        uid.Build();
 
-        FloatVectorField fvec("vec");
-        fvec.SetValue({1,2,3,4});
-        fvec.Build();
-
-        mydoc.AddLongField(age)
-             .AddLongField(likes)
-             .AddFloatField(score)
-             .AddStringField(uid)
-             .AddFloatVectorField(fvec)
+        mydoc.AddField("age", (long)20)
+             .AddField("likes", (long)100)
+             .AddField("score", (float)23.5)
+             .AddField("uid", "12443434343")
+             .AddField("vec", (vector<float>){1,2,3,4})
              .Build();
 
         /* cout << mydoc.Dump() << endl; */

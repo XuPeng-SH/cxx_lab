@@ -34,6 +34,34 @@ bool DocSchema::Build() {
     return true;
 }
 
+DocSchema& DocSchema::AddField(const std::string& name, long value) {
+    LongField field(name);
+    field.SetValue(value);
+    field.Build();
+    return AddLongField(field);
+}
+
+DocSchema& DocSchema::AddField(const std::string& name, float value) {
+    FloatField field(name);
+    field.SetValue(value);
+    field.Build();
+    return AddFloatField(field);
+}
+
+DocSchema& DocSchema::AddField(const std::string& name, const std::string& value) {
+    StringField field(name);
+    field.SetValue(value);
+    field.Build();
+    return AddStringField(field);
+}
+
+DocSchema& DocSchema::AddField(const std::string& name, const std::vector<float>& value) {
+    FloatVectorField field(name);
+    field.SetValue(value);
+    field.Build();
+    return AddFloatVectorField(field);
+}
+
 DocSchema& DocSchema::AddLongField(const LongField& field) {
     if (HasBuilt()) {
         std::cerr << "Warn: doc schema has already built" << std::endl;

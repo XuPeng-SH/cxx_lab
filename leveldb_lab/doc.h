@@ -22,6 +22,11 @@ public:
     virtual DocSchema& AddStringField(const StringField& field);
     virtual DocSchema& AddFloatVectorField(const FloatVectorField& field);
 
+    DocSchema& AddField(const std::string& name, long value);
+    DocSchema& AddField(const std::string& name, float value);
+    DocSchema& AddField(const std::string& name, const std::string& value);
+    DocSchema& AddField(const std::string& name, const std::vector<float>& value);
+
     virtual std::string Dump() const;
     virtual bool Build();
 
@@ -46,6 +51,7 @@ protected:
     std::vector<FloatVectorField> float_vector_fields_;
     bool fixed_ = false;
 };
+
 
 class Doc : public DocSchema {
 public:
