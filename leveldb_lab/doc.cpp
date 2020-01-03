@@ -17,7 +17,7 @@ DocSchema::DocSchema(const PrimaryKeyT& pk) {
 
 DocSchema::DocSchema(PrimaryKeyT&& pk) {
     assert(pk.Name() == PrimaryKeyName);
-    AddLongField(pk);
+    AddLongField(std::move(pk));
 }
 
 DocSchema::DocSchema(DocSchema&& other)
@@ -192,7 +192,7 @@ Doc::Doc(const PrimaryKeyT& pk, const std::shared_ptr<DocSchema> schema)
 }
 
 Doc::Doc(PrimaryKeyT&& pk, const std::shared_ptr<DocSchema> schema)
-: DocSchema(pk), schema_(schema)
+: DocSchema(std::move(pk)), schema_(schema)
 {
     assert(pk.HasBuilt());
     assert(schema->HasBuilt());
