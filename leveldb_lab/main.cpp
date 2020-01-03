@@ -112,15 +112,15 @@ int main(int argc, char** argv) {
     vector<Doc> docs;
 
     auto t_start = chrono::high_resolution_clock::now();
-    for (auto i=0; i<10000; ++i) {
-        auto&& this_pk = Helper::NewPK(12345333);
+    for (auto i=0; i<1000000; ++i) {
+        auto&& this_pk = std::move(Helper::NewPK(12345333));
         Doc mydoc(this_pk, schema);
 
-        mydoc.AddField("age", (long)20)
-             .AddField("likes", (long)100)
-             .AddField("score", (float)23.5)
-             .AddField("uid", "12443434343")
-             .AddField("vec", (vector<float>){1,2,3,4})
+        mydoc.AddLongFieldValue("age", 20)
+             .AddLongFieldValue("likes", 100)
+             .AddFloatFieldValue("score", 23.5)
+             .AddStringFieldValue("uid", "12443434343")
+             .AddFloatVectorFieldValue("vec", {1,2,3,4})
              .Build();
 
         /* cout << mydoc.Dump() << endl; */

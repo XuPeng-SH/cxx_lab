@@ -22,10 +22,18 @@ public:
     virtual DocSchema& AddStringField(const StringField& field);
     virtual DocSchema& AddFloatVectorField(const FloatVectorField& field);
 
-    DocSchema& AddField(const std::string& name, long value);
-    DocSchema& AddField(const std::string& name, float value);
-    DocSchema& AddField(const std::string& name, const std::string& value);
-    DocSchema& AddField(const std::string& name, const std::vector<float>& value);
+    virtual DocSchema& AddLongField(LongField&& field);
+    virtual DocSchema& AddFloatField(FloatField&& field);
+    virtual DocSchema& AddStringField(StringField&& field);
+    virtual DocSchema& AddFloatVectorField(FloatVectorField&& field);
+
+    template <typename T>
+    bool PreAddCheck(const T& field);
+
+    DocSchema& AddLongFieldValue(const std::string& name, long value);
+    DocSchema& AddFloatFieldValue(const std::string& name, float value);
+    DocSchema& AddStringFieldValue(const std::string& name, const std::string& value);
+    DocSchema& AddFloatVectorFieldValue(const std::string& name, const std::vector<float>& value);
 
     virtual std::string Dump() const;
     virtual bool Build();
@@ -80,7 +88,7 @@ public:
         return std::move(vf);
     }
 
-    static DocSchema::PrimaryKeyT&& NewPK(typename DocSchema::PrimaryKeyT::ValueT value) {
+    static DocSchema::PrimaryKeyT NewPK(typename DocSchema::PrimaryKeyT::ValueT value) {
         auto field = DocSchema::PrimaryKeyT(DocSchema::PrimaryKeyName);
         field.SetValue(value);
         field.Build();

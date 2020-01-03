@@ -34,105 +34,126 @@ bool DocSchema::Build() {
     return true;
 }
 
-DocSchema& DocSchema::AddField(const std::string& name, long value) {
+DocSchema& DocSchema::AddLongFieldValue(const std::string& name, long value) {
     LongField field(name);
     field.SetValue(value);
     field.Build();
-    return AddLongField(field);
+    return AddLongField(std::move(field));
 }
 
-DocSchema& DocSchema::AddField(const std::string& name, float value) {
+DocSchema& DocSchema::AddFloatFieldValue(const std::string& name, float value) {
     FloatField field(name);
     field.SetValue(value);
     field.Build();
-    return AddFloatField(field);
+    return AddFloatField(std::move(field));
 }
 
-DocSchema& DocSchema::AddField(const std::string& name, const std::string& value) {
+DocSchema& DocSchema::AddStringFieldValue(const std::string& name, const std::string& value) {
     StringField field(name);
     field.SetValue(value);
     field.Build();
-    return AddStringField(field);
+    return AddStringField(std::move(field));
 }
 
-DocSchema& DocSchema::AddField(const std::string& name, const std::vector<float>& value) {
+DocSchema& DocSchema::AddFloatVectorFieldValue(const std::string& name, const std::vector<float>& value) {
     FloatVectorField field(name);
     field.SetValue(value);
     field.Build();
-    return AddFloatVectorField(field);
+    return AddFloatVectorField(std::move(field));
 }
 
-DocSchema& DocSchema::AddLongField(const LongField& field) {
+DocSchema& DocSchema::AddLongField(LongField&& field) {
+    auto valid = PreAddCheck(field);
+    if (!valid) return *this;
+
+    size_t offset = long_fields_.size();
+    fields_schema_[field.Name()] = {LongFieldIdx, offset};
+    long_fields_.push_back(std::move(field));
+    return *this;
+}
+
+DocSchema& DocSchema::AddFloatField(FloatField&& field) {
+    auto valid = PreAddCheck(field);
+    if (!valid) return *this;
+
+    size_t offset = float_fields_.size();
+    fields_schema_[field.Name()] = {FloatFieldIdx, offset};
+    float_fields_.push_back(std::move(field));
+    return *this;
+}
+
+DocSchema& DocSchema::AddStringField(StringField&& field) {
+    auto valid = PreAddCheck(field);
+    if (!valid) return *this;
+
+    size_t offset = string_fields_.size();
+    fields_schema_[field.Name()] = {StringFieldIdx, offset};
+    string_fields_.push_back(std::move(field));
+    return *this;
+}
+
+DocSchema& DocSchema::AddFloatVectorField(FloatVectorField&& field) {
+    auto valid = PreAddCheck(field);
+    if (!valid) return *this;
+
+    size_t offset = float_vector_fields_.size();
+    fields_schema_[field.Name()] = {FloatVectorFieldIdx, offset};
+    float_vector_fields_.push_back(std::move(field));
+    return *this;
+}
+
+template <typename T>
+bool DocSchema::PreAddCheck(const T& field) {
     if (HasBuilt()) {
         std::cerr << "Warn: doc schema has already built" << std::endl;
-        return *this;
+        return false;
     }
     auto& name = field.Name();
     auto it = fields_schema_.find(name);
     if (it != fields_schema_.end()) {
         std::cerr << "Warn: " << name << " has already existed. Skip this add" << std::endl;
-        return *this;
+        return false;
     }
+    return true;
+}
+
+DocSchema& DocSchema::AddLongField(const LongField& field) {
+    auto valid = PreAddCheck(field);
+    if (!valid) return *this;
 
     size_t offset = long_fields_.size();
     long_fields_.push_back(field);
-    fields_schema_[name] = {LongFieldIdx, offset};
+    fields_schema_[field.Name()] = {LongFieldIdx, offset};
     return *this;
 }
 
 DocSchema& DocSchema::AddFloatField(const FloatField& field) {
-    if (HasBuilt()) {
-        std::cerr << "Warn: doc schema has already built" << std::endl;
-        return *this;
-    }
-    auto& name = field.Name();
-    auto it = fields_schema_.find(name);
-    if (it != fields_schema_.end()) {
-        std::cerr << "Warn: " << name << " has already existed. Skip this add" << std::endl;
-        return *this;
-    }
+    auto valid = PreAddCheck(field);
+    if (!valid) return *this;
 
     size_t offset = float_fields_.size();
     float_fields_.push_back(field);
-    fields_schema_[name] = {FloatFieldIdx, offset};
+    fields_schema_[field.Name()] = {FloatFieldIdx, offset};
     return *this;
 }
 
 DocSchema& DocSchema::AddStringField(const StringField& field) {
-    if (HasBuilt()) {
-        std::cerr << "Warn: doc schema has already built" << std::endl;
-        return *this;
-    }
-
-    auto& name = field.Name();
-    auto it = fields_schema_.find(name);
-    if (it != fields_schema_.end()) {
-        std::cerr << "Warn: " << name << " has already existed. Skip this add" << std::endl;
-        return *this;
-    }
+    auto valid = PreAddCheck(field);
+    if (!valid) return *this;
 
     size_t offset = string_fields_.size();
     string_fields_.push_back(field);
-    fields_schema_[name] = {StringFieldIdx, offset};
+    fields_schema_[field.Name()] = {StringFieldIdx, offset};
     return *this;
 }
 
 DocSchema& DocSchema::AddFloatVectorField(const FloatVectorField& field) {
-    if (HasBuilt()) {
-        std::cerr << "Warn: doc schema has already built" << std::endl;
-        return *this;
-    }
-
-    auto& name = field.Name();
-    auto it = fields_schema_.find(name);
-    if (it != fields_schema_.end()) {
-        std::cerr << "Warn: " << name << " has already existed. Skip this add" << std::endl;
-        return *this;
-    }
+    auto valid = PreAddCheck(field);
+    if (!valid) return *this;
 
     size_t offset = float_vector_fields_.size();
     float_vector_fields_.push_back(field);
-    fields_schema_[name] = {FloatVectorFieldIdx, offset};
+    fields_schema_[field.Name()] = {FloatVectorFieldIdx, offset};
     return *this;
 }
 

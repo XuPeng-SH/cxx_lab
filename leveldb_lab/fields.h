@@ -25,6 +25,26 @@ public:
     TypedField() = delete;
     TypedField(const std::string& name) : name_(name) {}
 
+    TypedField(TypedField&& other) {
+        name_ = std::move(other.name_);
+        fixed_ = other.fixed_;
+        initialized_ = other.initialized_;
+        readonly_ = other.readonly_;
+        required_ = other.required_;
+        unique_ = other.unique_;
+        value_ = std::move(other.value_);
+    }
+
+    TypedField(const TypedField& other) {
+        name_ = other.name_;
+        fixed_ = other.fixed_;
+        initialized_ = other.initialized_;
+        readonly_ = other.readonly_;
+        required_ = other.required_;
+        unique_ = other.unique_;
+        value_ = other.value_;
+    }
+
     virtual ~TypedField() {};
 
     TypedField& SetReadonly(bool ro) {readonly_ = ro;}
