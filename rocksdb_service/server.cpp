@@ -12,6 +12,7 @@
 #include "db.grpc.pb.h"
 #include "database.h"
 #include "rocksdb_impl.h"
+#include "rocksdb_util.h"
 
 using namespace std;
 
@@ -22,13 +23,13 @@ Server::Server(const std::string& port, const std::string& db_path) : port_(port
 class ServiceImpl : public db::grpc::DBService::Service {
 public:
     ServiceImpl(const string& db_path, std::shared_ptr<DocSchema> schema) : schema_(schema) {
-        rocksdb::Options options;
-        options.create_if_missing = true;
+        auto options = db::DefaultOpenOptions();
         rocksdb::DB *kvdb;
-        rocksdb::DB::Open(options, db_path, &kvdb);
+        rocksdb::DB::Open(*options, db_path, &kvdb);
         std::shared_ptr<rocksdb::DB> skvdb(kvdb);
         auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
         db_ = std::make_shared<db::MyDB>(impl);
+        auto wo = db::DefaultDBWriteOptions();
     }
 
     ::grpc::Status CreateTable(::grpc::ServerContext* context, const ::db::grpc::CreateTableParam* request, ::db::grpc::CreateTableResponse* response) override {
