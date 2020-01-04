@@ -19,7 +19,7 @@ const std::shared_ptr<rocksdb::WriteOptions>& DefaultDBWriteOptions() {
     static std::shared_ptr<rocksdb::WriteOptions> options;
     if (!options) {
         options = std::make_shared<rocksdb::WriteOptions>();
-        options->disableWAL = true;
+        options->disableWAL = false;
         options->sync = false;
     }
     return options;
@@ -45,7 +45,7 @@ void write_batch_demo(std::shared_ptr<rocksdb::DB> db) {
     }
 
     rocksdb::WriteBatch write_batch;
-    size_t cap = 80000;
+    size_t cap = 8000;
     std::vector<std::string> keys;
     std::vector<std::string> values;
     for (auto i=0; i<cap; ++i) {
