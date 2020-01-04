@@ -6,6 +6,9 @@
 #include <gflags/gflags.h>
 #include "db_op.h"
 #include "cf.h"
+#include "rocksdb_impl.h"
+#include "rocksdb_util.h"
+#include "doc.h"
 
 using namespace std;
 using namespace rocksdb;
@@ -21,7 +24,30 @@ DEFINE_bool(search, false, "search data");
 DEFINE_int32(nq, 100, "n query");
 DEFINE_string(scf, "default", "specify cf name for search");
 
+DEFINE_string(tname, "default", "table name");
+
 int main(int argc, char** argv) {
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
+    auto options = db::DefaultOpenOptions();
+    rocksdb::DB *kvdb;
+    rocksdb::DB::Open(*options, FLAGS_path, &kvdb);
+    std::shared_ptr<rocksdb::DB> skvdb(kvdb);
+    auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
+    auto thisdb = std::make_shared<db::MyDB>(impl);
+    auto schema = std::make_shared<DocSchema>();
+    std::vector<std::string> vec;
+    std::stringstream ss;
+    for (auto i=0; i<FLAGS_nb; ++i) {
+        ss << FLAGS_prefix << i;
+        vec.push_back(ss.str());
+        ss.str("");
+    }
+    std::cout << "Starting ..." << std::endl;
+    for (auto& v : vec) {
+        thisdb->CreateTable(v, *schema);
+    }
+
+    return 0;
     /* column_family_demo(); */
     /* return 0; */
     gflags::ParseCommandLineFlags(&argc, &argv, true);
