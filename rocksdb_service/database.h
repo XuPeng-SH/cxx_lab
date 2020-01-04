@@ -30,14 +30,4 @@ public:
     virtual ~DBImpl() {}
 };
 
-
-class RocksDBImpl : public DBImpl {
-public:
-    RocksDBImpl(std::shared_ptr<rocksdb::DB> db) : db_(db) {};
-    rocksdb::Status CreateTable(const std::string& table_name, const DocSchema& schema) override;
-
-protected:
-    std::shared_ptr<rocksdb::DB> db_;
-};
-
 }

@@ -15,6 +15,7 @@ DEFINE_string(port, "5555", "port");
 DEFINE_string(mode, "server", "server or client");
 DEFINE_string(host, "127.0.0.1", "host to connect");
 DEFINE_string(table_name, "default", "table name");
+DEFINE_string(db_path, "/tmp/rs_lab", "db path");
 
 
 int main(int argc, char** argv) {
@@ -30,7 +31,7 @@ int main(int argc, char** argv) {
     cout << "======== Config Block End   =================\n" << endl;
 
     if (FLAGS_mode == "server") {
-        Server server(FLAGS_port);
+        Server server(FLAGS_port, FLAGS_db_path);
         server.run();
     } else {
         auto client = Client::Build(FLAGS_host, FLAGS_port);

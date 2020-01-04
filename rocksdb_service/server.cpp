@@ -11,20 +11,21 @@
 
 #include "db.grpc.pb.h"
 #include "database.h"
+#include "rocksdb_impl.h"
 
 using namespace std;
 
 static int ID = 0;
 
-Server::Server(const std::string& port) : port_(port) {}
+Server::Server(const std::string& port, const std::string& db_path) : port_(port), db_path_(db_path) {}
 
 class ServiceImpl : public db::grpc::DBService::Service {
 public:
-    ServiceImpl(std::shared_ptr<DocSchema> schema) : schema_(schema) {
+    ServiceImpl(const string& db_path, std::shared_ptr<DocSchema> schema) : schema_(schema) {
         rocksdb::Options options;
         options.create_if_missing = true;
         rocksdb::DB *kvdb;
-        rocksdb::DB::Open(options, "/tmp/rs_lab", &kvdb);
+        rocksdb::DB::Open(options, db_path, &kvdb);
         std::shared_ptr<rocksdb::DB> skvdb(kvdb);
         auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
         db_ = std::make_shared<db::MyDB>(impl);
@@ -44,7 +45,7 @@ private:
 };
 
 void Server::run() {
-    ServiceImpl service(std::make_shared<DocSchema>());
+    ServiceImpl service(db_path_, std::make_shared<DocSchema>());
     string addr = "0.0.0.0:" + port_;
     grpc::ServerBuilder builder;
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
