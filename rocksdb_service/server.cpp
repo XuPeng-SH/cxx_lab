@@ -29,7 +29,7 @@ public:
         std::shared_ptr<rocksdb::DB> skvdb(kvdb);
         auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
         db_ = std::make_shared<db::MyDB>(impl);
-        auto wo = db::DefaultDBWriteOptions();
+        db::demo::write_batch_demo(skvdb);
     }
 
     ::grpc::Status CreateTable(::grpc::ServerContext* context, const ::db::grpc::CreateTableParam* request, ::db::grpc::CreateTableResponse* response) override {
