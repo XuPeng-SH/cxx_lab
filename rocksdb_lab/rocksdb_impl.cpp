@@ -57,6 +57,10 @@ void RocksDBImpl::Init() {
     /* demo::read_all(db_, false); */
 }
 
+rocksdb::Status RocksDBImpl::StoreSchema(const DocSchema& schema) {
+
+}
+
 rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const DocSchema& schema) {
     auto table_key = TableKey(table_name);
     /* cout << "RocksDBImpl::CreateTable: " << table_key << endl; */

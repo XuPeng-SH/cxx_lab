@@ -1,6 +1,7 @@
 #include "doc.h"
 #include <sstream>
 #include <assert.h>
+#include "doc.h"
 
 const char* DocSchema::PrimaryKeyName = "_id";
 const int DocSchema::LongFieldIdx = 0;
@@ -157,31 +158,52 @@ DocSchema& DocSchema::AddFloatVectorField(const FloatVectorField& field) {
     return *this;
 }
 
-std::string DocSchema::Dump() const {
-    std::stringstream ss;
-    ss << "DocSchema: " << (HasBuilt()?"[Built]":"[BUILDING]")  << "\n";
-    for (auto& kv: fields_schema_) {
+void DocSchema::Iterate(DocSchemaHandler* handler) const {
+    handler->PreHandle(*this);
+    for (auto& kv : fields_schema_) {
         auto& field_name = kv.first;
         auto& idx = std::get<0>(kv.second);
         auto& offset = std::get<1>(kv.second);
-
-        ss << field_name << " ";
-        if (idx == LongFieldIdx) {
-            ss << "LongField ";
-        } else if (idx == FloatFieldIdx) {
-            ss << "FloatField ";
-        } else if (idx == StringFieldIdx) {
-            ss << "StringField ";
-        } else if (idx == FloatVectorFieldIdx) {
-            ss << "FloatVectorField ";
-        }
-
-        if (idx == LongFieldIdx && offset == 0) {
-            ss << "PK ";
-        }
-        ss << "\n";
+        handler->Handle(*this, field_name, idx, offset);
     }
-    return ss.str();
+    handler->PostHandle(*this);
+}
+
+std::string DocSchema::Dump() const {
+    DumpHandler handler;
+    Iterate(&handler);
+    return std::move(handler.ToString());
+}
+
+std::string DumpHandler::ToString() {
+    return ss_.str();
+}
+
+void DumpHandler::PreHandle(const DocSchema& schema) {
+    ss_.str("");
+    ss_ << "DocSchema: " << (schema.HasBuilt()?"[Built]":"[BUILDING]")  << "\n";
+}
+
+void DumpHandler::Handle(const DocSchema& schema, const std::string& field_name,
+        int idx, size_t offset) {
+    ss_ << field_name << " ";
+    if (idx == DocSchema::LongFieldIdx) {
+        ss_ << "LongField ";
+    } else if (idx == DocSchema::FloatFieldIdx) {
+        ss_ << "FloatField ";
+    } else if (idx == DocSchema::StringFieldIdx) {
+        ss_ << "StringField ";
+    } else if (idx == DocSchema::FloatVectorFieldIdx) {
+        ss_ << "FloatVectorField ";
+    }
+
+    if (idx == DocSchema::LongFieldIdx && offset == 0) {
+        ss_ << "PK ";
+    }
+    ss_ << "\n";
+}
+
+void DumpHandler::PostHandle(const DocSchema& schema) {
 }
 
 Doc::Doc(const PrimaryKeyT& pk, const std::shared_ptr<DocSchema> schema)

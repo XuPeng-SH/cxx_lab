@@ -35,6 +35,22 @@ int main(int argc, char** argv) {
     auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
     auto thisdb = std::make_shared<db::MyDB>(impl);
     auto schema = std::make_shared<DocSchema>();
+
+    StringField uid_field("uid");
+    FloatVectorField vec_field("vec");
+
+    uid_field.SetMaxLength(20);
+    uid_field.SetMinLength(10);
+
+    vec_field.SetMaxLength(128);
+    vec_field.SetMinLength(128);
+
+    schema->AddStringField(uid_field)
+           .AddFloatVectorField(vec_field)
+           .Build();
+
+    std::cout << schema->Dump() << std::endl;
+
     std::vector<std::string> vec;
     std::stringstream ss;
     for (auto i=0; i<FLAGS_nb; ++i) {

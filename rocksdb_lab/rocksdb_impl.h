@@ -53,6 +53,8 @@ public:
 protected:
     void Init();
 
+    rocksdb::Status StoreSchema(const DocSchema& schema);
+
     std::shared_ptr<rocksdb::DB> db_;
     std::shared_ptr<DBCache> db_cache_;
     rocksdb::ReadOptions rdopt_;

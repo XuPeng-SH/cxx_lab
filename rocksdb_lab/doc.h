@@ -7,6 +7,7 @@
 #include <memory>
 
 class Doc;
+class DocSchemaHandler;
 class DocSchema {
 public:
     using PrimaryKeyT = LongField;
@@ -38,6 +39,8 @@ public:
     virtual std::string Dump() const;
     virtual bool Build();
 
+    void Iterate(DocSchemaHandler* handler) const;
+
     bool HasBuilt() const { return fixed_; }
 
     const PrimaryKeyT& GetPK() const { return long_fields_[PrimaryKeyIdx]; }
@@ -46,6 +49,7 @@ public:
 
 protected:
     friend class Doc;
+    friend class DumpHandler;
     static const int LongFieldIdx;
     static const int StringFieldIdx;
     static const int FloatFieldIdx;
@@ -60,6 +64,26 @@ protected:
     bool fixed_ = false;
 };
 
+class DocSchemaHandler {
+public:
+    virtual void PreHandle(const DocSchema& schema) = 0;
+    virtual void Handle(const DocSchema& schema, const std::string& field_name,
+        int idx, size_t offset) = 0;
+    virtual void PostHandle(const DocSchema& schema) = 0;
+    virtual ~DocSchemaHandler() {}
+};
+
+class DumpHandler : public DocSchemaHandler {
+public:
+    void PreHandle(const DocSchema& schema) override;
+    void Handle(const DocSchema& schema, const std::string& field_name,
+        int idx, size_t offset) override;
+    void PostHandle(const DocSchema& schema) override;
+    std::string ToString();
+
+protected:
+    std::stringstream ss_;
+};
 
 class Doc : public DocSchema {
 public:
