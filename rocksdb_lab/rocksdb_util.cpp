@@ -55,9 +55,13 @@ void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db) {
     }
 }
 
-void read_all(std::shared_ptr<rocksdb::DB> db, bool do_print) {
+void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bool do_print) {
+    rocksdb::ReadOptions roptions;
+    if (options == nullptr) {
+        options = &roptions;
+    }
     size_t count = 0;
-    rocksdb::Iterator* it = db->NewIterator(rocksdb::ReadOptions());
+    rocksdb::Iterator* it = db->NewIterator(*options);
     std::map<std::string, std::string> dict;
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         count++;
