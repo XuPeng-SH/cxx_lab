@@ -33,7 +33,7 @@ namespace demo {
 // [Key]ID:$tid$uid [Val]$sid$id
 void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db) {
     srand(time(0));
-    int num = 0;
+    int num = 1000000;
     uint64_t tid = 0;
     uint64_t id = 0;
     uint64_t sid = 0;

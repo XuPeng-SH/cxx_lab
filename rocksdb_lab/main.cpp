@@ -4,6 +4,7 @@
 #include <rocksdb/status.h>
 #include <map>
 #include <gflags/gflags.h>
+#include <chrono>
 #include "db_op.h"
 #include "cf.h"
 #include "rocksdb_impl.h"
@@ -65,6 +66,33 @@ int main(int argc, char** argv) {
     for (auto& v : vec) {
         thisdb->CreateTable(v, *schema);
     }
+
+    auto start = chrono::high_resolution_clock::now();
+    db::demo::read_all(skvdb, nullptr, false);
+    auto end = chrono::high_resolution_clock::now();
+    cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+
+    rocksdb::ReadOptions rdopts;
+    std::string upper(db::DBTableUidIdMappingPrefix);
+    std::string lower(db::DBTableUidIdMappingPrefix);
+    uint64_t tid = 0;
+    uint64_t l_uid = 612856698-1;
+    uint64_t u_uid = 1392120040 + 1;
+    upper.append((char*)&tid, sizeof(tid));
+    upper.append((char*)&u_uid, sizeof(u_uid));
+    lower.append((char*)&tid, sizeof(tid));
+    lower.append((char*)&l_uid, sizeof(l_uid));
+
+    Slice l(lower);
+    Slice u(upper);
+
+    rdopts.iterate_lower_bound = &l;
+    rdopts.iterate_upper_bound = &u;
+    std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl;
+    start = chrono::high_resolution_clock::now();
+    db::demo::read_all(skvdb, &rdopts, false);
+    end = chrono::high_resolution_clock::now();
+    cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
 
     return 0;
     /* column_family_demo(); */
