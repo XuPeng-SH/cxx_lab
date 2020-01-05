@@ -3,6 +3,9 @@
 #include <string>
 #include <sstream>
 #include <chrono>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 namespace db {
 
@@ -27,6 +30,31 @@ const std::shared_ptr<rocksdb::WriteOptions>& DefaultDBWriteOptions() {
 
 namespace demo {
 
+// [Key]ID:$tid$uid [Val]$sid$id
+void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db) {
+    srand(time(0));
+    int num = 0;
+    uint64_t tid = 0;
+    uint64_t id = 0;
+    uint64_t sid = 0;
+    for(int i=0; i<num; i++) {
+        uint64_t uid = rand();
+        std::string key(DBTableUidIdMappingPrefix);
+        key.append((char*)&tid, sizeof(uint64_t));
+        key.append((char*)&uid, sizeof(uint64_t));
+
+        std::string val;
+        val.append((char*)&sid, sizeof(uint64_t));
+        val.append((char*)&id, sizeof(uint64_t));
+        auto s = db->Put(*DefaultDBWriteOptions(), key, val);
+        if (!s.ok()) {
+            std::cout << s.ToString() << std::endl;
+            assert(false);
+        }
+        ++id;
+    }
+}
+
 void read_all(std::shared_ptr<rocksdb::DB> db, bool do_print) {
     size_t count = 0;
     rocksdb::Iterator* it = db->NewIterator(rocksdb::ReadOptions());
@@ -35,6 +63,7 @@ void read_all(std::shared_ptr<rocksdb::DB> db, bool do_print) {
         count++;
         if (!do_print) continue;
         auto key = it->key();
+        auto val = it->value();
         if (key.starts_with(DBTablePrefix)) {
             std::cout << "[" << key.ToString() << ", " << *(uint64_t*)(it->value().data()) << "]" << std::endl;
         } else if (key.starts_with(DBTableCurrentSegmentPrefix)) {
@@ -47,6 +76,15 @@ void read_all(std::shared_ptr<rocksdb::DB> db, bool do_print) {
             auto sid_addr = (uint64_t*)(key.data() + DBTableSegmentNextIDPrefix.size() + 1 + sizeof(uint64_t));
             std::cout << "[" << DBTableSegmentNextIDPrefix << *tid_addr << ":" << *sid_addr;
             std::cout << ", " << *(uint64_t*)(it->value().data()) << "]" << std::endl;
+        } else if (key.starts_with(DBTableUidIdMappingPrefix)) {
+            auto tid_addr = (uint64_t*)(key.data() + DBTableUidIdMappingPrefix.size());
+            auto uid_addr = (uint64_t*)(key.data() + DBTableUidIdMappingPrefix.size() + sizeof(uint64_t));
+
+            auto sid_addr = (uint64_t*)(val.data());
+            auto id_addr = (uint64_t*)(val.data() + sizeof(uint64_t));
+
+            std::cout << "[" << DBTableUidIdMappingPrefix << *tid_addr << ":" << *uid_addr;
+            std::cout << ", " << *sid_addr << ":" << *id_addr << "]" << std::endl;
         }
     }
     std::cout << "Found " << count << " KVs" << std::endl;

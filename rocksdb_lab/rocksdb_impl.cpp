@@ -53,8 +53,8 @@ void RocksDBImpl::Init() {
 
     /* std::cout << "Latest TID=" << *((uint64_t*)db_seq_id.data()) << std::endl; */
     db_cache_->SetTid(*((uint64_t*)db_seq_id.data()));
-    /* std::cout << "Start read_all ... " << std::endl; */
-    /* demo::read_all(db_, false); */
+    std::cout << "Start read_all ... " << std::endl;
+    demo::read_all(db_, true);
 }
 
 rocksdb::Status RocksDBImpl::StoreSchema(const DocSchema& schema) {

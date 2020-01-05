@@ -32,6 +32,9 @@ int main(int argc, char** argv) {
     rocksdb::DB *kvdb;
     rocksdb::DB::Open(*options, FLAGS_path, &kvdb);
     std::shared_ptr<rocksdb::DB> skvdb(kvdb);
+
+    db::demo::mock_uid_id_mapping(skvdb);
+
     auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
     auto thisdb = std::make_shared<db::MyDB>(impl);
     auto schema = std::make_shared<DocSchema>();
