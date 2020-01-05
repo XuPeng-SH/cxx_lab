@@ -54,6 +54,7 @@ const std::shared_ptr<rocksdb::Options>& DefaultOpenOptions();
 const std::shared_ptr<rocksdb::WriteOptions>& DefaultDBWriteOptions();
 
 namespace demo {
+    void check_str_to_uint64();
     void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bool do_print = true);
     void write_batch_demo(std::shared_ptr<rocksdb::DB>);
     void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db);

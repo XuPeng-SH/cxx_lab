@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     }
 
     auto start = chrono::high_resolution_clock::now();
-    db::demo::read_all(skvdb, nullptr, false);
+    /* db::demo::read_all(skvdb, nullptr, false); */
     auto end = chrono::high_resolution_clock::now();
     cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
 
@@ -93,6 +93,11 @@ int main(int argc, char** argv) {
     db::demo::read_all(skvdb, &rdopts, false);
     end = chrono::high_resolution_clock::now();
     cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+
+    start = chrono::high_resolution_clock::now();
+    db::demo::check_str_to_uint64();
+    end = chrono::high_resolution_clock::now();
+    cout << "check_str_to_uint64 takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
 
     return 0;
     /* column_family_demo(); */

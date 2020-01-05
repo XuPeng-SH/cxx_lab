@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <cstdlib>
+
+using namespace std;
 
 namespace db {
 
@@ -29,6 +32,24 @@ const std::shared_ptr<rocksdb::WriteOptions>& DefaultDBWriteOptions() {
 }
 
 namespace demo {
+
+void check_str_to_uint64() {
+    std::vector<std::string> strs;
+    uint64_t num = 105000000;
+    for(uint64_t i=100000000; i<num; ++i) {
+        strs.push_back(std::to_string(i));
+    }
+    char* endp;
+    std::vector<uint64_t> ints;
+
+    auto start = chrono::high_resolution_clock::now();
+    for (auto& str: strs) {
+        ints.push_back(strtoull(str.c_str(), &endp, 10));
+    }
+    auto end = chrono::high_resolution_clock::now();
+    cout << "to_uint64 takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+    std::cout << __func__ << " size=" << ints.size() << std::endl;
+}
 
 // [Key]ID:$tid$uid [Val]$sid$id
 void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db) {
