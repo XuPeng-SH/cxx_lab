@@ -2,6 +2,7 @@
 
 #include <rocksdb/db.h>
 #include <memory>
+#include <iostream>
 
 namespace db {
 
@@ -53,7 +54,21 @@ static const std::string DBTableFieldValuePrefix = "TF:";
 const std::shared_ptr<rocksdb::Options>& DefaultOpenOptions();
 const std::shared_ptr<rocksdb::WriteOptions>& DefaultDBWriteOptions();
 
+/* class MyComparator2 : public rocksdb::BytewiseComparator() {}; */
+
+class MyComparator : public rocksdb::Comparator {
+public:
+    const char* Name() const override { return "db.MyComparator"; }
+    int Compare(const rocksdb::Slice& a, const rocksdb::Slice& b) const override;
+
+    void FindShortSuccessor(std::string* key) const override {std::cout << "YYYYY" << std::endl;}
+    void FindShortestSeparator(std::string* start, const rocksdb::Slice& limit) const override {
+        std::cout << "ZZZZ" << std::endl;
+    }
+};
+
 namespace demo {
+    void just_check_cmp(std::shared_ptr<rocksdb::DB> db);
     void check_str_to_uint64();
     void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bool do_print = true);
     void write_batch_demo(std::shared_ptr<rocksdb::DB>);

@@ -9,6 +9,7 @@
 #include "cf.h"
 #include "rocksdb_impl.h"
 #include "rocksdb_util.h"
+#include <rocksdb/comparator.h>
 #include "doc.h"
 
 using namespace std;
@@ -29,12 +30,18 @@ DEFINE_string(tname, "default", "table name");
 
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
+    /* const rocksdb::Comparator* cmp = rocksdb::BytewiseComparator(); */
+    /* const db::Comparator* cmp = new db::MyComparator(); */
+    db::MyComparator cmp;
     auto options = db::DefaultOpenOptions();
+    options->comparator = &cmp;
     rocksdb::DB *kvdb;
     rocksdb::DB::Open(*options, FLAGS_path, &kvdb);
     std::shared_ptr<rocksdb::DB> skvdb(kvdb);
+    /* db::demo::just_check_cmp(skvdb); */
+    /* return 0; */
 
-    db::demo::mock_uid_id_mapping(skvdb);
+    /* db::demo::mock_uid_id_mapping(skvdb); */
 
     auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
     auto thisdb = std::make_shared<db::MyDB>(impl);
@@ -68,7 +75,7 @@ int main(int argc, char** argv) {
     }
 
     auto start = chrono::high_resolution_clock::now();
-    /* db::demo::read_all(skvdb, nullptr, false); */
+    db::demo::read_all(skvdb, nullptr, true);
     auto end = chrono::high_resolution_clock::now();
     cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
 
@@ -76,8 +83,10 @@ int main(int argc, char** argv) {
     std::string upper(db::DBTableUidIdMappingPrefix);
     std::string lower(db::DBTableUidIdMappingPrefix);
     uint64_t tid = 0;
-    uint64_t l_uid = 612856698-1;
-    uint64_t u_uid = 1392120040 + 1;
+    /* uint64_t l_uid = 612856698-1; */
+    /* uint64_t u_uid = 1392120040 + 1; */
+    uint64_t l_uid = 612856698-0;
+    uint64_t u_uid = 612856698 + 1;
     upper.append((char*)&tid, sizeof(tid));
     upper.append((char*)&u_uid, sizeof(u_uid));
     lower.append((char*)&tid, sizeof(tid));
@@ -88,16 +97,17 @@ int main(int argc, char** argv) {
 
     rdopts.iterate_lower_bound = &l;
     rdopts.iterate_upper_bound = &u;
+    rdopts.readahead_size = 1024*512;
     std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl;
     start = chrono::high_resolution_clock::now();
-    db::demo::read_all(skvdb, &rdopts, false);
+    db::demo::read_all(skvdb, &rdopts, true);
     end = chrono::high_resolution_clock::now();
     cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
 
-    start = chrono::high_resolution_clock::now();
-    db::demo::check_str_to_uint64();
-    end = chrono::high_resolution_clock::now();
-    cout << "check_str_to_uint64 takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+    /* start = chrono::high_resolution_clock::now(); */
+    /* db::demo::check_str_to_uint64(); */
+    /* end = chrono::high_resolution_clock::now(); */
+    /* cout << "check_str_to_uint64 takes " << chrono::duration<double, std::milli>(end-start).count() << endl; */
 
     return 0;
     /* column_family_demo(); */

@@ -31,7 +31,38 @@ const std::shared_ptr<rocksdb::WriteOptions>& DefaultDBWriteOptions() {
     return options;
 }
 
+int MyComparator::Compare(const rocksdb::Slice& a, const rocksdb::Slice& b) const {
+    /* std::cout << "a=" << a.ToString() << std::endl; */
+    /* std::cout << "b=" << b.ToString() << std::endl; */
+    return a.compare(b);
+    /* const size_t min_len = (a.size() < b.size()) ? a.size() : b.size(); */
+    /* auto a_sep_pos = a.find(":"); */
+    /* auto b_sep_pos = b.find(":"); */
+    /* if (a_sep_pos == std::string::npos) { */
+    /*     a_sep_pos = a.size(); */
+    /* } */
+    /* if (b_sep_pos == std::string::npos) { */
+    /*     b_sep_pos = b.size(); */
+    /* } */
+    /* Slice a_1(a.data(), a_sep_pos); */
+    /* Slice b_1(b.data(), b_sep_pos); */
+    /* int t1 = a_1.compare(b_1); */
+    /* if (t1 != 0) { */
+    /*     return t1; */
+    /* } */
+    /* if (Slice(DBTableUidIdMappingPrefix.data(), DBTableUidIdMappingPrefix.size()) == a_1) { */
+
+    /* } */
+}
+
 namespace demo {
+
+void just_check_cmp(std::shared_ptr<rocksdb::DB> db) {
+    std::string db_seq_id;
+    rocksdb::ReadOptions opt;
+    auto s = db->Get(opt, "1", &db_seq_id);
+    s = db->Put(*DefaultDBWriteOptions(), "1", "1");
+}
 
 void check_str_to_uint64() {
     std::vector<std::string> strs;
@@ -54,7 +85,7 @@ void check_str_to_uint64() {
 // [Key]ID:$tid$uid [Val]$sid$id
 void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db) {
     srand(time(0));
-    int num = 1000000;
+    int num = 0;
     uint64_t tid = 0;
     uint64_t id = 0;
     uint64_t sid = 0;
@@ -67,6 +98,7 @@ void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db) {
         std::string val;
         val.append((char*)&sid, sizeof(uint64_t));
         val.append((char*)&id, sizeof(uint64_t));
+
         auto s = db->Put(*DefaultDBWriteOptions(), key, val);
         if (!s.ok()) {
             std::cout << s.ToString() << std::endl;
