@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(rocksdbLab)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 aux_source_directory(./ source_files)
 

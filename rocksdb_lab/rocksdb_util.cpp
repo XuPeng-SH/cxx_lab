@@ -113,6 +113,7 @@ void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bo
     if (options == nullptr) {
         options = &roptions;
     }
+    /* options->readahead_size = 1024 * 1024 * 10; */
     size_t count = 0;
     rocksdb::Iterator* it = db->NewIterator(*options);
     std::map<std::string, std::string> dict;

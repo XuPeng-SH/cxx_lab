@@ -107,9 +107,9 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
         }
 
         db_cache_->UpdateSegMap(tid, 0);
-        /* std::cout << "tid=" << tid << std::endl; */
         auto s = db_cache_->GetSegId(tid, sid);
         if (!s.ok()) {
+            std::cout << "tid=" << tid  << " sid=" << sid << std::endl;
             std::cerr << s.ToString() << std::endl;
             assert(false);
         }

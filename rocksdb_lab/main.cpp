@@ -5,11 +5,13 @@
 #include <map>
 #include <gflags/gflags.h>
 #include <chrono>
+#include <thread>
 #include "db_op.h"
 #include "cf.h"
 #include "rocksdb_impl.h"
 #include "rocksdb_util.h"
 #include <rocksdb/comparator.h>
+#include <rocksdb/table.h>
 #include "doc.h"
 
 using namespace std;
@@ -30,16 +32,43 @@ DEFINE_string(tname, "default", "table name");
 
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    /* const rocksdb::Comparator* cmp = rocksdb::BytewiseComparator(); */
-    /* const db::Comparator* cmp = new db::MyComparator(); */
-    db::MyComparator cmp;
+
     auto options = db::DefaultOpenOptions();
+
+    // Setup threadpool for compaction and flush
+    auto env = rocksdb::Env::Default();
+    env->SetBackgroundThreads(2, rocksdb::Env::LOW);
+    env->SetBackgroundThreads(1, rocksdb::Env::HIGH);
+    options->env = env;
+    options->max_background_compactions = 2;
+    options->max_background_flushes = 1;
+
+    // Set Comparator
+    /* db::MyComparator cmp; */
     /* options->comparator = &cmp; */
+
+    // Set Block Cache
+    size_t capacity = (size_t)5 * 1024 * 1024 * 1024;
+    std::shared_ptr<Cache> cache = rocksdb::NewLRUCache(capacity);
+    rocksdb::BlockBasedTableOptions table_options;
+    table_options.block_cache = cache;
+    table_options.block_size = 32 * 1024;
+    options->table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
+
+    // Set write buffer size
+    options->write_buffer_size = 256 << 10;
+
     rocksdb::DB *kvdb;
     rocksdb::DB::Open(*options, FLAGS_path, &kvdb);
     std::shared_ptr<rocksdb::DB> skvdb(kvdb);
-    /* db::demo::just_check_cmp(skvdb); */
-    /* return 0; */
+
+    auto TEST_STR_TO_UINT64 = [&]() {
+        auto start = chrono::high_resolution_clock::now();
+        db::demo::check_str_to_uint64();
+        auto end = chrono::high_resolution_clock::now();
+        cout << "check_str_to_uint64 takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+        return 0;
+    };
 
     /* db::demo::mock_uid_id_mapping(skvdb); */
 
@@ -69,45 +98,82 @@ int main(int argc, char** argv) {
         vec.push_back(ss.str());
         ss.str("");
     }
-    std::cout << "Starting ..." << std::endl;
-    for (auto& v : vec) {
-        thisdb->CreateTable(v, *schema);
-    }
 
-    auto start = chrono::high_resolution_clock::now();
-    db::demo::read_all(skvdb, nullptr, false);
-    auto end = chrono::high_resolution_clock::now();
-    cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+    auto mt_create_table = [&](int tnum) {
+        std::vector<std::pair<size_t, size_t>> range;
+        size_t step = vec.size()/tnum;
 
-    rocksdb::ReadOptions rdopts;
-    std::string upper(db::DBTableUidIdMappingPrefix);
-    std::string lower(db::DBTableUidIdMappingPrefix);
-    uint64_t tid = 0;
-    /* uint64_t l_uid = 612856698-1; */
-    /* uint64_t u_uid = 1392120040 + 1; */
-    uint64_t l_uid = 612856698-0;
-    uint64_t u_uid = 612856698 + 1;
-    upper.append((char*)&tid, sizeof(tid));
-    upper.append((char*)&u_uid, sizeof(u_uid));
-    lower.append((char*)&tid, sizeof(tid));
-    lower.append((char*)&l_uid, sizeof(l_uid));
+        std::cout << "vec.size()=" << vec.size() << std::endl;
+        std::cout << "step=" << step << std::endl;
+        for (size_t i=0; i<tnum; i++) {
+            auto start = i * step;
+            auto end = (i+1) * step;
+            if (i+1 == tnum) {
+                end = vec.size();
+            }
+            std::cout << "start=" << start << " end=" << end <<std::endl;
+            range.push_back({start, end});
+        }
 
-    Slice l(lower);
-    Slice u(upper);
+        std::cout << "range.size=" << range.size() << std::endl;
+        std::vector<std::thread> tvec;
 
-    rdopts.iterate_lower_bound = &l;
-    rdopts.iterate_upper_bound = &u;
-    rdopts.readahead_size = 1024*512;
-    std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl;
-    start = chrono::high_resolution_clock::now();
-    db::demo::read_all(skvdb, &rdopts, true);
-    end = chrono::high_resolution_clock::now();
-    cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+        auto start = chrono::high_resolution_clock::now();
+        for (auto& itrange : range) {
+            tvec.push_back(std::thread([&](const std::pair<size_t, size_t>& r) {
+                auto start = std::get<0>(r);
+                auto end = std::get<1>(r);
+                for(auto i=start; i<end; ++i) {
+                    /* std::cout << "handling " << i << std::endl; */
+                    thisdb->CreateTable(vec[i], *schema);
+                }
+            }, itrange));
+        }
 
-    /* start = chrono::high_resolution_clock::now(); */
-    /* db::demo::check_str_to_uint64(); */
-    /* end = chrono::high_resolution_clock::now(); */
-    /* cout << "check_str_to_uint64 takes " << chrono::duration<double, std::milli>(end-start).count() << endl; */
+        for (auto& t: tvec) {
+            t.join();
+        }
+        auto end = chrono::high_resolution_clock::now();
+        cout << "tnum=" << tnum << " write takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+    };
+    mt_create_table(8);
+
+
+    auto test_read_all = [&](rocksdb::ReadOptions* opt,  bool do_print) {
+        std::cout << "Starting ..." << std::endl;
+        auto start = chrono::high_resolution_clock::now();
+        db::demo::read_all(skvdb, opt, do_print);
+        auto end = chrono::high_resolution_clock::now();
+        cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+    };
+
+    /* test_read_all(nullptr, false); */
+
+    auto test_read_with_upper_lower = [&](rocksdb::ReadOptions* opt, bool do_print) {
+        rocksdb::ReadOptions rdopts;
+        std::string upper(db::DBTableUidIdMappingPrefix);
+        std::string lower(db::DBTableUidIdMappingPrefix);
+        uint64_t tid = 0;
+        uint64_t l_uid = 612856698-0;
+        uint64_t u_uid = 612856698 + 1;
+        upper.append((char*)&tid, sizeof(tid));
+        upper.append((char*)&u_uid, sizeof(u_uid));
+        lower.append((char*)&tid, sizeof(tid));
+        lower.append((char*)&l_uid, sizeof(l_uid));
+
+        Slice l(lower);
+        Slice u(upper);
+
+        rdopts.iterate_lower_bound = &l;
+        rdopts.iterate_upper_bound = &u;
+        rdopts.readahead_size = 1024*512;
+
+        auto start = chrono::high_resolution_clock::now();
+        db::demo::read_all(skvdb, &rdopts, true);
+        auto end = chrono::high_resolution_clock::now();
+        cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+    };
+
 
     return 0;
     /* column_family_demo(); */

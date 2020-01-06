@@ -61,9 +61,8 @@ public:
     const char* Name() const override { return "db.MyComparator"; }
     int Compare(const rocksdb::Slice& a, const rocksdb::Slice& b) const override;
 
-    void FindShortSuccessor(std::string* key) const override {std::cout << "YYYYY" << std::endl;}
+    void FindShortSuccessor(std::string* key) const override {/*std::cout << "YYYYY" << std::endl;*/}
     void FindShortestSeparator(std::string* start, const rocksdb::Slice& limit) const override {
-        std::cout << "ZZZZ" << std::endl;
     }
 };
 
