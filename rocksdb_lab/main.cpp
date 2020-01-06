@@ -27,6 +27,7 @@ DEFINE_string(prefix, "", "mock data prefix");
 DEFINE_bool(search, false, "search data");
 DEFINE_int32(nq, 100, "n query");
 DEFINE_string(scf, "default", "specify cf name for search");
+DEFINE_bool(rall, false, "read all");
 
 DEFINE_string(tname, "default", "table name");
 
@@ -44,8 +45,8 @@ int main(int argc, char** argv) {
     options->max_background_flushes = 1;
 
     // Set Comparator
-    /* db::MyComparator cmp; */
-    /* options->comparator = &cmp; */
+    db::MyComparator cmp;
+    options->comparator = &cmp;
 
     // Set Block Cache
     size_t capacity = (size_t)5 * 1024 * 1024 * 1024;
@@ -70,7 +71,11 @@ int main(int argc, char** argv) {
         return 0;
     };
 
-    /* db::demo::mock_uid_id_mapping(skvdb); */
+    if (FLAGS_mock){
+        db::demo::mock_uid_id_mapping(skvdb, FLAGS_nb);
+        return 0;
+    }
+
 
     auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
     auto thisdb = std::make_shared<db::MyDB>(impl);
@@ -136,7 +141,7 @@ int main(int argc, char** argv) {
         auto end = chrono::high_resolution_clock::now();
         cout << "tnum=" << tnum << " write takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
-    mt_create_table(8);
+    /* mt_create_table(8); */
 
 
     auto test_read_all = [&](rocksdb::ReadOptions* opt,  bool do_print) {
@@ -147,7 +152,8 @@ int main(int argc, char** argv) {
         cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
 
-    /* test_read_all(nullptr, false); */
+    if (FLAGS_rall)
+        test_read_all(nullptr, false);
 
     auto test_read_with_upper_lower = [&](rocksdb::ReadOptions* opt, bool do_print) {
         rocksdb::ReadOptions rdopts;

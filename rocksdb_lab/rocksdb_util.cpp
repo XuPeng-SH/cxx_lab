@@ -83,9 +83,8 @@ void check_str_to_uint64() {
 }
 
 // [Key]ID:$tid$uid [Val]$sid$id
-void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db) {
+void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db, int num) {
     srand(time(0));
-    int num = 0;
     uint64_t tid = 0;
     uint64_t id = 0;
     uint64_t sid = 0;
