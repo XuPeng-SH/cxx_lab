@@ -144,6 +144,7 @@ void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bo
             std::cout << ", " << *sid_addr << ":" << *id_addr << "]" << std::endl;
         }
     }
+    delete it;
     std::cout << "Found " << count << " KVs" << std::endl;
 }
 

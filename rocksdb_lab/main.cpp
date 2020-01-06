@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     /* const db::Comparator* cmp = new db::MyComparator(); */
     db::MyComparator cmp;
     auto options = db::DefaultOpenOptions();
-    options->comparator = &cmp;
+    /* options->comparator = &cmp; */
     rocksdb::DB *kvdb;
     rocksdb::DB::Open(*options, FLAGS_path, &kvdb);
     std::shared_ptr<rocksdb::DB> skvdb(kvdb);
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     }
 
     auto start = chrono::high_resolution_clock::now();
-    db::demo::read_all(skvdb, nullptr, true);
+    db::demo::read_all(skvdb, nullptr, false);
     auto end = chrono::high_resolution_clock::now();
     cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
 
