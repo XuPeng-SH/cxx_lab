@@ -28,6 +28,7 @@ DEFINE_bool(search, false, "search data");
 DEFINE_int32(nq, 100, "n query");
 DEFINE_string(scf, "default", "specify cf name for search");
 DEFINE_bool(rall, false, "read all");
+DEFINE_bool(print, false, "do print");
 
 DEFINE_string(tname, "default", "table name");
 
@@ -153,15 +154,15 @@ int main(int argc, char** argv) {
     };
 
     if (FLAGS_rall)
-        test_read_all(nullptr, false);
+        test_read_all(nullptr, FLAGS_print);
 
-    auto test_read_with_upper_lower = [&](rocksdb::ReadOptions* opt, bool do_print) {
+    auto test_read_with_upper_lower = [&](bool do_print) {
         rocksdb::ReadOptions rdopts;
         std::string upper(db::DBTableUidIdMappingPrefix);
         std::string lower(db::DBTableUidIdMappingPrefix);
         uint64_t tid = 0;
-        uint64_t l_uid = 612856698-0;
-        uint64_t u_uid = 612856698 + 1;
+        uint64_t l_uid = 697345571;
+        uint64_t u_uid = 813815863 + 1;
         upper.append((char*)&tid, sizeof(tid));
         upper.append((char*)&u_uid, sizeof(u_uid));
         lower.append((char*)&tid, sizeof(tid));
@@ -177,9 +178,10 @@ int main(int argc, char** argv) {
         auto start = chrono::high_resolution_clock::now();
         db::demo::read_all(skvdb, &rdopts, true);
         auto end = chrono::high_resolution_clock::now();
-        cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+        cout << "readpartial takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
 
+    test_read_with_upper_lower(true);
 
     return 0;
     /* column_family_demo(); */

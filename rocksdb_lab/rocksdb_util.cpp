@@ -32,9 +32,12 @@ const std::shared_ptr<rocksdb::WriteOptions>& DefaultDBWriteOptions() {
 }
 
 int MyComparator::Compare(const rocksdb::Slice& a, const rocksdb::Slice& b) const {
-    /* std::cout << "a=" << a.ToString() << std::endl; */
-    /* std::cout << "b=" << b.ToString() << std::endl; */
-    return a.compare(b);
+    rocksdb::Slice a_pre(a.data(), PrefixSize);
+    rocksdb::Slice b_pre(b.data(), PrefixSize);
+    auto ret = a_pre.compare(b_pre);
+    if (ret != 0) {
+        return ret;
+    }
     /* const size_t min_len = (a.size() < b.size()) ? a.size() : b.size(); */
     /* auto a_sep_pos = a.find(":"); */
     /* auto b_sep_pos = b.find(":"); */
@@ -44,9 +47,10 @@ int MyComparator::Compare(const rocksdb::Slice& a, const rocksdb::Slice& b) cons
     /* if (b_sep_pos == std::string::npos) { */
     /*     b_sep_pos = b.size(); */
     /* } */
-    /* Slice a_1(a.data(), a_sep_pos); */
-    /* Slice b_1(b.data(), b_sep_pos); */
+    /* rocksdb::Slice a_1(a.data(), a_sep_pos); */
+    /* rocksdb::Slice b_1(b.data(), b_sep_pos); */
     /* int t1 = a_1.compare(b_1); */
+    return a.compare(b);
     /* if (t1 != 0) { */
     /*     return t1; */
     /* } */
@@ -140,7 +144,7 @@ void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bo
             auto sid_addr = (uint64_t*)(val.data());
             auto id_addr = (uint64_t*)(val.data() + sizeof(uint64_t));
 
-            std::cout << "[" << DBTableUidIdMappingPrefix << *tid_addr << ":" << *uid_addr;
+            std::cout << "[" << DBTableUidIdMappingPrefix << ":" << *tid_addr << ":" << *uid_addr;
             std::cout << ", " << *sid_addr << ":" << *id_addr << "]" << std::endl;
         }
     }
