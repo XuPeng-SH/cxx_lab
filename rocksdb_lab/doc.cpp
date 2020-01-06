@@ -21,6 +21,15 @@ DocSchema::DocSchema(PrimaryKeyT&& pk) {
     AddLongField(std::move(pk));
 }
 
+DocSchema::DocSchema(const DocSchema& other)
+: fields_schema_(other.fields_schema_),
+  long_fields_(other.long_fields_),
+  float_fields_(other.float_fields_),
+  string_fields_(other.string_fields_),
+  fixed_(other.fixed_)
+{
+}
+
 DocSchema::DocSchema(DocSchema&& other)
 : fields_schema_(std::move(other.fields_schema_)),
   long_fields_(std::move(other.long_fields_)),

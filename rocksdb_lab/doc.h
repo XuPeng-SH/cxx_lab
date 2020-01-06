@@ -17,6 +17,7 @@ public:
     DocSchema(PrimaryKeyT&& pk);
 
     DocSchema(DocSchema&& other);
+    DocSchema(const DocSchema& other);
 
     virtual DocSchema& AddLongField(const LongField& field);
     virtual DocSchema& AddFloatField(const FloatField& field);

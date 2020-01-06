@@ -9,4 +9,8 @@ rocksdb::Status MyDB::CreateTable(const std::string& table_name, const DocSchema
     return impl_->CreateTable(table_name, schema);
 }
 
+rocksdb::Status MyDB::AddDoc(const std::string& table_name, const Doc& doc) {
+    return impl_->AddDoc(table_name, doc);
+}
+
 }

@@ -83,19 +83,38 @@ int main(int argc, char** argv) {
     auto schema = std::make_shared<DocSchema>();
 
     StringField uid_field("uid");
-    FloatVectorField vec_field("vec");
+    LongField age_field("age");
 
     uid_field.SetMaxLength(20);
     uid_field.SetMinLength(10);
 
-    vec_field.SetMaxLength(128);
-    vec_field.SetMinLength(128);
-
-    schema->AddStringField(uid_field)
-           .AddFloatVectorField(vec_field)
+    schema->AddLongField(age_field)
+           /* .AddLongField(uid_field) */
            .Build();
+    /* FloatVectorField vec_field("vec"); */
+    /* vec_field.SetMaxLength(128); */
+    /* vec_field.SetMinLength(128); */
+
+    /* schema->AddStringField(uid_field) */
+    /*        .AddFloatVectorField(vec_field) */
+    /*        .Build(); */
 
     std::cout << schema->Dump() << std::endl;
+
+    {
+        std::string table_name = "mockt";
+        thisdb->CreateTable(table_name, *schema);
+        for (auto i=0; i<100; i++) {
+            Doc mydoc(Helper::NewPK(i+10000), schema);
+            mydoc.AddLongFieldValue("age", i)
+                 /* .AddStringFieldValue("uid", std::to_string(1000000+i)) */
+                 .Build();
+
+            /* std::cout << mydoc.Dump() << std::endl; */
+            auto s = thisdb->AddDoc(table_name, mydoc);
+            if (!s.ok()) std::cout << s.ToString() << std::endl;
+        }
+    }
 
     std::vector<std::string> vec;
     std::stringstream ss;
@@ -142,7 +161,7 @@ int main(int argc, char** argv) {
         auto end = chrono::high_resolution_clock::now();
         cout << "tnum=" << tnum << " write takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
-    /* mt_create_table(8); */
+    /* mt_create_table(1); */
 
 
     auto test_read_all = [&](rocksdb::ReadOptions* opt,  bool do_print) {
@@ -161,8 +180,9 @@ int main(int argc, char** argv) {
         std::string upper(db::DBTableUidIdMappingPrefix);
         std::string lower(db::DBTableUidIdMappingPrefix);
         uint64_t tid = 0;
-        uint64_t l_uid = 697345571;
-        uint64_t u_uid = 813815863 + 1;
+        /* uint64_t l_uid = 950079711; */
+        uint64_t l_uid = 265167685;
+        uint64_t u_uid = 1549469410 + 1;
         upper.append((char*)&tid, sizeof(tid));
         upper.append((char*)&u_uid, sizeof(u_uid));
         lower.append((char*)&tid, sizeof(tid));
@@ -181,7 +201,7 @@ int main(int argc, char** argv) {
         cout << "readpartial takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
 
-    test_read_with_upper_lower(true);
+    /* test_read_with_upper_lower(true); */
 
     return 0;
     /* column_family_demo(); */

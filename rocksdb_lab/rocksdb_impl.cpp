@@ -61,6 +61,31 @@ rocksdb::Status RocksDBImpl::StoreSchema(const DocSchema& schema) {
 
 }
 
+rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& doc) {
+    auto schema = db_cache_->GetSchemaByTname(table_name);
+    if (!schema) return rocksdb::Status::NotFound();
+    if (!doc.HasBuilt()) {
+        return rocksdb::Status::InvalidArgument();
+    }
+
+    uint64_t tid;
+    auto s = db_cache_->GetTidByTname(table_name, tid);
+    if (!s.ok()) {
+        std::cout << s.ToString() << std::endl;
+        return s;
+    }
+    uint64_t _id_field_id = 0;
+    uint64_t age_field_id = 1;
+    uint64_t LONG_TYPE = 1;
+
+    std::string id_field_key(DBTableFieldValuePrefix);
+    id_field_key.append((char*)(&_id_field_id), sizeof(uint64_t));
+    id_field_key.append((char*)(&LONG_TYPE), sizeof(uint64_t));
+    id_field_key.append((char*)(&LONG_TYPE), sizeof(uint64_t));
+
+    return  rocksdb::Status::OK();
+}
+
 rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const DocSchema& schema) {
     auto table_key = TableKey(table_name);
     /* cout << "RocksDBImpl::CreateTable: " << table_key << endl; */
@@ -114,7 +139,7 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
             assert(false);
         }
         /* std::cout << "segid=" << sid << std::endl; */
-        db_cache_->SetTid(next_tid);
+        db_cache_->SetTid(next_tid, &table_name, &schema);
         /* demo::read_all(db_); */
 
     } else if (!s.ok()) {
