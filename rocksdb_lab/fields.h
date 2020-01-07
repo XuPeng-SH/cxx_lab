@@ -287,6 +287,7 @@ struct TypeWrapper<std::string> {
 class StringField : public WithMixinTypedField<LengthMixin, std::string> {
 public:
     using BaseT = WithMixinTypedField<LengthMixin, std::string>;
+    using ValueT = std::string;
 
     StringField(const std::string& name) : BaseT::ThisT(name) {}
 

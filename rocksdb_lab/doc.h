@@ -12,6 +12,11 @@ class DocSchema {
 public:
     using PrimaryKeyT = LongField;
     static const char* PrimaryKeyName;
+    static const int LongFieldIdx;
+    static const int StringFieldIdx;
+    static const int FloatFieldIdx;
+    static const int PrimaryKeyIdx;
+    static const int FloatVectorFieldIdx;
 
     DocSchema(const PrimaryKeyT& pk = PrimaryKeyT(PrimaryKeyName));
     DocSchema(PrimaryKeyT&& pk);
@@ -44,6 +49,8 @@ public:
 
     bool HasBuilt() const { return fixed_; }
 
+    uint8_t Size() const { return (uint8_t)fields_schema_.size(); }
+
     const PrimaryKeyT& GetPK() const { return long_fields_[PrimaryKeyIdx]; }
 
     virtual ~DocSchema() {}
@@ -51,11 +58,6 @@ public:
 protected:
     friend class Doc;
     friend class DumpHandler;
-    static const int LongFieldIdx;
-    static const int StringFieldIdx;
-    static const int FloatFieldIdx;
-    static const int PrimaryKeyIdx;
-    static const int FloatVectorFieldIdx;
 
     std::map<std::string, std::pair<int, size_t>> fields_schema_;
     std::vector<LongField> long_fields_;

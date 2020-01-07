@@ -31,6 +31,51 @@ const std::shared_ptr<rocksdb::WriteOptions>& DefaultDBWriteOptions() {
     return options;
 }
 
+void DocSchemaSerializerHandler::PreHandle(const DocSchema& schema) {
+    fields_id_ = 0;
+    /* TODO: Schema need check fields_num, fields_type, and field_name size */
+    // [$fields_num][$field_1_id][$field_1_type][$field_1_size][$field_1_name]
+    //    uint8_t      uint8_t       uint8_t       uint8_t        bytes
+    uint8_t fields_num = (uint8_t)(schema.Size());
+    serialized_ = "";
+    serialized_.append((char*)&fields_num, sizeof(fields_num));
+}
+
+void DocSchemaSerializerHandler::Handle(const DocSchema& schema, const std::string& field_name,
+        int idx, size_t offset) {
+    serialized_.append((char*)&fields_id_, sizeof(fields_id_));
+
+    if (idx == DocSchema::LongFieldIdx) {
+        auto tval = LongField::FieldTypeValue();
+        serialized_.append((char*)&tval, sizeof(tval));
+    } else if (idx == DocSchema::FloatFieldIdx) {
+        auto tval = FloatField::FieldTypeValue();
+        serialized_.append((char*)&tval, sizeof(tval));
+    } else if (idx == DocSchema::StringFieldIdx) {
+        auto tval = StringField::FieldTypeValue();
+        serialized_.append((char*)&tval, sizeof(tval));
+    } else if (idx == DocSchema::FloatVectorFieldIdx) {
+        auto tval = FloatVectorField::FieldTypeValue();
+        serialized_.append((char*)&tval, sizeof(tval));
+    }
+
+    auto size = (uint8_t)field_name.size();
+    serialized_.append((char*)&size, sizeof(size));
+    serialized_.append(field_name.data(), size);
+
+    ++fields_id_;
+}
+
+void DocSchemaSerializerHandler::PostHandle(const DocSchema& schema) {
+}
+
+const std::string& DocSchemaSerializerHandler::ToString() const {
+    return serialized_;
+}
+std::string&& DocSchemaSerializerHandler::ToString() {
+    return std::move(serialized_);
+}
+
 int MyComparator::Compare(const rocksdb::Slice& a, const rocksdb::Slice& b) const {
     // TODO: Test Performance Prefix of type int
     // 1500000 Scan Takes 240 ms

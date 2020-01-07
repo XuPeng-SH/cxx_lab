@@ -3,6 +3,7 @@
 #include <rocksdb/db.h>
 #include <memory>
 #include <iostream>
+#include "doc.h"
 
 namespace db {
 
@@ -56,7 +57,51 @@ static const std::string DBTableFieldValuePrefix = "TFP";
 const std::shared_ptr<rocksdb::Options>& DefaultOpenOptions();
 const std::shared_ptr<rocksdb::WriteOptions>& DefaultDBWriteOptions();
 
-/* class MyComparator2 : public rocksdb::BytewiseComparator() {}; */
+class DocSchemaSerializerHandler : public DocSchemaHandler {
+public:
+    void PreHandle(const DocSchema& schema) override;
+    void Handle(const DocSchema& schema, const std::string& field_name,
+        int idx, size_t offset) override;
+    void PostHandle(const DocSchema& schema) override;
+    const std::string& ToString() const;
+    std::string&& ToString();
+
+protected:
+    uint8_t fields_id_;
+    std::string serialized_;
+};
+
+class Serializer {
+public:
+    /* using ValueT = typename FieldT::ValueT; */
+
+    template <typename FieldT>
+    static rocksdb::Status SerializeFieldMeta(const FieldT& v, std::string& data) {
+        uint8_t field_type_value = v.FieldTypeValue();
+        /* std::cout << __func__ << " type=" << (int)field_type_value << std::endl; */
+        uint8_t field_name_size = (uint8_t)v.Name().size();
+        // [$field_type_value][$field_name_size][$field_name]
+        // |------uint8_t-----|----uint8_t-----|---n bytes--|
+        data.append((char*)&field_type_value, sizeof(field_type_value));
+        data.append((char*)&field_name_size, sizeof(field_name_size));
+        data.append((char*)v.Name().data(), field_name_size);
+        return rocksdb::Status::OK();
+    }
+
+    static rocksdb::Status DeserializeFieldMeta(const rocksdb::Slice& data, uint8_t& type, std::string& name) {
+        type = *data.data();
+        uint8_t size = *(data.data() + 1);
+        name.assign(data.data()+2, size);
+        /* std::cout << __func__ << " name=" << name << " type=" << (int)type << std::endl; */
+        return rocksdb::Status::OK();
+    }
+
+    static rocksdb::Status SerializeDocSchema(const DocSchema& schema, std::string& data) {
+        DocSchemaSerializerHandler handler;
+        schema.Iterate(&handler);
+        data = std::move(handler.ToString());
+    }
+};
 
 class MyComparator : public rocksdb::Comparator {
 public:
