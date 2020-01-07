@@ -81,6 +81,7 @@ int main(int argc, char** argv) {
     auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
     auto thisdb = std::make_shared<db::MyDB>(impl);
     auto schema = std::make_shared<DocSchema>();
+    schema->AddLongField(LongField("_id"));
 
     StringField uid_field("uid");
     LongField age_field("age");
@@ -88,33 +89,43 @@ int main(int argc, char** argv) {
     uid_field.SetMaxLength(20);
     uid_field.SetMinLength(10);
 
-    schema->AddLongField(age_field)
-           /* .AddLongField(uid_field) */
-           .Build();
-    /* FloatVectorField vec_field("vec"); */
-    /* vec_field.SetMaxLength(128); */
-    /* vec_field.SetMinLength(128); */
+    auto CHECK_SERIALIZER = [&]()
+    {
+        std::string meta;
+        db::Serializer::SerializeFieldMeta(uid_field, meta);
+        uint8_t type;
+        std::string fname;
+        db::Serializer::DeserializeFieldMeta(meta, type, fname);
+        std::string doc_serialized;
+        schema->AddLongField(age_field)
+               .AddStringField(uid_field)
+               .Build();
+        db::Serializer::SerializeDocSchema(*schema, doc_serialized);
+        DocSchema dschema;
+        db::Serializer::DeserializeDocSchema(doc_serialized, dschema);
+        /* return 0; */
+    };
 
-    /* schema->AddStringField(uid_field) */
-    /*        .AddFloatVectorField(vec_field) */
-    /*        .Build(); */
-
-    std::cout << schema->Dump() << std::endl;
-
+    auto ADD_DOC = [&]()
     {
         std::string table_name = "mockt";
         thisdb->CreateTable(table_name, *schema);
-        for (auto i=0; i<100; i++) {
+        for (auto i=0; i<10; i++) {
             Doc mydoc(Helper::NewPK(i+10000), schema);
             mydoc.AddLongFieldValue("age", i)
-                 /* .AddStringFieldValue("uid", std::to_string(1000000+i)) */
+                 .AddStringFieldValue("uid", std::to_string(1000000+i))
                  .Build();
 
             /* std::cout << mydoc.Dump() << std::endl; */
             auto s = thisdb->AddDoc(table_name, mydoc);
-            if (!s.ok()) std::cout << s.ToString() << std::endl;
+            if (!s.ok()) {
+                db::demo::read_all(skvdb, nullptr, true);
+                std::cout << s.ToString() << std::endl;
+                return 0;
+            }
+
         }
-    }
+    };
 
     std::vector<std::string> vec;
     std::stringstream ss;
@@ -124,7 +135,7 @@ int main(int argc, char** argv) {
         ss.str("");
     }
 
-    auto mt_create_table = [&](int tnum) {
+    auto MT_CREATE_TABLE = [&](int tnum) {
         std::vector<std::pair<size_t, size_t>> range;
         size_t step = vec.size()/tnum;
 
@@ -161,10 +172,10 @@ int main(int argc, char** argv) {
         auto end = chrono::high_resolution_clock::now();
         cout << "tnum=" << tnum << " write takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
-    /* mt_create_table(1); */
+    MT_CREATE_TABLE(1);
 
 
-    auto test_read_all = [&](rocksdb::ReadOptions* opt,  bool do_print) {
+    auto READ_ALL = [&](rocksdb::ReadOptions* opt,  bool do_print) {
         std::cout << "Starting ..." << std::endl;
         auto start = chrono::high_resolution_clock::now();
         db::demo::read_all(skvdb, opt, do_print);
@@ -173,9 +184,9 @@ int main(int argc, char** argv) {
     };
 
     if (FLAGS_rall)
-        test_read_all(nullptr, FLAGS_print);
+        READ_ALL(nullptr, FLAGS_print);
 
-    auto test_read_with_upper_lower = [&](bool do_print) {
+    auto READ_WITH_UPPER_LOWER = [&](bool do_print) {
         rocksdb::ReadOptions rdopts;
         std::string upper(db::DBTableUidIdMappingPrefix);
         std::string lower(db::DBTableUidIdMappingPrefix);
