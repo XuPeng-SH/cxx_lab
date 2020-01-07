@@ -18,17 +18,21 @@ public:
     static const int PrimaryKeyIdx;
     static const int FloatVectorFieldIdx;
 
-    DocSchema(const PrimaryKeyT& pk = PrimaryKeyT(PrimaryKeyName));
+    DocSchema() = default;
+    /* DocSchema(const PrimaryKeyT& pk = PrimaryKeyT(PrimaryKeyName)); */
+    DocSchema(const PrimaryKeyT& pk);
     DocSchema(PrimaryKeyT&& pk);
 
     DocSchema(DocSchema&& other);
     DocSchema(const DocSchema& other);
 
+    /* virtual DocSchema& AddPKField(const LongField& pk); */
     virtual DocSchema& AddLongField(const LongField& field);
     virtual DocSchema& AddFloatField(const FloatField& field);
     virtual DocSchema& AddStringField(const StringField& field);
     virtual DocSchema& AddFloatVectorField(const FloatVectorField& field);
 
+    /* virtual DocSchema& AddPKField(LongField&& pk); */
     virtual DocSchema& AddLongField(LongField&& field);
     virtual DocSchema& AddFloatField(FloatField&& field);
     virtual DocSchema& AddStringField(StringField&& field);
@@ -60,6 +64,8 @@ protected:
     friend class DumpHandler;
 
     std::map<std::string, std::pair<int, size_t>> fields_schema_;
+    std::map<std::string, uint8_t> fields_name_id_;
+    std::vector<std::string> fields_id_name_;
     std::vector<LongField> long_fields_;
     std::vector<FloatField> float_fields_;
     std::vector<StringField> string_fields_;
@@ -70,7 +76,7 @@ protected:
 class DocSchemaHandler {
 public:
     virtual void PreHandle(const DocSchema& schema) = 0;
-    virtual void Handle(const DocSchema& schema, const std::string& field_name,
+    virtual void Handle(const DocSchema& schema, const std::string& field_name, uint8_t field_id,
         int idx, size_t offset) = 0;
     virtual void PostHandle(const DocSchema& schema) = 0;
     virtual ~DocSchemaHandler() {}
@@ -79,7 +85,7 @@ public:
 class DumpHandler : public DocSchemaHandler {
 public:
     void PreHandle(const DocSchema& schema) override;
-    void Handle(const DocSchema& schema, const std::string& field_name,
+    void Handle(const DocSchema& schema, const std::string& field_name, uint8_t field_id,
         int idx, size_t offset) override;
     void PostHandle(const DocSchema& schema) override;
     std::string ToString();

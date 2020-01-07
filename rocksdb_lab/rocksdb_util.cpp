@@ -32,7 +32,6 @@ const std::shared_ptr<rocksdb::WriteOptions>& DefaultDBWriteOptions() {
 }
 
 void DocSchemaSerializerHandler::PreHandle(const DocSchema& schema) {
-    fields_id_ = 0;
     /* TODO: Schema need check fields_num, fields_type, and field_name size */
     // [$fields_num][$field_1_id][$field_1_type][$field_1_size][$field_1_name]
     //    uint8_t      uint8_t       uint8_t       uint8_t        bytes
@@ -41,9 +40,10 @@ void DocSchemaSerializerHandler::PreHandle(const DocSchema& schema) {
     serialized_.append((char*)&fields_num, sizeof(fields_num));
 }
 
-void DocSchemaSerializerHandler::Handle(const DocSchema& schema, const std::string& field_name,
+void DocSchemaSerializerHandler::Handle(const DocSchema& schema, const std::string& field_name, uint8_t field_id,
         int idx, size_t offset) {
-    serialized_.append((char*)&fields_id_, sizeof(fields_id_));
+    /* serialized_.append((char*)&fields_id_, sizeof(fields_id_)); */
+    serialized_.append((char*)&field_id, sizeof(field_id));
 
     if (idx == DocSchema::LongFieldIdx) {
         auto tval = LongField::FieldTypeValue();
@@ -62,8 +62,6 @@ void DocSchemaSerializerHandler::Handle(const DocSchema& schema, const std::stri
     auto size = (uint8_t)field_name.size();
     serialized_.append((char*)&size, sizeof(size));
     serialized_.append(field_name.data(), size);
-
-    ++fields_id_;
 }
 
 void DocSchemaSerializerHandler::PostHandle(const DocSchema& schema) {

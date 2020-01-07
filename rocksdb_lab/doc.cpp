@@ -14,10 +14,12 @@ const int DocSchema::FloatVectorFieldIdx = 3;
 DocSchema::DocSchema(const PrimaryKeyT& pk) {
     assert(pk.Name() == PrimaryKeyName);
     AddLongField(pk);
+    /* AddPKField(pk); */
 }
 
 DocSchema::DocSchema(PrimaryKeyT&& pk) {
     assert(pk.Name() == PrimaryKeyName);
+    /* AddPKField(std::move(pk)); */
     AddLongField(std::move(pk));
 }
 
@@ -40,6 +42,14 @@ DocSchema::DocSchema(DocSchema&& other)
 }
 
 bool DocSchema::Build() {
+    if (fixed_) return true;
+    fields_name_id_.clear();
+    fields_id_name_.clear();
+    uint8_t id = 0;
+    for (auto& kv : fields_schema_) {
+        fields_name_id_[kv.first] = id++;
+        fields_id_name_.push_back(kv.first);
+    }
     fixed_ = true;
     return true;
 }
@@ -71,6 +81,30 @@ DocSchema& DocSchema::AddFloatVectorFieldValue(const std::string& name, const st
     field.Build();
     return AddFloatVectorField(std::move(field));
 }
+
+/*
+DocSchema& DocSchema::AddPKField(const LongField& field) {
+    assert(fields_schema_.size() == 0);
+    auto valid = PreAddCheck(field);
+    if (!valid) return *this;
+
+    size_t offset = long_fields_.size();
+    fields_schema_[field.Name()] = {LongFieldIdx, offset};
+    long_fields_.push_back(field);
+    return *this;
+}
+
+DocSchema& DocSchema::AddPKField(LongField&& field) {
+    assert(fields_schema_.size() == 0);
+    auto valid = PreAddCheck(field);
+    if (!valid) return *this;
+
+    size_t offset = long_fields_.size();
+    fields_schema_[field.Name()] = {LongFieldIdx, offset};
+    long_fields_.push_back(std::move(field));
+    return *this;
+}
+*/
 
 DocSchema& DocSchema::AddLongField(LongField&& field) {
     auto valid = PreAddCheck(field);
@@ -168,12 +202,15 @@ DocSchema& DocSchema::AddFloatVectorField(const FloatVectorField& field) {
 }
 
 void DocSchema::Iterate(DocSchemaHandler* handler) const {
+    if (!HasBuilt()) return;
     handler->PreHandle(*this);
     for (auto& kv : fields_schema_) {
-        auto& field_name = kv.first;
+        const auto field_name = kv.first;
         auto& idx = std::get<0>(kv.second);
         auto& offset = std::get<1>(kv.second);
-        handler->Handle(*this, field_name, idx, offset);
+        const auto& field_id = fields_name_id_.find(field_name);
+        /* std::cout << __func__ << ": field_id=" << (int)(field_id->second) << " field_name=" << field_name << std::endl; */
+        handler->Handle(*this, field_name, field_id->second, idx, offset);
     }
     handler->PostHandle(*this);
 }
@@ -193,7 +230,7 @@ void DumpHandler::PreHandle(const DocSchema& schema) {
     ss_ << "DocSchema: " << (schema.HasBuilt()?"[Built]":"[BUILDING]")  << "\n";
 }
 
-void DumpHandler::Handle(const DocSchema& schema, const std::string& field_name,
+void DumpHandler::Handle(const DocSchema& schema, const std::string& field_name, uint8_t field_id,
         int idx, size_t offset) {
     ss_ << field_name << " ";
     if (idx == DocSchema::LongFieldIdx) {
