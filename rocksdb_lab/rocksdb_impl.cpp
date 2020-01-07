@@ -51,19 +51,65 @@ void RocksDBImpl::Init() {
         assert(false);
     }
 
-    /* std::cout << "Latest TID=" << *((uint64_t*)db_seq_id.data()) << std::endl; */
     db_cache_->SetTid(*((uint64_t*)db_seq_id.data()));
+
+    rocksdb::ReadOptions options;
+    {
+        std::string lower(db::DBTablePrefix);
+        rocksdb::Slice l(lower);
+        options.iterate_lower_bound = &l;
+        rocksdb::Iterator* it = db_->NewIterator(options);
+        for (it->SeekToFirst(); it->Valid(); it->Next()) {
+            auto key = it->key();
+            if (!key.starts_with(DBTablePrefix)) {
+                break;
+            }
+            auto val = it->value();
+            std::string tk = std::string(key.data()+DBTablePrefix.size(), key.size()-DBTablePrefix.size());
+            db_cache_->UpdateTableMapping(*(uint64_t*)(val.data()), tk);
+            std::cout << "Found k=" << tk << " tid=" << *(uint64_t*)(val.data()) << " " << __func__ << ":" << __LINE__ << std::endl;
+        }
+        delete it;
+    }
+
+    std::string lower(db::DBTableMappingPrefix);
+    std::string upper(db::DBTableMappingPrefix);
+    uint64_t start = 0;
+    lower.append((char*)&start, sizeof(start));
+    upper += db_seq_id;
+    rocksdb::Slice l(lower);
+    rocksdb::Slice u(upper);
+    options.iterate_lower_bound = &l;
+    options.iterate_upper_bound = &u;
+
+    rocksdb::Iterator* it = db_->NewIterator(options);
+    for (it->SeekToFirst(); it->Valid(); it->Next()) {
+        auto key = it->key();
+        auto val = it->value();
+        auto tid_addr = (uint64_t*)(key.data() + DBTableMappingPrefix.size());
+
+        DocSchema schema;
+        auto s = Serializer::DeserializeDocSchema(val, schema);
+        if (!s.ok()) {
+            std::cout << s.ToString() << std::endl;
+        }
+        db_cache_->UpdateTableMapping(*((uint64_t*)tid_addr), schema);
+        /* std::cout << "[[[[[" << DBTableMappingPrefix << ":" << *tid_addr; */
+        /* std::cout << ", " << schema.Dump() << "]]]]]" << std::endl; */
+    }
+
+    delete it;
     /* std::cout << "Start read_all ... " << std::endl; */
     /* demo::read_all(db_, nullptr, true); */
 }
 
-rocksdb::Status RocksDBImpl::StoreSchema(const DocSchema& schema) {
-
-}
 
 rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& doc) {
     auto schema = db_cache_->GetSchemaByTname(table_name);
-    if (!schema) return rocksdb::Status::NotFound();
+    if (!schema) {
+        std::cout << "NotFound in Cache: table_name=" << table_name << " " << __func__ << ":" << __LINE__ << std::endl;
+        return rocksdb::Status::NotFound();
+    }
     if (!doc.HasBuilt()) {
         return rocksdb::Status::InvalidArgument();
     }
@@ -71,7 +117,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
     uint64_t tid;
     auto s = db_cache_->GetTidByTname(table_name, tid);
     if (!s.ok()) {
-        std::cout << s.ToString() << std::endl;
+        std::cout << s.ToString() << __func__ << ":" << __LINE__ << std::endl;
         return s;
     }
     uint64_t _id_field_id = 0;
@@ -109,7 +155,7 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
 
         std::string t_v;
         t_v.append((char*)&tid, sizeof(tid));
-        /* std::cout << "Putting " << tid << " to " << table_key << std::endl; */
+        std::cout << "Putting " << tid << " to " << table_key << std::endl;
         wb.Put(table_key, t_v);
 
         std::string ts_k(DBTableCurrentSegmentPrefix);
@@ -124,6 +170,16 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
         std::string tss_v;
         tss_v.append((char*)&id, sizeof(id));
         wb.Put(tss_k, tss_v);
+
+        std::string schema_serialized;
+        s = Serializer::SerializeDocSchema(schema, schema_serialized);
+        if (!s.ok()) {
+            std::cerr << s.ToString() << std::endl;
+            assert(false);
+        }
+        std::string tm_k(DBTableMappingPrefix);
+        tm_k.append((char*)&tid, sizeof(tid));
+        wb.Put(tm_k, schema_serialized);
 
         s = db_->Write(*DefaultDBWriteOptions(), &wb);
         if (!s.ok()) {

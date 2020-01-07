@@ -191,6 +191,16 @@ void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bo
 
             std::cout << "[" << DBTableUidIdMappingPrefix << ":" << *tid_addr << ":" << *uid_addr;
             std::cout << ", " << *sid_addr << ":" << *id_addr << "]" << std::endl;
+        } else if (key.starts_with(DBTableMappingPrefix)) {
+            auto tid_addr = (uint64_t*)(key.data() + DBTableMappingPrefix.size());
+
+            DocSchema schema;
+            auto s = Serializer::DeserializeDocSchema(val, schema);
+            if (!s.ok()) {
+                std::cout << s.ToString() << std::endl;
+            }
+            /* std::cout << "[" << DBTableMappingPrefix << ":" << *tid_addr; */
+            /* std::cout << ", " << schema.Dump() << "]" << std::endl; */
         }
     }
     delete it;

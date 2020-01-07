@@ -24,10 +24,22 @@ public:
         std::unique_lock<std::shared_timed_mutex> lock(tidmtx_);
         if (tname != nullptr && schema != nullptr) {
             tnamenamp_[*tname] = tid_;
+            tidnamemap_[tid_] = *tname;
             tschemaamp_[*tname] = std::make_shared<DocSchema>(*schema);
         }
         tid_ = tid;
     };
+
+    void UpdateTableMapping(uint64_t tid, const std::string& tname) {
+        std::unique_lock<std::shared_timed_mutex> lock(tidmtx_);
+        tnamenamp_[tname] = tid;
+        tidnamemap_[tid] = tname;
+    }
+
+    void UpdateTableMapping(uint64_t tid, const DocSchema& schema) {
+        std::unique_lock<std::shared_timed_mutex> lock(tidmtx_);
+        tschemaamp_[tidnamemap_[tid]] = std::make_shared<DocSchema>(schema);
+    }
 
     void UpdateSegMap(uint64_t tid, uint64_t sid) {
         std::unique_lock<std::shared_timed_mutex> lock(sidmtx_);
@@ -70,12 +82,16 @@ public:
         return rocksdb::Status::OK();
     }
 
+    void Dump() const {
+    }
+
 private:
     mutable std::shared_timed_mutex tidmtx_;
     mutable std::shared_timed_mutex sidmtx_;
     std::atomic<uint64_t> tid_;
     std::map<uint64_t, uint64_t> segmap_;
     std::map<std::string, uint64_t> tnamenamp_;
+    std::map<uint64_t, std::string> tidnamemap_;
     std::map<std::string, std::shared_ptr<DocSchema>> tschemaamp_;
 };
 
@@ -90,7 +106,7 @@ public:
 protected:
     void Init();
 
-    rocksdb::Status StoreSchema(const DocSchema& schema);
+    /* rocksdb::Status StoreSchema(const DocSchema& schema); */
 
     std::shared_ptr<rocksdb::DB> db_;
     std::shared_ptr<DBCache> db_cache_;

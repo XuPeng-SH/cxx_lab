@@ -57,6 +57,15 @@ public:
 
     const PrimaryKeyT& GetPK() const { return long_fields_[PrimaryKeyIdx]; }
 
+    bool GetFieldId(const std::string& field_name, uint8_t& field_id) const {
+        const auto& it = fields_name_id_.find(field_name);
+        if (it == fields_name_id_.end()) {
+            return false;
+        }
+        field_id = it->second;
+        return true;
+    }
+
     virtual ~DocSchema() {}
 
 protected:

@@ -99,6 +99,7 @@ public:
         DocSchemaSerializerHandler handler;
         schema.Iterate(&handler);
         data = std::move(handler.ToString());
+        return rocksdb::Status::OK();
     }
 
     static rocksdb::Status DeserializeDocSchema(const rocksdb::Slice& data, DocSchema& schema) {
