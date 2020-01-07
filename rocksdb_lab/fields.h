@@ -63,6 +63,10 @@ public:
         return TypeInfoT::name;
     }
 
+    static const uint8_t FieldTypeValue() {
+        return TypeInfoT::value;
+    }
+
     virtual bool Validate() const {return true;};
     virtual ThisT& Build() {
         if (!HasValue()) {
@@ -263,18 +267,21 @@ public:
 template <>
 struct TypeWrapper<long> {
     static constexpr const char* name = "LongField";
+    static constexpr const uint8_t value = 1;
 };
 using LongField = NumericField<long>;
 
 template <>
 struct TypeWrapper<float> {
     static constexpr const char* name = "FloatField";
+    static constexpr const uint8_t value = 2;
 };
 using FloatField = NumericField<float>;
 
 template <>
 struct TypeWrapper<std::string> {
     static constexpr const char* name = "StringField";
+    static constexpr const uint8_t value = 3;
 };
 
 class StringField : public WithMixinTypedField<LengthMixin, std::string> {
@@ -306,11 +313,13 @@ public:
 template <>
 struct TypeWrapper<std::vector<float>> {
     static constexpr const char* name = "FloatVectorField";
+    static constexpr const uint8_t value = 4;
 };
 using FloatVectorField = VectorField<float>;
 
 template <>
 struct TypeWrapper<bool> {
     static constexpr const char* name = "BooleanField";
+    static constexpr const uint8_t value = 5;
 };
 using BooleanField = TypedField<bool>;

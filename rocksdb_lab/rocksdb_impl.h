@@ -67,6 +67,7 @@ public:
             return rocksdb::Status::NotFound();
         }
         tid = it->second;
+        return rocksdb::Status::OK();
     }
 
 private:
