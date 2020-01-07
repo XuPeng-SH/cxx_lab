@@ -125,6 +125,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
     uint64_t LONG_TYPE = 1;
 
     std::string id_field_key(DBTableFieldValuePrefix);
+    id_field_key.append((char*)(&tid), sizeof(tid));
     id_field_key.append((char*)(&_id_field_id), sizeof(uint64_t));
     id_field_key.append((char*)(&LONG_TYPE), sizeof(uint64_t));
     id_field_key.append((char*)(&LONG_TYPE), sizeof(uint64_t));
