@@ -93,6 +93,10 @@ public:
         return "";
     }
 
+    virtual std::string Serialize() const {
+        return "";
+    }
+
     virtual std::map<std::string, std::string> ToMap() const {
         std::map<std::string, std::string> map_result;
         map_result["RO"] = IsReadonly() ? "RO" : "";
@@ -257,6 +261,13 @@ public:
 
     NumericField(const std::string& name) : BaseT::ThisT(name) {}
 
+    std::string Serialize() const override {
+        std::string serialized;
+        auto value = BaseT::GetValue();
+        serialized.append((char*)(&value), sizeof(value));
+        return std::move(serialized);
+    }
+
     std::string DumpValue() const override{
         std::stringstream ss;
         ss << BaseT::GetValue();
@@ -291,6 +302,13 @@ public:
 
     StringField(const std::string& name) : BaseT::ThisT(name) {}
 
+    std::string Serialize() const override {
+        std::string serialized;
+        auto value = BaseT::GetValue();
+        serialized.append(value.data(), value.size());
+        return std::move(serialized);
+    }
+
     std::string DumpValue() const override{
         return BaseT::GetValue();
     }
@@ -302,6 +320,12 @@ public:
     using BaseT = WithMixinTypedField<VectorLengthMixin, std::vector<ElementT>>;
 
     VectorField(const std::string& name) : BaseT::ThisT(name) {}
+
+    std::string Serialize() const override {
+        // TODO
+        assert(false);
+    }
+
     std::string DumpValue() const override{
         std::stringstream ss;
         for (auto& v : BaseT::value_) {

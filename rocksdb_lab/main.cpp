@@ -124,9 +124,10 @@ int main(int argc, char** argv) {
                 std::cout << s.ToString() << std::endl;
                 return 0;
             }
-
         }
     };
+
+    ADD_DOC();
 
     std::vector<std::string> vec;
     std::stringstream ss;

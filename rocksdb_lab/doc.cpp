@@ -266,6 +266,35 @@ Doc::Doc(PrimaryKeyT&& pk, const std::shared_ptr<DocSchema> schema)
     assert(schema->HasBuilt());
 }
 
+std::map<uint8_t, std::string> Doc::Serialize() const {
+    std::map<uint8_t, std::string> serialized;
+    for(auto& f: long_fields_) {
+        auto value = f.GetValue();
+        uint8_t fid;
+        schema_->GetFieldId(f.Name(), fid);
+        serialized[fid] = std::move(f.Serialize());
+    }
+    for (auto& f: float_fields_) {
+        auto value = f.GetValue();
+        uint8_t fid;
+        schema_->GetFieldId(f.Name(), fid);
+        serialized[fid] = std::move(f.Serialize());
+    }
+    for (auto& f: string_fields_) {
+        auto value = f.GetValue();
+        uint8_t fid;
+        schema_->GetFieldId(f.Name(), fid);
+        serialized[fid] = std::move(f.Serialize());
+    }
+    for (auto& f: float_vector_fields_) {
+        auto value = f.GetValue();
+        uint8_t fid;
+        schema_->GetFieldId(f.Name(), fid);
+        serialized[fid] = std::move(f.Serialize());
+    }
+    return std::move(serialized);
+}
+
 bool Doc::Build() {
     if (fields_schema_.size() != schema_->fields_schema_.size()) {
         std::cerr << "Error: Cannot build doc due to incomplete fields" << std::endl;

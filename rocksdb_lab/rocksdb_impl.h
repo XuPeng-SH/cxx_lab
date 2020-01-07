@@ -46,6 +46,18 @@ public:
         segmap_[tid] = sid;
     }
 
+    void UpdateTidOffset(uint64_t tid, uint64_t offset) {
+        std::unique_lock<std::shared_timed_mutex> lock(sidmtx_);
+        offset_[tid] = offset;
+    }
+
+    rocksdb::Status GetTidOffset(uint64_t tid, uint64_t& offset) {
+        std::shared_lock<std::shared_timed_mutex> lock(sidmtx_);
+        /* offset_[tid] = offset; */
+        offset = offset_[tid];
+        return rocksdb::Status::OK();
+    }
+
     rocksdb::Status GetSegId(uint64_t tid, uint64_t& sid) const {
         std::shared_lock<std::shared_timed_mutex> lock(sidmtx_);
         const auto& it_map = segmap_.find(tid);
@@ -54,14 +66,14 @@ public:
         return rocksdb::Status::OK();
     }
 
-    rocksdb::Status GetAndIncSegId(uint64_t tid, uint64_t& sid) {
-        std::unique_lock<std::shared_timed_mutex> lock(sidmtx_);
-        const auto& it_map = segmap_.find(tid);
-        if (it_map == segmap_.end()) return rocksdb::Status::NotFound();
-        sid = it_map->second;
-        segmap_[tid]++;
-        return rocksdb::Status::OK();
-    }
+    /* rocksdb::Status GetAndIncSegId(uint64_t tid, uint64_t& sid) { */
+    /*     std::unique_lock<std::shared_timed_mutex> lock(sidmtx_); */
+    /*     const auto& it_map = segmap_.find(tid); */
+    /*     if (it_map == segmap_.end()) return rocksdb::Status::NotFound(); */
+    /*     sid = it_map->second; */
+    /*     segmap_[tid]++; */
+    /*     return rocksdb::Status::OK(); */
+    /* } */
 
     std::shared_ptr<DocSchema> GetSchemaByTname(const std::string& tname) {
         std::shared_lock<std::shared_timed_mutex> lock(tidmtx_);
@@ -93,6 +105,7 @@ private:
     std::map<std::string, uint64_t> tnamenamp_;
     std::map<uint64_t, std::string> tidnamemap_;
     std::map<std::string, std::shared_ptr<DocSchema>> tschemaamp_;
+    std::map<uint64_t, uint64_t> offset_;
 };
 
 class RocksDBImpl : public DBImpl {

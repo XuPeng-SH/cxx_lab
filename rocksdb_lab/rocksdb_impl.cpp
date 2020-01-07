@@ -51,9 +51,37 @@ void RocksDBImpl::Init() {
         assert(false);
     }
 
-    db_cache_->SetTid(*((uint64_t*)db_seq_id.data()));
+    uint64_t tid = *(uint64_t*)(db_seq_id.data());
+    db_cache_->SetTid(tid);
+
+    /* s = db_->Get(rdopt_, DB) */
 
     rocksdb::ReadOptions options;
+    {
+        std::string lower(DBTableSegmentNextIDPrefix);
+        std::string upper(DBTableSegmentNextIDPrefix);
+        uint64_t start = 0;
+        lower.append((char*)&start, sizeof(start));
+        upper += db_seq_id;
+        rocksdb::Slice l(lower);
+        rocksdb::Slice u(upper);
+        options.iterate_lower_bound = &l;
+        options.iterate_upper_bound = &u;
+
+        rocksdb::Iterator* it = db_->NewIterator(options);
+        for (it->SeekToFirst(); it->Valid(); it->Next()) {
+            auto key = it->key();
+            auto tid = *(uint64_t*)(key.data() + DBTableMappingPrefix.size());
+
+            auto val = it->value();
+            uint64_t sid = *(uint64_t*)(val.data());
+            uint64_t id = *(uint64_t*)(val.data() + sizeof(sid));
+
+            db_cache_->UpdateSegMap(tid, sid);
+            db_cache_->UpdateTidOffset(tid, id);
+        }
+        delete it;
+    }
     {
         std::string lower(db::DBTablePrefix);
         rocksdb::Slice l(lower);
@@ -120,15 +148,70 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
         std::cout << s.ToString() << __func__ << ":" << __LINE__ << std::endl;
         return s;
     }
-    uint64_t _id_field_id = 0;
-    uint64_t age_field_id = 1;
-    uint64_t LONG_TYPE = 1;
 
-    std::string id_field_key(DBTableFieldValuePrefix);
-    id_field_key.append((char*)(&tid), sizeof(tid));
-    id_field_key.append((char*)(&_id_field_id), sizeof(uint64_t));
-    id_field_key.append((char*)(&LONG_TYPE), sizeof(uint64_t));
-    id_field_key.append((char*)(&LONG_TYPE), sizeof(uint64_t));
+    std::string key;
+    std::string val;
+    uint64_t sid;
+    s = db_cache_->GetSegId(tid, sid);
+    if (!s.ok()) {
+        std::cerr << s.ToString() << std::endl;
+        return s;
+    }
+
+    rocksdb::WriteBatch wb;
+
+    uint64_t offset;
+    s = db_cache_->GetTidOffset(tid, offset);
+    std::map<uint8_t, std::string> doc_serialized;
+    Serializer::SerializeDoc(doc, doc_serialized);
+    for (auto& kv : doc_serialized) {
+        auto& fid = kv.first;
+        auto& v = kv.second;
+        key.assign(DBTableFieldValuePrefix);
+        key.append((char*)(&tid), sizeof(tid));
+        key.append((char*)(&fid), sizeof(uint8_t));
+        key.append(v.data(), v.size());
+
+        val.clear();
+        val.append((char*)(&sid), sizeof(sid));
+        val.append((char*)(&offset), sizeof(offset));
+
+        wb.Put(key, val);
+    }
+
+    bool updated = false;
+    if (offset + 1 >= DBTableSegmentSize) {
+        sid++;
+        offset = 0;
+        updated = true;
+        std::string next_tid;
+        next_tid.append((char*)(&tid), sizeof(tid));
+        wb.Put(DBTableSequenceKey, next_tid);
+
+        std::string current_seg(DBTableCurrentSegmentPrefix);
+        current_seg.append((char*)(&tid), sizeof(tid));
+        std::string v;
+        v.append((char*)&sid, sizeof(sid));
+        wb.Put(current_seg, v);
+
+        std::string next_id_k(DBTableSegmentNextIDPrefix);
+        next_id_k.append((char*)&tid, sizeof(tid));
+        std::string next_id_v;
+        next_id_v.append((char*)&sid, sizeof(sid));
+        next_id_v.append((char*)&offset, sizeof(offset));
+        wb.Put(next_id_k, next_id_v);
+    }
+
+    s = db_->Write(*DefaultDBWriteOptions(), &wb);
+    if (!s.ok()) {
+        std::cerr << s.ToString() << std::endl;
+        return s;
+    }
+
+    if (updated) {
+        db_cache_->UpdateSegMap(tid, sid);
+        db_cache_->UpdateTidOffset(tid, offset);
+    }
 
     return  rocksdb::Status::OK();
 }
@@ -167,10 +250,12 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
         ts_v.append((char*)&sid, sizeof(sid));
         wb.Put(ts_k, ts_v);
 
+        // $Prefix$tid ==> $sid$id
         std::string tss_k(DBTableSegmentNextIDPrefix);
         tss_k.append((char*)&tid, sizeof(tid));
-        tss_k.append((char*)&sid, sizeof(sid));
         std::string tss_v;
+        std::cout << "XXXXXXXXXXX " << sid << std::endl;
+        tss_v.append((char*)&sid, sizeof(sid));
         tss_v.append((char*)&id, sizeof(id));
         wb.Put(tss_k, tss_v);
 
@@ -191,6 +276,7 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
         }
 
         db_cache_->UpdateSegMap(tid, 0);
+        db_cache_->UpdateTidOffset(tid, id);
         auto s = db_cache_->GetSegId(tid, sid);
         if (!s.ok()) {
             std::cout << "tid=" << tid  << " sid=" << sid << std::endl;

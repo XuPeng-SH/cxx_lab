@@ -114,6 +114,8 @@ public:
     DocSchema& AddStringField(const StringField& field) override;
     DocSchema& AddFloatVectorField(const FloatVectorField& field) override;
 
+    std::map<uint8_t, std::string> Serialize() const;
+
     bool Build() override;
 
 private:

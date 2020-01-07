@@ -179,9 +179,11 @@ void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bo
             std::cout << "[" << DBTableSequenceKey << ", " << *(uint64_t*)(it->value().data()) << "]" << std::endl;
         } else if (key.starts_with(DBTableSegmentNextIDPrefix)) {
             auto tid_addr = (uint64_t*)(key.data() + DBTableSegmentNextIDPrefix.size());
-            auto sid_addr = (uint64_t*)(key.data() + DBTableSegmentNextIDPrefix.size() + 1 + sizeof(uint64_t));
-            std::cout << "[" << DBTableSegmentNextIDPrefix << *tid_addr << ":" << *sid_addr;
-            std::cout << ", " << *(uint64_t*)(it->value().data()) << "]" << std::endl;
+            /* auto sid_addr = (uint64_t*)(key.data() + DBTableSegmentNextIDPrefix.size() + 1 + sizeof(uint64_t)); */
+            auto sid_addr = (uint64_t*)(val.data());
+            auto id_addr = (uint64_t*)(val.data() + sizeof(uint64_t));
+            std::cout << "[" << DBTableSegmentNextIDPrefix << *tid_addr << ", " << *sid_addr;
+            std::cout << ":" << *id_addr << "]" << std::endl;
         } else if (key.starts_with(DBTableUidIdMappingPrefix)) {
             auto tid_addr = (uint64_t*)(key.data() + DBTableUidIdMappingPrefix.size());
             auto uid_addr = (uint64_t*)(key.data() + DBTableUidIdMappingPrefix.size() + sizeof(uint64_t));
@@ -201,6 +203,9 @@ void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bo
             }
             /* std::cout << "[" << DBTableMappingPrefix << ":" << *tid_addr; */
             /* std::cout << ", " << schema.Dump() << "]" << std::endl; */
+        } else if (key.starts_with(DBTableFieldValuePrefix)) {
+            // [Key]$Prefix:$tid:$fid$fval [Val]$sid$id
+            // PXU TODO
         }
     }
     delete it;

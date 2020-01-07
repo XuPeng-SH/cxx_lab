@@ -95,6 +95,11 @@ public:
         return rocksdb::Status::OK();
     }
 
+    static rocksdb::Status SerializeDoc(const Doc& doc, std::map<uint8_t, std::string>& data) {
+        data = std::move(doc.Serialize());
+        return rocksdb::Status::OK();
+    }
+
     static rocksdb::Status SerializeDocSchema(const DocSchema& schema, std::string& data) {
         DocSchemaSerializerHandler handler;
         schema.Iterate(&handler);
