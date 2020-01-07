@@ -135,7 +135,6 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
 
 rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const DocSchema& schema) {
     auto table_key = TableKey(table_name);
-    /* cout << "RocksDBImpl::CreateTable: " << table_key << endl; */
 
     std::string table_key_value;
 
@@ -143,6 +142,9 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
 
     auto s = db_->Get(rdopt_, table_key, &table_key_value);
     if (s.IsNotFound()) {
+        if (!schema.HasBuilt()) {
+            return rocksdb::Status::InvalidArgument("DocSchema is expected to be built first!");
+        }
         // TODO: create table should be thread safe
         uint64_t sid = 0;
         uint64_t id = 0;

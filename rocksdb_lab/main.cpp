@@ -89,6 +89,10 @@ int main(int argc, char** argv) {
     uid_field.SetMaxLength(20);
     uid_field.SetMinLength(10);
 
+    schema->AddLongField(age_field)
+           .AddStringField(uid_field)
+           .Build();
+
     auto CHECK_SERIALIZER = [&]()
     {
         std::string meta;
@@ -97,9 +101,6 @@ int main(int argc, char** argv) {
         std::string fname;
         db::Serializer::DeserializeFieldMeta(meta, type, fname);
         std::string doc_serialized;
-        schema->AddLongField(age_field)
-               .AddStringField(uid_field)
-               .Build();
         db::Serializer::SerializeDocSchema(*schema, doc_serialized);
         DocSchema dschema;
         db::Serializer::DeserializeDocSchema(doc_serialized, dschema);
@@ -139,19 +140,16 @@ int main(int argc, char** argv) {
         std::vector<std::pair<size_t, size_t>> range;
         size_t step = vec.size()/tnum;
 
-        std::cout << "vec.size()=" << vec.size() << std::endl;
-        std::cout << "step=" << step << std::endl;
         for (size_t i=0; i<tnum; i++) {
             auto start = i * step;
             auto end = (i+1) * step;
             if (i+1 == tnum) {
                 end = vec.size();
             }
-            std::cout << "start=" << start << " end=" << end <<std::endl;
+            /* std::cout << "start=" << start << " end=" << end <<std::endl; */
             range.push_back({start, end});
         }
 
-        std::cout << "range.size=" << range.size() << std::endl;
         std::vector<std::thread> tvec;
 
         auto start = chrono::high_resolution_clock::now();
@@ -159,9 +157,13 @@ int main(int argc, char** argv) {
             tvec.push_back(std::thread([&](const std::pair<size_t, size_t>& r) {
                 auto start = std::get<0>(r);
                 auto end = std::get<1>(r);
+                rocksdb::Status s;
                 for(auto i=start; i<end; ++i) {
-                    /* std::cout << "handling " << i << std::endl; */
-                    thisdb->CreateTable(vec[i], *schema);
+                    s = thisdb->CreateTable(vec[i], *schema);
+                    if (!s.ok()) {
+                        std::cout << "Error: " << s.ToString() << std::endl;
+                        break;
+                    }
                 }
             }, itrange));
         }
@@ -170,13 +172,12 @@ int main(int argc, char** argv) {
             t.join();
         }
         auto end = chrono::high_resolution_clock::now();
-        cout << "tnum=" << tnum << " write takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+        cout << __FILE__ << ":" << __LINE__ << " tnum=" << tnum << " write takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
     MT_CREATE_TABLE(1);
 
 
     auto READ_ALL = [&](rocksdb::ReadOptions* opt,  bool do_print) {
-        std::cout << "Starting ..." << std::endl;
         auto start = chrono::high_resolution_clock::now();
         db::demo::read_all(skvdb, opt, do_print);
         auto end = chrono::high_resolution_clock::now();
