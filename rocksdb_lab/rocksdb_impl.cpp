@@ -128,7 +128,7 @@ void RocksDBImpl::Init() {
 
     delete it;
     /* std::cout << "Start read_all ... " << std::endl; */
-    Dump(true);
+    /* Dump(true); */
 }
 
 
@@ -248,14 +248,32 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
     for (auto& kv : doc_serialized) {
         auto& fid = kv.first;
         auto& v = kv.second;
-        key.assign(DBTableFieldValuePrefix);
-        key.append((char*)(&tid), sizeof(tid));
-        key.append((char*)(&fid), sizeof(uint8_t));
-        key.append(v.data(), v.size());
-        key.append((char*)(&sid), sizeof(sid));
-        key.append((char*)(&offset), sizeof(offset));
+        if (fid == 0) {
+            key.assign(DBTableUidIdMappingPrefix);
+            key.append((char*)&tid, sizeof(tid));
+            key.append(v);
 
-        val.clear();
+            {
+                std::string val;
+                s = db_->Get(rdopt_, key, &val);
+                if (s.ok()) {
+                    // PXU TODO: Delete all existing keys
+                    /* std::cout << s.ToString() << std::endl; */
+                }
+            }
+
+            val.assign((char*)&sid, sizeof(sid));
+            val.append((char*)&offset, sizeof(offset));
+        } else {
+            key.assign(DBTableFieldValuePrefix);
+            key.append((char*)(&tid), sizeof(tid));
+            key.append((char*)(&fid), sizeof(uint8_t));
+            key.append(v.data(), v.size());
+            key.append((char*)(&sid), sizeof(sid));
+            key.append((char*)(&offset), sizeof(offset));
+
+            val.clear();
+        }
 
         wb.Put(key, val);
     }

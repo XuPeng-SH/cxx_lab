@@ -53,6 +53,8 @@ public:
 
     bool HasBuilt() const { return fixed_; }
 
+    uint64_t UID() const { return long_fields_[0].GetValue(); }
+
     uint8_t Size() const { return (uint8_t)fields_schema_.size(); }
 
     const PrimaryKeyT& GetPK() const { return long_fields_[PrimaryKeyIdx]; }

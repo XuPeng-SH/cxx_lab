@@ -176,9 +176,6 @@ int main(int argc, char** argv) {
     };
     /* MT_CREATE_TABLE(1); */
 
-    return 0;
-
-
     auto READ_ALL = [&](bool do_print) {
         auto start = chrono::high_resolution_clock::now();
         /* db::demo::read_all(thisdb, opt, do_print); */
