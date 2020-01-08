@@ -117,11 +117,10 @@ int main(int argc, char** argv) {
                  .AddStringFieldValue("uid", std::to_string(1000000+i))
                  .Build();
 
-            /* std::cout << mydoc.Dump() << std::endl; */
             auto s = thisdb->AddDoc(table_name, mydoc);
             if (!s.ok()) {
-                db::demo::read_all(skvdb, nullptr, true);
-                std::cout << s.ToString() << std::endl;
+                /* db::demo::read_all(skvdb, nullptr, true); */
+                std::cout << s.ToString() << " " << __func__ << ":" << __LINE__ << std::endl;
                 return 0;
             }
         }
@@ -177,16 +176,19 @@ int main(int argc, char** argv) {
     };
     MT_CREATE_TABLE(1);
 
+    return 0;
 
-    auto READ_ALL = [&](rocksdb::ReadOptions* opt,  bool do_print) {
+
+    auto READ_ALL = [&](bool do_print) {
         auto start = chrono::high_resolution_clock::now();
-        db::demo::read_all(skvdb, opt, do_print);
+        /* db::demo::read_all(thisdb, opt, do_print); */
+        thisdb->Dump(do_print);
         auto end = chrono::high_resolution_clock::now();
         cout << "readall takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
 
     if (FLAGS_rall)
-        READ_ALL(nullptr, FLAGS_print);
+        READ_ALL(FLAGS_print);
 
     auto READ_WITH_UPPER_LOWER = [&](bool do_print) {
         rocksdb::ReadOptions rdopts;
@@ -209,7 +211,8 @@ int main(int argc, char** argv) {
         rdopts.readahead_size = 1024*512;
 
         auto start = chrono::high_resolution_clock::now();
-        db::demo::read_all(skvdb, &rdopts, true);
+        /* db::demo::read_all(thisdb, &rdopts, true); */
+        thisdb->Dump(true);
         auto end = chrono::high_resolution_clock::now();
         cout << "readpartial takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };

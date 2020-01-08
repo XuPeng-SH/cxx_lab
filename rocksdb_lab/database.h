@@ -19,6 +19,7 @@ public:
     MyDB(std::shared_ptr<DBImpl> impl) : impl_(impl) {}
     rocksdb::Status CreateTable(const std::string& table_name, const DocSchema& schema);
     rocksdb::Status AddDoc(const std::string& table_name, const Doc& doc);
+    void Dump(bool do_print);
 
 private:
     std::shared_ptr<DBImpl> impl_;
@@ -28,6 +29,7 @@ class DBImpl {
 public:
     virtual rocksdb::Status CreateTable(const std::string& table_name, const DocSchema& schema) = 0;
     virtual rocksdb::Status AddDoc(const std::string& table_name, const Doc& doc) = 0;
+    virtual void Dump(bool do_print) = 0;
 
     virtual ~DBImpl() {}
 };

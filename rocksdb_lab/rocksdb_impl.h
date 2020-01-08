@@ -94,8 +94,7 @@ public:
         return rocksdb::Status::OK();
     }
 
-    void Dump() const {
-    }
+    void Dump() const {}
 
 private:
     mutable std::shared_timed_mutex tidmtx_;
@@ -115,6 +114,8 @@ public:
     rocksdb::Status AddDoc(const std::string& table_name, const Doc& doc) override;
 
     rocksdb::Status GetLatestTableId(uint64_t tid);
+
+    void Dump(bool do_print) override;
 
 protected:
     void Init();

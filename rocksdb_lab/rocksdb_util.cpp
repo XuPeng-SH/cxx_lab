@@ -156,62 +156,6 @@ void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db, int num) {
     }
 }
 
-void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bool do_print) {
-    rocksdb::ReadOptions roptions;
-    if (options == nullptr) {
-        options = &roptions;
-    }
-    /* options->readahead_size = 1024 * 1024 * 10; */
-    size_t count = 0;
-    rocksdb::Iterator* it = db->NewIterator(*options);
-    std::map<std::string, std::string> dict;
-    for (it->SeekToFirst(); it->Valid(); it->Next()) {
-        count++;
-        if (!do_print) continue;
-        auto key = it->key();
-        auto val = it->value();
-        if (key.starts_with(DBTablePrefix)) {
-            std::cout << "[" << key.ToString() << ", " << *(uint64_t*)(it->value().data()) << "]" << std::endl;
-        } else if (key.starts_with(DBTableCurrentSegmentPrefix)) {
-            auto sid_addr = key.data() + DBTableCurrentSegmentPrefix.size();
-            std::cout << "[" << DBTableCurrentSegmentPrefix << *(uint64_t*)(sid_addr) << ", " << *(uint64_t*)(it->value().data()) << "]" << std::endl;
-        } else if (key.starts_with(DBTableSequenceKey)) {
-            std::cout << "[" << DBTableSequenceKey << ", " << *(uint64_t*)(it->value().data()) << "]" << std::endl;
-        } else if (key.starts_with(DBTableSegmentNextIDPrefix)) {
-            auto tid_addr = (uint64_t*)(key.data() + DBTableSegmentNextIDPrefix.size());
-            /* auto sid_addr = (uint64_t*)(key.data() + DBTableSegmentNextIDPrefix.size() + 1 + sizeof(uint64_t)); */
-            auto sid_addr = (uint64_t*)(val.data());
-            auto id_addr = (uint64_t*)(val.data() + sizeof(uint64_t));
-            std::cout << "[" << DBTableSegmentNextIDPrefix << *tid_addr << ", " << *sid_addr;
-            std::cout << ":" << *id_addr << "]" << std::endl;
-        } else if (key.starts_with(DBTableUidIdMappingPrefix)) {
-            auto tid_addr = (uint64_t*)(key.data() + DBTableUidIdMappingPrefix.size());
-            auto uid_addr = (uint64_t*)(key.data() + DBTableUidIdMappingPrefix.size() + sizeof(uint64_t));
-
-            auto sid_addr = (uint64_t*)(val.data());
-            auto id_addr = (uint64_t*)(val.data() + sizeof(uint64_t));
-
-            std::cout << "[" << DBTableUidIdMappingPrefix << ":" << *tid_addr << ":" << *uid_addr;
-            std::cout << ", " << *sid_addr << ":" << *id_addr << "]" << std::endl;
-        } else if (key.starts_with(DBTableMappingPrefix)) {
-            auto tid_addr = (uint64_t*)(key.data() + DBTableMappingPrefix.size());
-
-            DocSchema schema;
-            auto s = Serializer::DeserializeDocSchema(val, schema);
-            if (!s.ok()) {
-                std::cout << s.ToString() << std::endl;
-            }
-            /* std::cout << "[" << DBTableMappingPrefix << ":" << *tid_addr; */
-            /* std::cout << ", " << schema.Dump() << "]" << std::endl; */
-        } else if (key.starts_with(DBTableFieldValuePrefix)) {
-            // [Key]$Prefix:$tid:$fid$fval [Val]$sid$id
-            // PXU TODO
-        }
-    }
-    delete it;
-    std::cout << "Found " << count << " KVs" << std::endl;
-}
-
 void write_batch_demo(std::shared_ptr<rocksdb::DB> db) {
     std::vector<float> vec(512);
     for (auto i=0; i<512; ++i) {

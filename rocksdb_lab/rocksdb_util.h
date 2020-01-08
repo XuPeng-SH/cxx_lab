@@ -157,7 +157,7 @@ public:
 namespace demo {
     void just_check_cmp(std::shared_ptr<rocksdb::DB> db);
     void check_str_to_uint64();
-    void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bool do_print = true);
+    /* void read_all(std::shared_ptr<rocksdb::DB> db, rocksdb::ReadOptions* options, bool do_print = true); */
     void write_batch_demo(std::shared_ptr<rocksdb::DB>);
     void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db, int num = 0);
 }
