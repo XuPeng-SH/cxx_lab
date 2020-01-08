@@ -177,10 +177,36 @@ void RocksDBImpl::Dump(bool do_print) {
             /* std::cout << ", " << schema.Dump() << "]" << std::endl; */
         } else if (key.starts_with(DBTableFieldValuePrefix)) {
             // [Key]$Prefix:$tid:$fid$fval [Val]$sid$id
-            // PXU TODO
-            /* auto tid_addr = (uint64_t*)(key.data() + DBTableFieldValuePrefix.size()); */
-            /* db_cache_ */
+            /* continue; */
+            auto tid_addr = (uint64_t*)(key.data() + DBTableFieldValuePrefix.size());
+            auto schema = db_cache_->GetSchema(*tid_addr);
+            auto fid_addr = (uint8_t*)((char*)(tid_addr) + sizeof(uint64_t));
+            auto fval_addr = (char*)((char*)(tid_addr) + sizeof(uint64_t) + sizeof(uint8_t));
 
+            std::cout << "[" << DBTableFieldValuePrefix << ":" << *tid_addr << ":" << (int)*fid_addr << ":";
+            uint8_t ftype;
+            auto s = schema->GetFieldType(*fid_addr, ftype);
+            if (!s) {
+                std::cerr << "Cannot get field type of field_id" << *fid_addr << std::endl;
+                return;
+            }
+
+            if (ftype == LongField::FieldTypeValue()) {
+                std::cout << *(long*)(fval_addr);
+            } else if (ftype == FloatField::FieldTypeValue()) {
+                std::cout << *(float*)(fval_addr);
+            } else if (ftype == StringField::FieldTypeValue()) {
+                auto size = key.size() - DBTableFieldValuePrefix.size()
+                    - sizeof(uint64_t) - sizeof(uint8_t) - 2 * sizeof(uint64_t);
+                std::cout << rocksdb::Slice(fval_addr, size).ToString();
+            } else {
+                std::cerr << "TODO" << std::endl;
+                assert(false);
+            }
+
+            auto sid_addr = (uint64_t*)(key.data() + key.size() - 2 * sizeof(uint64_t));
+            auto id_addr = (uint64_t*)(key.data() + key.size() - 1 * sizeof(uint64_t));
+            std::cout << ":" << *sid_addr << ":" << *id_addr << "]" << std::endl;
         }
     }
     delete it;
@@ -189,7 +215,7 @@ void RocksDBImpl::Dump(bool do_print) {
 
 
 rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& doc) {
-    auto schema = db_cache_->GetSchemaByTname(table_name);
+    auto schema = db_cache_->GetSchema(table_name);
     if (!schema) {
         std::cout << "NotFound in Cache: table_name=" << table_name << " " << __func__ << ":" << __LINE__ << std::endl;
         return rocksdb::Status::NotFound();
@@ -227,16 +253,17 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
         key.append((char*)(&tid), sizeof(tid));
         key.append((char*)(&fid), sizeof(uint8_t));
         key.append(v.data(), v.size());
+        key.append((char*)(&sid), sizeof(sid));
+        key.append((char*)(&offset), sizeof(offset));
 
         val.clear();
-        val.append((char*)(&sid), sizeof(sid));
-        val.append((char*)(&offset), sizeof(offset));
 
         wb.Put(key, val);
     }
 
     bool updated = false;
-    if (offset + 1 >= DBTableSegmentSize) {
+    offset++;
+    if (offset >= DBTableSegmentSize) {
         sid++;
         offset = 0;
         updated = true;
@@ -249,14 +276,14 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
         std::string v;
         v.append((char*)&sid, sizeof(sid));
         wb.Put(current_seg, v);
-
-        std::string next_id_k(DBTableSegmentNextIDPrefix);
-        next_id_k.append((char*)&tid, sizeof(tid));
-        std::string next_id_v;
-        next_id_v.append((char*)&sid, sizeof(sid));
-        next_id_v.append((char*)&offset, sizeof(offset));
-        wb.Put(next_id_k, next_id_v);
     }
+
+    std::string next_id_k(DBTableSegmentNextIDPrefix);
+    next_id_k.append((char*)&tid, sizeof(tid));
+    std::string next_id_v;
+    next_id_v.append((char*)&sid, sizeof(sid));
+    next_id_v.append((char*)&offset, sizeof(offset));
+    wb.Put(next_id_k, next_id_v);
 
     s = db_->Write(*DefaultDBWriteOptions(), &wb);
     if (!s.ok()) {

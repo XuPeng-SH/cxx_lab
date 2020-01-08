@@ -21,6 +21,7 @@ typedef enum {
 
 } FieldTypeEnum;
 
+/* static constexpr const size_t DBTableSegmentSize = 1; // TODO: Support Customized size */
 static constexpr const size_t DBTableSegmentSize = 500000; // TODO: Support Customized size
 
 static constexpr const size_t PrefixSize = 3;
@@ -50,7 +51,7 @@ static const std::string DBTableUidIdMappingPrefix = "TID";
 // (K,V) = (TM:0, [{"name": STRING}, [{"age": UINT8}]]) ==> Table 0 has 2 fields of types STRING and UINT8
 static const std::string DBTableMappingPrefix = "TMP";
 
-// [Key]TF:$tid:$fid$fval [Val]$sid$id
+// [Key]TF:$tid:$fid$fval$sid$id [Val]
 // (K,V) = (ID:0:0:20:1, 20)   ==> Table/Segment/ID 0/0/20 filed id 1 store value 20
 static const std::string DBTableFieldValuePrefix = "TFP";
 

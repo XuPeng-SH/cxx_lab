@@ -25,6 +25,9 @@ DocSchema::DocSchema(PrimaryKeyT&& pk) {
 
 DocSchema::DocSchema(const DocSchema& other)
 : fields_schema_(other.fields_schema_),
+  fields_name_id_(other.fields_name_id_),
+  fields_id_name_(other.fields_id_name_),
+  fields_id_type_(other.fields_id_type_),
   long_fields_(other.long_fields_),
   float_fields_(other.float_fields_),
   string_fields_(other.string_fields_),
@@ -34,6 +37,9 @@ DocSchema::DocSchema(const DocSchema& other)
 
 DocSchema::DocSchema(DocSchema&& other)
 : fields_schema_(std::move(other.fields_schema_)),
+  fields_name_id_(std::move(other.fields_name_id_)),
+  fields_id_name_(std::move(other.fields_id_name_)),
+  fields_id_type_(std::move(other.fields_id_type_)),
   long_fields_(std::move(other.long_fields_)),
   float_fields_(std::move(other.float_fields_)),
   string_fields_(std::move(other.string_fields_)),
@@ -48,6 +54,20 @@ bool DocSchema::Build() {
     uint8_t id = 0;
     for (auto& kv : fields_schema_) {
         fields_name_id_[kv.first] = id++;
+        auto& pair = fields_schema_[kv.first];
+        auto idx = std::get<0>(pair);
+        size_t type;
+        if (idx == LongFieldIdx) {
+            fields_id_type_.push_back(LongField::FieldTypeValue());
+        } else if (idx == FloatFieldIdx) {
+            fields_id_type_.push_back(FloatField::FieldTypeValue());
+        } else if (idx == StringFieldIdx) {
+            fields_id_type_.push_back(StringField::FieldTypeValue());
+        } else if (idx == FloatVectorFieldIdx) {
+            fields_id_type_.push_back(FloatVectorField::FieldTypeValue());
+        } else {
+            assert(false);
+        }
         fields_id_name_.push_back(kv.first);
     }
     fixed_ = true;

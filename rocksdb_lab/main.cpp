@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
     {
         std::string table_name = "mockt";
         thisdb->CreateTable(table_name, *schema);
-        for (auto i=0; i<10; i++) {
+        for (auto i=0; i<1; i++) {
             Doc mydoc(Helper::NewPK(i+10000), schema);
             mydoc.AddLongFieldValue("age", i)
                  .AddStringFieldValue("uid", std::to_string(1000000+i))

@@ -66,6 +66,14 @@ public:
         return true;
     }
 
+    bool GetFieldType(uint8_t field_id, uint8_t& field_type) {
+        if (fields_id_type_.size() <= field_id) {
+            return false;
+        }
+        field_type = fields_id_type_[field_id];
+        return true;
+    }
+
     virtual ~DocSchema() {}
 
 protected:
@@ -75,6 +83,7 @@ protected:
     std::map<std::string, std::pair<int, size_t>> fields_schema_;
     std::map<std::string, uint8_t> fields_name_id_;
     std::vector<std::string> fields_id_name_;
+    std::vector<uint8_t> fields_id_type_;
     std::vector<LongField> long_fields_;
     std::vector<FloatField> float_fields_;
     std::vector<StringField> string_fields_;

@@ -32,12 +32,14 @@ public:
 
     void UpdateTableMapping(uint64_t tid, const std::string& tname) {
         std::unique_lock<std::shared_timed_mutex> lock(tidmtx_);
+        std::cout << "updating tname=" << tname << " for tid=" << tid << std::endl;
         tnamenamp_[tname] = tid;
         tidnamemap_[tid] = tname;
     }
 
     void UpdateTableMapping(uint64_t tid, const DocSchema& schema) {
         std::unique_lock<std::shared_timed_mutex> lock(tidmtx_);
+        std::cout << "updating schema for tid=" << tid << std::endl;
         tschemaamp_[tidnamemap_[tid]] = std::make_shared<DocSchema>(schema);
     }
 
@@ -75,7 +77,12 @@ public:
     /*     return rocksdb::Status::OK(); */
     /* } */
 
-    std::shared_ptr<DocSchema> GetSchemaByTname(const std::string& tname) {
+    std::shared_ptr<DocSchema> GetSchema(const uint64_t tid) {
+       auto& tname = tidnamemap_[tid];
+       return GetSchema(tname);
+    }
+
+    std::shared_ptr<DocSchema> GetSchema(const std::string& tname) {
         std::shared_lock<std::shared_timed_mutex> lock(tidmtx_);
         auto it = tschemaamp_.find(tname);
         if (it == tschemaamp_.end()) {
