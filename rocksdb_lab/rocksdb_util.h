@@ -121,8 +121,8 @@ public:
 
             field_name.assign(data.data()+offset, name_size);
             offset += name_size;
-            std::cout << "field_id=" << (int)field_id << " field_type=" << (int)field_type;
-            std::cout << " field_name=" << field_name << std::endl;
+            /* std::cout << "field_id=" << (int)field_id << " field_type=" << (int)field_type; */
+            /* std::cout << " field_name=" << field_name << std::endl; */
 
             // TODO: Store and fetch field parameters
             if (field_type == LongField::FieldTypeValue()) {
@@ -138,7 +138,7 @@ public:
         }
 
         schema.Build();
-        std::cout << schema.Dump() << std::endl;
+        /* std::cout << schema.Dump() << std::endl; */
 
         return rocksdb::Status::OK();
     }

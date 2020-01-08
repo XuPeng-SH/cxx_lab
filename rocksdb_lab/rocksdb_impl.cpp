@@ -58,6 +58,23 @@ void RocksDBImpl::Init() {
 
     rocksdb::ReadOptions options;
     {
+        std::string lower(db::DBTablePrefix);
+        rocksdb::Slice l(lower);
+        options.iterate_lower_bound = &l;
+        rocksdb::Iterator* it = db_->NewIterator(options);
+        for (it->SeekToFirst(); it->Valid(); it->Next()) {
+            auto key = it->key();
+            if (!key.starts_with(DBTablePrefix)) {
+                break;
+            }
+            auto val = it->value();
+            std::string tk = std::string(key.data()+DBTablePrefix.size(), key.size()-DBTablePrefix.size());
+            db_cache_->UpdateTableMapping(*(uint64_t*)(val.data()), tk);
+            std::cout << "Found k=" << tk << " tid=" << *(uint64_t*)(val.data()) << " " << __func__ << ":" << __LINE__ << std::endl;
+        }
+        delete it;
+    }
+    {
         std::string lower(DBTableSegmentNextIDPrefix);
         std::string upper(DBTableSegmentNextIDPrefix);
         uint64_t start = 0;
@@ -79,23 +96,6 @@ void RocksDBImpl::Init() {
 
             db_cache_->UpdateSegMap(tid, sid);
             db_cache_->UpdateTidOffset(tid, id);
-        }
-        delete it;
-    }
-    {
-        std::string lower(db::DBTablePrefix);
-        rocksdb::Slice l(lower);
-        options.iterate_lower_bound = &l;
-        rocksdb::Iterator* it = db_->NewIterator(options);
-        for (it->SeekToFirst(); it->Valid(); it->Next()) {
-            auto key = it->key();
-            if (!key.starts_with(DBTablePrefix)) {
-                break;
-            }
-            auto val = it->value();
-            std::string tk = std::string(key.data()+DBTablePrefix.size(), key.size()-DBTablePrefix.size());
-            db_cache_->UpdateTableMapping(*(uint64_t*)(val.data()), tk);
-            std::cout << "Found k=" << tk << " tid=" << *(uint64_t*)(val.data()) << " " << __func__ << ":" << __LINE__ << std::endl;
         }
         delete it;
     }
@@ -128,7 +128,7 @@ void RocksDBImpl::Init() {
 
     delete it;
     /* std::cout << "Start read_all ... " << std::endl; */
-    /* demo::read_all(db_, nullptr, true); */
+    demo::read_all(db_, nullptr, true);
 }
 
 
@@ -254,7 +254,6 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
         std::string tss_k(DBTableSegmentNextIDPrefix);
         tss_k.append((char*)&tid, sizeof(tid));
         std::string tss_v;
-        std::cout << "XXXXXXXXXXX " << sid << std::endl;
         tss_v.append((char*)&sid, sizeof(sid));
         tss_v.append((char*)&id, sizeof(id));
         wb.Put(tss_k, tss_v);
