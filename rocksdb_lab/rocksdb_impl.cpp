@@ -177,7 +177,6 @@ void RocksDBImpl::Dump(bool do_print) {
             /* std::cout << ", " << schema.Dump() << "]" << std::endl; */
         } else if (key.starts_with(DBTableFieldValuePrefix)) {
             // [Key]$Prefix:$tid:$fid$fval [Val]$sid$id
-            /* continue; */
             auto tid_addr = (uint64_t*)(key.data() + DBTableFieldValuePrefix.size());
             auto schema = db_cache_->GetSchema(*tid_addr);
             auto fid_addr = (uint8_t*)((char*)(tid_addr) + sizeof(uint64_t));
@@ -267,10 +266,6 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
         sid++;
         offset = 0;
         updated = true;
-        std::string next_tid;
-        next_tid.append((char*)(&tid), sizeof(tid));
-        wb.Put(DBTableSequenceKey, next_tid);
-
         std::string current_seg(DBTableCurrentSegmentPrefix);
         current_seg.append((char*)(&tid), sizeof(tid));
         std::string v;
@@ -293,8 +288,8 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
 
     if (updated) {
         db_cache_->UpdateSegMap(tid, sid);
-        db_cache_->UpdateTidOffset(tid, offset);
     }
+    db_cache_->UpdateTidOffset(tid, offset);
 
     return  rocksdb::Status::OK();
 }
@@ -320,6 +315,7 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
 
         std::string tsk_val;
         tsk_val.append((char*)&next_tid, sizeof(next_tid));
+        std::cout << "Updating next tid to " << next_tid << std::endl;
         wb.Put(DBTableSequenceKey, tsk_val);
 
         std::string t_v;

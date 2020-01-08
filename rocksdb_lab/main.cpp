@@ -107,11 +107,11 @@ int main(int argc, char** argv) {
         /* return 0; */
     };
 
-    auto ADD_DOC = [&]()
+    auto ADD_DOC = [&](int num)
     {
         std::string table_name = "mockt";
         thisdb->CreateTable(table_name, *schema);
-        for (auto i=0; i<1; i++) {
+        for (auto i=0; i<num; i++) {
             Doc mydoc(Helper::NewPK(i+10000), schema);
             mydoc.AddLongFieldValue("age", i)
                  .AddStringFieldValue("uid", std::to_string(1000000+i))
@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
         }
     };
 
-    ADD_DOC();
+    ADD_DOC(FLAGS_nb);
 
     std::vector<std::string> vec;
     std::stringstream ss;
@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
         auto end = chrono::high_resolution_clock::now();
         cout << __FILE__ << ":" << __LINE__ << " tnum=" << tnum << " write takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
-    MT_CREATE_TABLE(1);
+    /* MT_CREATE_TABLE(1); */
 
     return 0;
 

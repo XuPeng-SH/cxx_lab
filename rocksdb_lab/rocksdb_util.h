@@ -7,22 +7,7 @@
 
 namespace db {
 
-typedef enum {
-    INT8 = 0,
-    UINT8,
-    INT32,
-    UINT32,
-    INT64,
-    UINT64,
-
-    FLOAT=50,
-
-    STRING=100,
-
-} FieldTypeEnum;
-
-/* static constexpr const size_t DBTableSegmentSize = 1; // TODO: Support Customized size */
-static constexpr const size_t DBTableSegmentSize = 500000; // TODO: Support Customized size
+static constexpr const size_t DBTableSegmentSize = 50000; // TODO: Support Customized size
 
 static constexpr const size_t PrefixSize = 3;
 
