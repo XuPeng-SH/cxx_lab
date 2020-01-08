@@ -245,6 +245,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
     s = db_cache_->GetTidOffset(tid, offset);
     std::map<uint8_t, std::string> doc_serialized;
     Serializer::SerializeDoc(doc, doc_serialized);
+    std::string need_delete;
     for (auto& kv : doc_serialized) {
         auto& fid = kv.first;
         auto& v = kv.second;
@@ -257,14 +258,20 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                 std::string val;
                 s = db_->Get(rdopt_, key, &val);
                 if (s.ok()) {
-                    // PXU TODO: Delete all existing keys
-                    /* std::cout << s.ToString() << std::endl; */
+                    // 1. Delete UID
+                    wb.Delete(key);
+                    need_delete = val;
+                    // 2. Find And Delete All Fields, TODO
+                    // 3. Update all bitmap like marker for vector deletion, TODO
                 }
             }
 
             val.assign((char*)&sid, sizeof(sid));
             val.append((char*)&offset, sizeof(offset));
+            // Add New UID-ID Mapping Into Write Batch
+            wb.Put(key, val);
         } else {
+            // [Key]$Prefix:$tid:$fid$fval$sid$id -> None
             key.assign(DBTableFieldValuePrefix);
             key.append((char*)(&tid), sizeof(tid));
             key.append((char*)(&fid), sizeof(uint8_t));
@@ -273,9 +280,14 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             key.append((char*)(&offset), sizeof(offset));
 
             val.clear();
+            /* if (!need_delete.empty()) { */
+            /*     std::string to_delete_key(DBTableFieldValuePrefix); */
+            /*     to_delete_key.append() */
+            /*     wb. */
+            /* } */
+            wb.Put(key, val);
         }
 
-        wb.Put(key, val);
     }
 
     bool updated = false;
