@@ -36,9 +36,11 @@ static const std::string DBTableUidIdMappingPrefix = "TID";
 // (K,V) = (TM:0, [{"name": STRING}, [{"age": UINT8}]]) ==> Table 0 has 2 fields of types STRING and UINT8
 static const std::string DBTableMappingPrefix = "TMP";
 
-// [Key]TF:$tid:$fid$fval$sid$id [Val]
-// (K,V) = (ID:0:0:20:1, 20)   ==> Table/Segment/ID 0/0/20 filed id 1 store value 20
-static const std::string DBTableFieldValuePrefix = "TFP";
+// [Key]$Prefix:$tid:$fid$fval$sid$id   [Val]None
+static const std::string DBTableFieldIndexPrefix = "TFI";
+
+// [Key]$Prefix:$tid:$sid$id$fid    [val]$fval
+static const std::string DBTableFieldValuePrefix = "TFV";
 
 const std::shared_ptr<rocksdb::Options>& DefaultOpenOptions();
 const std::shared_ptr<rocksdb::WriteOptions>& DefaultDBWriteOptions();
