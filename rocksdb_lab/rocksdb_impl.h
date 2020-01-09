@@ -208,6 +208,7 @@ public:
             std::cerr << "TODO" << std::endl;
             assert(false);
         }
+
         auto sid_addr = key.data() + key.size() - 2 * sizeof(uint64_t);
         auto id_addr = key.data() + key.size() - 1 * sizeof(uint64_t);
         rocksdb::Slice sid_slice(sid_addr, sizeof(sid));

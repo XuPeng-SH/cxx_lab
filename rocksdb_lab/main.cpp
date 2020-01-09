@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
         std::vector<std::shared_ptr<Doc>> docs;
         db::FieldsFilter filters;
         db::FieldFilter filter;
-        long age_upper = 100;
+        long age_upper = 12;
         long age_lower = 0;
         Serializer::SerializeNumeric(age_upper, filter.upper_bound);
         Serializer::SerializeNumeric(age_lower, filter.lower_bound);
