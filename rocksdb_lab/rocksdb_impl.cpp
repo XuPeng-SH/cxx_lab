@@ -351,27 +351,7 @@ void RocksDBImpl::Dump(bool do_print) {
         } else if (key.starts_with(DBTableFieldIndexPrefix)) {
             KeyHelper::PrintDBIndexKey(key, db_cache_);
         } else if (key.starts_with(DBTableFieldValuePrefix)) {
-            // [Key]$Prefix:$tid:$sid$id$fid    [val]$fval
-            uint64_t tid, sid, offset;
-            uint8_t fid;
-            auto tid_addr = key.data() + DBTableFieldValuePrefix.size();
-            auto sid_addr = key.data() + DBTableFieldValuePrefix.size() + sizeof(uint64_t);
-            auto offset_addr = key.data() + DBTableFieldValuePrefix.size() + 2*sizeof(uint64_t);
-            auto fid_addr = (char*)(tid_addr) + 3*sizeof(uint64_t);
-
-            rocksdb::Slice tid_slice(tid_addr, sizeof(tid));
-            rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
-            rocksdb::Slice offset_slice(offset_addr, sizeof(offset));
-            rocksdb::Slice fid_slice(fid_addr, sizeof(fid));
-
-            Serializer::DeserializeNumeric(tid_slice, tid);
-            Serializer::DeserializeNumeric(sid_slice, sid);
-            Serializer::DeserializeNumeric(offset_slice, offset);
-            Serializer::DeserializeNumeric(fid_slice, fid);
-
-            std::cout << "[" << DBTableFieldValuePrefix << ":" << tid << ":" << sid << ":" << offset << ":" << (int)fid;
-            std::cout << ":<>]" << std::endl;
-
+            KeyHelper::PrintDBFieldValueKeyValue(key, val, db_cache_);
         } else {
             std::cout << "Error: unKown key " << key.ToString() << std::endl;
         }
@@ -459,15 +439,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                 }
 
                 {
-                    uint64_t sid, offset;
-                    auto sid_addr = addr_to_delete.data();
-                    auto offset_addr = sid_addr + 1;
-                    rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
-                    rocksdb::Slice offset_slice(offset_addr, sizeof(offset));
-                    Serializer::DeserializeNumeric(sid_slice, sid);
-                    Serializer::DeserializeNumeric(offset_slice, offset);
-                    std::cout << "DELETE_VALUE[" << DBTableFieldValuePrefix << ":" << tid << ":" << sid << ":" << offset << ":" << (int)fid << "]" << std::endl;
-
+                    KeyHelper::PrintDBFieldValueKeyValue(field_key, "", db_cache_, "DELETE_VALUE");
                 }
                 wb.Delete(field_key);
 
@@ -492,8 +464,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             Serializer::SerializeNumeric(offset, field_val_key);
             Serializer::SerializeNumeric(fid, field_val_key);
             {
-
-                std::cout << "ADDING_VALUE[" << DBTableFieldValuePrefix << ":" << tid << ":" << sid << ":" << offset << ":" << (int)fid << "," << v << "]" << std::endl;
+                KeyHelper::PrintDBFieldValueKeyValue(field_val_key, v, db_cache_, "ADDING_VALUE");
             }
             s = wb.Put(field_val_key, v);
             if (!s.ok()) {

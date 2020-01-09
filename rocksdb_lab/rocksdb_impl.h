@@ -117,6 +117,57 @@ private:
 
 class KeyHelper {
 public:
+    // [Key]$Prefix:$tid:$sid$id$fid    [val]$fval
+    static void PrintDBFieldValueKeyValue(const rocksdb::Slice& key,
+                                     const rocksdb::Slice& val,
+                                     std::shared_ptr<DBCache> cache,
+                                     const std::string& header = "") {
+        uint64_t tid, sid, offset;
+        uint8_t fid;
+        auto tid_addr = key.data() + PrefixSize;
+        auto sid_addr = key.data() + PrefixSize + sizeof(tid);
+        auto offset_addr = key.data() + PrefixSize + 2*sizeof(uint64_t);
+        auto fid_addr = (char*)(tid_addr) + 3*sizeof(uint64_t);
+
+        rocksdb::Slice tid_slice(tid_addr, sizeof(tid));
+        rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
+        rocksdb::Slice offset_slice(offset_addr, sizeof(offset));
+        rocksdb::Slice fid_slice(fid_addr, sizeof(fid));
+
+        Serializer::DeserializeNumeric(tid_slice, tid);
+        Serializer::DeserializeNumeric(sid_slice, sid);
+        Serializer::DeserializeNumeric(offset_slice, offset);
+        Serializer::DeserializeNumeric(fid_slice, fid);
+
+        std::cout << header << "[ " << DBTableFieldValuePrefix << ":" << tid << ":" << sid << ":" << offset << ":" << (int)fid;
+
+        auto schema = cache->GetSchema(tid);
+        uint8_t field_type;
+        auto s = schema->GetFieldType(fid, field_type);
+        if (!s) {
+            std::cerr << "Cannot get field type of field_id" << fid << std::endl;
+            return;
+        }
+
+        if (field_type == LongField::FieldTypeValue()) {
+            long vv;
+            Serializer::DeserializeNumeric(val, vv);
+            std::cout << ":" << vv;
+        } else if (field_type == FloatField::FieldTypeValue()) {
+            long vv;
+            Serializer::DeserializeNumeric(val, vv);
+            std::cout << ":" << vv;
+        } else if (field_type == StringField::FieldTypeValue()) {
+            std::cout << ":" << val.ToString();
+        } else {
+            std::cerr << "TODO" << std::endl;
+            assert(false);
+        }
+
+        std::cout << " ]" << std::endl;
+
+    }
+
     //$Prefix$tid$fid$val$sid$id
     static void PrintDBIndexKey(const rocksdb::Slice& key,
                                 std::shared_ptr<DBCache> cache,
