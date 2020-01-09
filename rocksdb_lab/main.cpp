@@ -46,8 +46,8 @@ int main(int argc, char** argv) {
     options->max_background_flushes = 1;
 
     // Set Comparator
-    db::MyComparator cmp;
-    options->comparator = &cmp;
+    /* db::MyComparator cmp; */
+    /* options->comparator = &cmp; */
 
     // Set Block Cache
     size_t capacity = (size_t)5 * 1024 * 1024 * 1024;

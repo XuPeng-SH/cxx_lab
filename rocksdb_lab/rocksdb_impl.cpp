@@ -173,6 +173,7 @@ void RocksDBImpl::Dump(bool do_print) {
             if (!s.ok()) {
                 std::cout << s.ToString() << std::endl;
             }
+            std::cout << "[" << DBTableMappingPrefix << ":" << *tid_addr << "]" << std::endl;
             /* std::cout << "[" << DBTableMappingPrefix << ":" << *tid_addr; */
             /* std::cout << ", " << schema.Dump() << "]" << std::endl; */
         } else if (key.starts_with(DBTableFieldIndexPrefix)) {
@@ -206,6 +207,18 @@ void RocksDBImpl::Dump(bool do_print) {
             auto sid_addr = (uint64_t*)(key.data() + key.size() - 2 * sizeof(uint64_t));
             auto id_addr = (uint64_t*)(key.data() + key.size() - 1 * sizeof(uint64_t));
             std::cout << ":" << *sid_addr << ":" << *id_addr << "]" << std::endl;
+        } else if (key.starts_with(DBTableFieldValuePrefix)) {
+            // [Key]$Prefix:$tid:$sid$id$fid    [val]$fval
+            auto tid_addr = (uint64_t*)(key.data() + DBTableFieldValuePrefix.size());
+            auto sid_addr = (uint64_t*)(key.data() + DBTableFieldValuePrefix.size() + sizeof(uint64_t));
+            auto offset_addr = (uint64_t*)(key.data() + DBTableFieldValuePrefix.size() + 2*sizeof(uint64_t));
+            auto fid_addr = (uint8_t*)((char*)(tid_addr) + 3*sizeof(uint64_t));
+
+            std::cout << "[" << DBTableFieldValuePrefix << ":" << *tid_addr << ":" << *sid_addr << ":" << *offset_addr << ":" << (int)*fid_addr;
+            std::cout << ":<>]" << std::endl;
+
+        } else {
+            std::cout << "Error: unKown key " << key.ToString() << std::endl;
         }
     }
     delete it;
@@ -247,8 +260,6 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
     Serializer::SerializeDoc(doc, doc_serialized);
     std::string addr_to_delete;
     std::string fval_to_delete;
-    std::string field_val_key;
-    /* std::string field_val_value; */
 
     for (auto& kv : doc_serialized) {
         auto& fid = kv.first;
@@ -264,6 +275,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                     // 1. Delete UID
                     // 2. Find And Delete All Fields, TODO
                     // 3. Update all bitmap like marker for vector deletion, TODO
+                    std::cout << "DELETE_ID[" << key << std::endl;
                     wb.Delete(key);
                 }
             }
@@ -283,6 +295,12 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                     assert(false);
                 }
 
+                {
+                    auto sid_addr = (uint64_t*)addr_to_delete.data();
+                    auto offset_addr = sid_addr + 1;
+                    std::cout << "DELETE_VALUE[" << DBTableFieldValuePrefix << ":" << tid << ":" << *sid_addr << ":" << *offset_addr << ":" << (int)fid << "]" << std::endl;
+
+                }
                 wb.Delete(field_key);
 
                 std::string to_delete_index_key(DBTableFieldIndexPrefix);
@@ -291,21 +309,30 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                 to_delete_index_key.append(fval_to_delete);
                 to_delete_index_key.append(addr_to_delete);
 
-                std::cout << "Deleting Key=" << DBTableFieldIndexPrefix << ":" << tid << ":" << (int)fid;
+                std::cout << "DELETE_INDEX[" << DBTableFieldIndexPrefix << ":" << tid << ":" << (int)fid;
                 if (fid==1)
-                    std::cout <<  ":" << *(long*)(fval_to_delete.data()) << std::endl;
+                    std::cout <<  ":" << *(long*)(fval_to_delete.data()) << "]" << std::endl;
                 else
-                    std::cout << std::endl;
+                    std::cout <<  ":" << fval_to_delete << "]" << std::endl;
                 wb.Delete(to_delete_index_key);
             }
 
             // [Key]$Prefix:$tid:$sid$id$fid    [val]$fval
+            std::string field_val_key;
             field_val_key.assign(DBTableFieldValuePrefix);
             field_val_key.append((char*)(&tid), sizeof(tid));
             field_val_key.append((char*)(&sid), sizeof(sid));
             field_val_key.append((char*)(&offset), sizeof(offset));
             field_val_key.append((char*)(&fid), sizeof(uint8_t));
-            wb.Put(field_val_key, v);
+            {
+
+                std::cout << "ADDING_VALUE[" << DBTableFieldValuePrefix << ":" << tid << ":" << sid << ":" << offset << ":" << (int)fid << "," << v << "]" << std::endl;
+            }
+            s = wb.Put(field_val_key, v);
+            if (!s.ok()) {
+                std::cerr << s.ToString() << std::endl;
+                assert(false);
+            }
 
             // [Key]$Prefix:$tid:$fid$fval$sid$id -> None
             key.assign(DBTableFieldIndexPrefix);
@@ -315,6 +342,27 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             key.append((char*)(&sid), sizeof(sid));
             key.append((char*)(&offset), sizeof(offset));
 
+            {
+                uint8_t field_type;
+                auto fval_addr = v.data();
+                schema->GetFieldType(fid, field_type);
+                std::cout << "ADDING_INDEX[" << DBTableFieldIndexPrefix << ":" << tid << ":" << (int)fid << ":";
+                if (field_type == LongField::FieldTypeValue()) {
+                    std::cout << *(long*)(fval_addr);
+                } else if (field_type == FloatField::FieldTypeValue()) {
+                    std::cout << *(float*)(fval_addr);
+                } else if (field_type == StringField::FieldTypeValue()) {
+                    auto size = key.size() - DBTableFieldIndexPrefix.size()
+                        - sizeof(uint64_t) - sizeof(uint8_t) - 2 * sizeof(uint64_t);
+                    std::cout << rocksdb::Slice(fval_addr, size).ToString();
+                } else {
+                    std::cerr << "TODO" << std::endl;
+                    assert(false);
+                }
+
+                /* std::cout  << v */
+                std::cout  << ":" << sid << ":" << offset << "]" << std::endl;
+            }
             val.clear();
             wb.Put(key, val);
         }
