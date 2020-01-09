@@ -2,6 +2,7 @@
 #include <sstream>
 #include <assert.h>
 #include "doc.h"
+#include "utils.h"
 
 const char* DocSchema::PrimaryKeyName = "_id";
 const int DocSchema::LongFieldIdx = 0;
@@ -285,31 +286,29 @@ void DocSchemaSerializerHandler::PreHandle(const DocSchema& schema) {
     //    uint8_t      uint8_t       uint8_t       uint8_t        bytes
     uint8_t fields_num = (uint8_t)(schema.Size());
     serialized_ = "";
-    serialized_.append((char*)&fields_num, sizeof(fields_num));
+    Serializer::SerializeNumeric(fields_num, serialized_);
 }
 
 void DocSchemaSerializerHandler::Handle(const DocSchema& schema, const std::string& field_name, uint8_t field_id,
         int idx, size_t offset) {
-    /* serialized_.append((char*)&fields_id_, sizeof(fields_id_)); */
-    serialized_.append((char*)&field_id, sizeof(field_id));
+    Serializer::SerializeNumeric(field_id, serialized_);
 
+    uint8_t tval;
     if (idx == DocSchema::LongFieldIdx) {
-        auto tval = LongField::FieldTypeValue();
-        serialized_.append((char*)&tval, sizeof(tval));
+        tval = LongField::FieldTypeValue();
     } else if (idx == DocSchema::FloatFieldIdx) {
-        auto tval = FloatField::FieldTypeValue();
-        serialized_.append((char*)&tval, sizeof(tval));
+        tval = FloatField::FieldTypeValue();
     } else if (idx == DocSchema::StringFieldIdx) {
-        auto tval = StringField::FieldTypeValue();
-        serialized_.append((char*)&tval, sizeof(tval));
+        tval = StringField::FieldTypeValue();
     } else if (idx == DocSchema::FloatVectorFieldIdx) {
-        auto tval = FloatVectorField::FieldTypeValue();
-        serialized_.append((char*)&tval, sizeof(tval));
+        tval = FloatVectorField::FieldTypeValue();
     }
 
+    Serializer::SerializeNumeric(tval, serialized_);
+
     auto size = (uint8_t)field_name.size();
-    serialized_.append((char*)&size, sizeof(size));
-    serialized_.append(field_name.data(), size);
+    Serializer::SerializeNumeric(size, serialized_);
+    serialized_.append(field_name);
 }
 
 void DocSchemaSerializerHandler::PostHandle(const DocSchema& schema) {

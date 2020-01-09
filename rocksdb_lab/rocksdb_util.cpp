@@ -97,12 +97,12 @@ void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db, int num) {
     for(int i=0; i<num; i++) {
         uint64_t uid = rand();
         std::string key(DBTableUidIdMappingPrefix);
-        key.append((char*)&tid, sizeof(uint64_t));
-        key.append((char*)&uid, sizeof(uint64_t));
+        Serializer::SerializeNumeric(tid, key);
+        Serializer::SerializeNumeric(uid, key);
 
         std::string val;
-        val.append((char*)&sid, sizeof(uint64_t));
-        val.append((char*)&id, sizeof(uint64_t));
+        Serializer::SerializeNumeric(sid, val);
+        Serializer::SerializeNumeric(id, val);
 
         auto s = db->Put(*DefaultDBWriteOptions(), key, val);
         if (!s.ok()) {

@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <typeinfo>
 #include <type_traits>
+#include "utils.h"
 
 
 template <typename T>
@@ -264,7 +265,7 @@ public:
     std::string Serialize() const override {
         std::string serialized;
         auto value = BaseT::GetValue();
-        serialized.append((char*)(&value), sizeof(value));
+        Serializer::SerializeNumeric(value, serialized);
         return std::move(serialized);
     }
 

@@ -27,8 +27,8 @@ public:
         // [$field_type_value][$field_name_size][$field_name]
         // |------uint8_t-----|----uint8_t-----|---n bytes--|
 
-        data.append((char*)&field_type_value, sizeof(field_type_value));
-        data.append((char*)&field_name_size, sizeof(field_name_size));
+        SerializeNumeric(field_type_value, data);
+        SerializeNumeric(field_name_size, data);
         data.append((char*)v.Name().data(), field_name_size);
         return rocksdb::Status::OK();
     }
@@ -42,7 +42,7 @@ public:
     }
 
     template <typename NumT>
-    static rocksdb::Status DeSerializeNumeric(const rocksdb::Slice& strv, NumT& numv) {
+    static rocksdb::Status DeserializeNumeric(const rocksdb::Slice& strv, NumT& numv) {
         numv = *(NumT*)(strv.data());
         SwapEndian(numv);
         return rocksdb::Status::OK();
