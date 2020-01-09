@@ -126,6 +126,32 @@ void RocksDBImpl::Init() {
 rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
             std::vector<std::shared_ptr<Doc>> docs,
             const FieldsFilter& filter) {
+    uint64_t tid;
+    auto s = db_cache_->GetTidByTname(table_name, tid);
+    if (!s.ok()) {
+        std::cout << s.ToString() << __func__ << ":" << __LINE__ << std::endl;
+        return s;
+    }
+
+    auto schema = db_cache_->GetSchema(tid);
+
+    for (auto& f : filter) {
+        rocksdb::ReadOptions options;
+        options.iterate_upper_bound = f.upper_bound;
+        options.iterate_lower_bound = f.lower_bound;
+
+        rocksdb::Iterator* it = db_->NewIterator(options);
+
+        size_t items = 0;
+        for (it->SeekToFirst(); it->Valid(); it->Next()) {
+            if (items >= f.number) break;
+            auto key = it->key();
+
+        }
+
+        delete it;
+    }
+
     return rocksdb::Status::OK();
 }
 
@@ -166,15 +192,15 @@ rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std
     upper += sid_id;
     Serializer::SerializeNumeric(end, upper);
 
+    uint8_t fid;
+    uint8_t ftype;
+
     rocksdb::Slice l(lower);
     rocksdb::Slice u(upper);
     options.iterate_lower_bound = &l;
     options.iterate_upper_bound = &u;
 
     rocksdb::Iterator* it = db_->NewIterator(options);
-
-    uint8_t fid;
-    uint8_t ftype;
 
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         auto key = it->key();
