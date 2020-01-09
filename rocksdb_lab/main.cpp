@@ -196,6 +196,12 @@ int main(int argc, char** argv) {
     if (FLAGS_rall)
         READ_ALL(FLAGS_print);
 
+    {
+        std::shared_ptr<Doc> doc;
+        auto s = thisdb->GetDoc("mockt", 10000, doc);
+        cout << s.ToString() << endl;
+    }
+
     auto READ_WITH_UPPER_LOWER = [&](bool do_print) {
         rocksdb::ReadOptions rdopts;
         std::string upper(db::DBTableUidIdMappingPrefix);

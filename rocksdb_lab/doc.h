@@ -59,6 +59,11 @@ public:
 
     uint8_t Size() const { return (uint8_t)fields_schema_.size(); }
 
+    const std::string& GetFieldName(uint8_t field_id) const {
+        assert(field_id < fields_id_name_.size());
+        return fields_id_name_[field_id];
+    }
+
     const PrimaryKeyT& GetPK() const { return long_fields_[PrimaryKeyIdx]; }
 
     bool GetFieldId(const std::string& field_name, uint8_t& field_id) const {

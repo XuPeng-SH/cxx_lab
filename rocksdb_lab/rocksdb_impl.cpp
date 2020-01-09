@@ -145,9 +145,57 @@ rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std
     auto schema = db_cache_->GetSchema(tid);
     doc.reset(new Doc(Helper::NewPK(uid), schema));
 
-    /* bool build_doc = mydoc.AddLongFieldValue("age", i) */
-    /*                       .AddStringFieldValue("uid", std::to_string(1000000+i)) */
-    /*                       .Build(); */
+    //$Prefix:$tid$sid$id$fid ==> $fval
+    rocksdb::ReadOptions options;
+    std::string lower(DBTableFieldValuePrefix);
+    std::string upper(DBTableFieldValuePrefix);
+    uint8_t start = 0;
+    uint8_t end = std::numeric_limits<uint8_t>::max();
+
+    Serializer::SerializeNumeric(tid, lower);
+    lower += sid_id;
+    Serializer::SerializeNumeric(start, lower);
+
+    Serializer::SerializeNumeric(tid, upper);
+    upper += sid_id;
+    Serializer::SerializeNumeric(end, upper);
+
+    rocksdb::Slice l(lower);
+    rocksdb::Slice u(upper);
+    options.iterate_lower_bound = &l;
+    options.iterate_upper_bound = &u;
+
+    rocksdb::Iterator* it = db_->NewIterator(options);
+
+    uint8_t fid;
+    uint8_t ftype;
+
+    for (it->SeekToFirst(); it->Valid(); it->Next()) {
+        auto key = it->key();
+        auto val = it->value();
+        auto fid_addr = key.data() + sizeof(uint64_t)*3 + PrefixSize;
+        Serializer::DeserializeNumeric(rocksdb::Slice(fid_addr, sizeof(fid)), fid);
+        schema->GetFieldType(fid, ftype);
+        const std::string& fname = schema->GetFieldName(fid);
+        if (ftype == LongField::FieldTypeValue()) {
+            long value;
+            Serializer::DeserializeNumeric(val, value);
+            doc->AddLongFieldValue(fname, value);
+        } else if (ftype == FloatField::FieldTypeValue()) {
+            float value;
+            doc->AddFloatFieldValue(fname, value);
+        } else if (ftype == StringField::FieldTypeValue()) {
+            doc->AddStringFieldValue(fname, val.ToString());
+        } else {
+            std::cerr << "Not Supported: TODO" << std::endl;
+            assert(false);
+        }
+    }
+
+    doc->Build();
+
+    delete it;
+    std::cout << doc->Dump() << std::endl;
 }
 
 void RocksDBImpl::Dump(bool do_print) {
