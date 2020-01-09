@@ -117,6 +117,32 @@ void RocksDBImpl::Init() {
     delete it;
 }
 
+rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std::shared_ptr<Doc> doc) {
+    uint64_t tid;
+    auto s = db_cache_->GetTidByTname(table_name, tid);
+    if (!s.ok()) {
+        std::cout << s.ToString() << __func__ << ":" << __LINE__ << std::endl;
+        return s;
+    }
+
+    std::string key(DBTableUidIdMappingPrefix);
+    Serializer::SerializeNumeric(tid, key);
+    Serializer::SerializeNumeric(uid, key);
+
+    std::string sid_id;
+    s = db_->Get(rdopt_, key, &sid_id);
+    if (!s.ok()) {
+        std::cout << s.ToString() << __func__ << ":" << __LINE__ << std::endl;
+        return s;
+    }
+
+    auto schema = db_cache_->GetSchema(tid);
+    doc.reset(new Doc(Helper::NewPK(uid), schema));
+
+    /* bool build_doc = mydoc.AddLongFieldValue("age", i) */
+    /*                       .AddStringFieldValue("uid", std::to_string(1000000+i)) */
+    /*                       .Build(); */
+}
 
 void RocksDBImpl::Dump(bool do_print) {
     rocksdb::ReadOptions options;
@@ -144,7 +170,7 @@ void RocksDBImpl::Dump(bool do_print) {
             std::cout << ":" << *id_addr << "]" << std::endl;
         } else if (key.starts_with(DBTableUidIdMappingPrefix)) {
             auto tid_addr = (uint64_t*)(key.data() + DBTableUidIdMappingPrefix.size());
-            auto uid_addr = (uint64_t*)(key.data() + DBTableUidIdMappingPrefix.size() + sizeof(uint64_t));
+            auto uid_addr = (long*)(key.data() + DBTableUidIdMappingPrefix.size() + sizeof(uint64_t));
 
             auto sid_addr = (uint64_t*)(val.data());
             auto id_addr = (uint64_t*)(val.data() + sizeof(uint64_t));

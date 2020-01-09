@@ -121,6 +121,7 @@ public:
     rocksdb::Status AddDoc(const std::string& table_name, const Doc& doc) override;
 
     rocksdb::Status GetLatestTableId(uint64_t tid);
+    rocksdb::Status GetDoc(const std::string& table_name, long uid, std::shared_ptr<Doc> doc) override;
 
     void Dump(bool do_print) override;
 
