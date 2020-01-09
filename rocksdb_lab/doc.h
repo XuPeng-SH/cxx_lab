@@ -5,9 +5,11 @@
 #include <map>
 #include <type_traits>
 #include <memory>
+#include <rocksdb/db.h>
 
 class Doc;
 class DocSchemaHandler;
+class DocSchemaSerializerHandler;
 class DocSchema {
 public:
     using PrimaryKeyT = LongField;
@@ -76,6 +78,44 @@ public:
         return true;
     }
 
+    rocksdb::Status Serialize(std::string& data) const;
+
+
+    static rocksdb::Status Deserialize(const rocksdb::Slice& data, DocSchema& schema) {
+        uint8_t fields_num = *(uint8_t*)(data.data());
+        int offset = 1;
+        uint8_t field_id;
+        uint8_t field_type;
+        uint8_t name_size;
+        std::string field_name;
+        while(fields_num-- > 0) {
+            field_id = *(uint8_t*)(data.data() + offset++);
+            field_type = *(uint8_t*)(data.data() + offset++);
+            name_size = *(uint8_t*)(data.data() + offset++);
+
+            field_name.assign(data.data()+offset, name_size);
+            offset += name_size;
+            /* std::cout << "field_id=" << (int)field_id << " field_type=" << (int)field_type; */
+            /* std::cout << " field_name=" << field_name << std::endl; */
+
+            // TODO: Store and fetch field parameters
+            if (field_type == LongField::FieldTypeValue()) {
+                LongField f(field_name);
+                schema.AddLongField(std::move(f));
+            } else if (field_type == StringField::FieldTypeValue()) {
+                StringField f(field_name);
+                schema.AddStringField(std::move(f));
+            } else if (field_type == FloatField::FieldTypeValue()) {
+                FloatField f(field_name);
+                schema.AddFloatField(std::move(f));
+            }
+        }
+
+        schema.Build();
+
+        return rocksdb::Status::OK();
+    }
+
     virtual ~DocSchema() {}
 
 protected:
@@ -112,6 +152,19 @@ public:
 
 protected:
     std::stringstream ss_;
+};
+
+class DocSchemaSerializerHandler : public DocSchemaHandler {
+public:
+    void PreHandle(const DocSchema& schema) override;
+    void Handle(const DocSchema& schema, const std::string& field_name, uint8_t field_id,
+        int idx, size_t offset) override;
+    void PostHandle(const DocSchema& schema) override;
+    const std::string& ToString() const;
+    std::string&& ToString();
+
+protected:
+    std::string serialized_;
 };
 
 class Doc : public DocSchema {

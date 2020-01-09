@@ -2,6 +2,7 @@
 #include <iostream>
 #include <rocksdb/db.h>
 #include "rocksdb_util.h"
+#include "utils.h"
 
 using namespace std;
 
@@ -12,19 +13,6 @@ std::string TableKey(const std::string& table_name) {
     std::string key = DBTablePrefix + table_name;
     return std::move(key);
 }
-
-/* struct A { */
-/*  A(int a) : a_(a) { std::cout << "C" << std::endl; } */
-/*  A(const A& o) { a_ = o.a_; std::cout << "C&" << std::endl; } */
-/*  A(A&& o) { a_ = std::move(o.a_); std::cout << "C&&" << std::endl; } */
-/*  int a_; */
-/* }; */
-
-/* A CallA() { */
-/*     A a(2); */
-/*     return std::move(a); */
-/* } */
-
 
 RocksDBImpl::RocksDBImpl(std::shared_ptr<rocksdb::DB> db)
 : db_(db), db_cache_(new DBCache())
@@ -117,7 +105,7 @@ void RocksDBImpl::Init() {
         auto tid_addr = (uint64_t*)(key.data() + DBTableMappingPrefix.size());
 
         DocSchema schema;
-        auto s = Serializer::DeserializeDocSchema(val, schema);
+        DocSchema::Deserialize(val, schema);
         if (!s.ok()) {
             std::cout << s.ToString() << std::endl;
         }
@@ -127,8 +115,6 @@ void RocksDBImpl::Init() {
     }
 
     delete it;
-    /* std::cout << "Start read_all ... " << std::endl; */
-    /* Dump(true); */
 }
 
 
@@ -169,7 +155,7 @@ void RocksDBImpl::Dump(bool do_print) {
             auto tid_addr = (uint64_t*)(key.data() + DBTableMappingPrefix.size());
 
             DocSchema schema;
-            auto s = Serializer::DeserializeDocSchema(val, schema);
+            auto s = DocSchema::Deserialize(val, schema);
             if (!s.ok()) {
                 std::cout << s.ToString() << std::endl;
             }
@@ -257,7 +243,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
     uint64_t offset;
     s = db_cache_->GetTidOffset(tid, offset);
     std::map<uint8_t, std::string> doc_serialized;
-    Serializer::SerializeDoc(doc, doc_serialized);
+    doc_serialized = doc.Serialize();
     std::string addr_to_delete;
     std::string fval_to_delete;
 
@@ -267,6 +253,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
         if (fid == 0) {
             key.assign(DBTableUidIdMappingPrefix);
             key.append((char*)&tid, sizeof(tid));
+            /* Serializer::SerializeNumeric(tid, key); */
             key.append(v);
 
             {
@@ -446,7 +433,7 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
         wb.Put(tss_k, tss_v);
 
         std::string schema_serialized;
-        s = Serializer::SerializeDocSchema(schema, schema_serialized);
+        s = schema.Serialize(schema_serialized);
         if (!s.ok()) {
             std::cerr << s.ToString() << std::endl;
             assert(false);

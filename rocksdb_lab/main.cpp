@@ -13,6 +13,7 @@
 #include <rocksdb/comparator.h>
 #include <rocksdb/table.h>
 #include "doc.h"
+#include "utils.h"
 
 using namespace std;
 using namespace rocksdb;
@@ -34,6 +35,14 @@ DEFINE_string(tname, "default", "table name");
 
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
+    /* int a1=257; */
+    /* int a2 = 8; */
+    /* string b1, b2; */
+    /* db::Serializer::SerializeNumeric(a1, b1); */
+    /* db::Serializer::SerializeNumeric(a2, b2); */
+
+    /* std::cout << (b1 > b2) << std::endl; */
+    /* return 0; */
 
     auto options = db::DefaultOpenOptions();
 
@@ -96,14 +105,14 @@ int main(int argc, char** argv) {
     auto CHECK_SERIALIZER = [&]()
     {
         std::string meta;
-        db::Serializer::SerializeFieldMeta(uid_field, meta);
+        Serializer::SerializeFieldMeta(uid_field, meta);
         uint8_t type;
         std::string fname;
-        db::Serializer::DeserializeFieldMeta(meta, type, fname);
+        Serializer::DeserializeFieldMeta(meta, type, fname);
         std::string doc_serialized;
-        db::Serializer::SerializeDocSchema(*schema, doc_serialized);
+        schema->Serialize(doc_serialized);
         DocSchema dschema;
-        db::Serializer::DeserializeDocSchema(doc_serialized, dschema);
+        DocSchema::Deserialize(doc_serialized, dschema);
         /* return 0; */
     };
 

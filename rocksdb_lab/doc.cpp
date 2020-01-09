@@ -74,6 +74,13 @@ bool DocSchema::Build() {
     return true;
 }
 
+rocksdb::Status DocSchema::Serialize(std::string& data) const {
+    DocSchemaSerializerHandler handler;
+    this->Iterate(&handler);
+    data = std::move(handler.ToString());
+    return rocksdb::Status::OK();
+}
+
 DocSchema& DocSchema::AddLongFieldValue(const std::string& name, long value) {
     LongField field(name);
     field.SetValue(value);
@@ -270,6 +277,49 @@ void DumpHandler::Handle(const DocSchema& schema, const std::string& field_name,
 }
 
 void DumpHandler::PostHandle(const DocSchema& schema) {
+}
+
+void DocSchemaSerializerHandler::PreHandle(const DocSchema& schema) {
+    /* TODO: Schema need check fields_num, fields_type, and field_name size */
+    // [$fields_num][$field_1_id][$field_1_type][$field_1_size][$field_1_name]
+    //    uint8_t      uint8_t       uint8_t       uint8_t        bytes
+    uint8_t fields_num = (uint8_t)(schema.Size());
+    serialized_ = "";
+    serialized_.append((char*)&fields_num, sizeof(fields_num));
+}
+
+void DocSchemaSerializerHandler::Handle(const DocSchema& schema, const std::string& field_name, uint8_t field_id,
+        int idx, size_t offset) {
+    /* serialized_.append((char*)&fields_id_, sizeof(fields_id_)); */
+    serialized_.append((char*)&field_id, sizeof(field_id));
+
+    if (idx == DocSchema::LongFieldIdx) {
+        auto tval = LongField::FieldTypeValue();
+        serialized_.append((char*)&tval, sizeof(tval));
+    } else if (idx == DocSchema::FloatFieldIdx) {
+        auto tval = FloatField::FieldTypeValue();
+        serialized_.append((char*)&tval, sizeof(tval));
+    } else if (idx == DocSchema::StringFieldIdx) {
+        auto tval = StringField::FieldTypeValue();
+        serialized_.append((char*)&tval, sizeof(tval));
+    } else if (idx == DocSchema::FloatVectorFieldIdx) {
+        auto tval = FloatVectorField::FieldTypeValue();
+        serialized_.append((char*)&tval, sizeof(tval));
+    }
+
+    auto size = (uint8_t)field_name.size();
+    serialized_.append((char*)&size, sizeof(size));
+    serialized_.append(field_name.data(), size);
+}
+
+void DocSchemaSerializerHandler::PostHandle(const DocSchema& schema) {
+}
+
+const std::string& DocSchemaSerializerHandler::ToString() const {
+    return serialized_;
+}
+std::string&& DocSchemaSerializerHandler::ToString() {
+    return std::move(serialized_);
 }
 
 Doc::Doc(const PrimaryKeyT& pk, const std::shared_ptr<DocSchema> schema)
