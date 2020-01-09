@@ -262,7 +262,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                     // 1. Delete UID
                     // 2. Find And Delete All Fields, TODO
                     // 3. Update all bitmap like marker for vector deletion, TODO
-                    std::cout << "DELETE_ID[" << key << std::endl;
+                    /* std::cout << "DELETE_ID[" << key << std::endl; */
                     wb.Delete(key);
                 }
             }
@@ -296,11 +296,13 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                 to_delete_index_key.append(fval_to_delete);
                 to_delete_index_key.append(addr_to_delete);
 
-                std::cout << "DELETE_INDEX[" << DBTableFieldIndexPrefix << ":" << tid << ":" << (int)fid;
-                if (fid==1)
-                    std::cout <<  ":" << *(long*)(fval_to_delete.data()) << "]" << std::endl;
-                else
-                    std::cout <<  ":" << fval_to_delete << "]" << std::endl;
+                {
+                    std::cout << "DELETE_INDEX[" << DBTableFieldIndexPrefix << ":" << tid << ":" << (int)fid;
+                    if (fid==1)
+                        std::cout <<  ":" << *(long*)(fval_to_delete.data()) << "]" << std::endl;
+                    else
+                        std::cout <<  ":" << fval_to_delete << "]" << std::endl;
+                }
                 wb.Delete(to_delete_index_key);
             }
 
@@ -329,11 +331,12 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             key.append((char*)(&sid), sizeof(sid));
             key.append((char*)(&offset), sizeof(offset));
 
+#if 1
             {
                 uint8_t field_type;
                 auto fval_addr = v.data();
                 schema->GetFieldType(fid, field_type);
-                std::cout << "ADDING_INDEX[" << DBTableFieldIndexPrefix << ":" << tid << ":" << (int)fid << ":";
+                /* std::cout << "ADDING_INDEX[" << DBTableFieldIndexPrefix << ":" << tid << ":" << (int)fid << ":"; */
                 if (field_type == LongField::FieldTypeValue()) {
                     std::cout << *(long*)(fval_addr);
                 } else if (field_type == FloatField::FieldTypeValue()) {
@@ -350,6 +353,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                 /* std::cout  << v */
                 std::cout  << ":" << sid << ":" << offset << "]" << std::endl;
             }
+#endif
             val.clear();
             wb.Put(key, val);
         }
