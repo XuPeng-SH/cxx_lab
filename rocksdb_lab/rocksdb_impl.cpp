@@ -123,6 +123,12 @@ void RocksDBImpl::Init() {
     delete it;
 }
 
+rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
+            std::vector<std::shared_ptr<Doc>> docs,
+            const FieldsFilter& filter) {
+    return rocksdb::Status::OK();
+}
+
 rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std::shared_ptr<Doc> doc) {
     uint64_t tid;
     auto s = db_cache_->GetTidByTname(table_name, tid);

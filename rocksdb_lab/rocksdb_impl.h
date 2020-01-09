@@ -123,6 +123,10 @@ public:
     rocksdb::Status GetLatestTableId(uint64_t tid);
     rocksdb::Status GetDoc(const std::string& table_name, long uid, std::shared_ptr<Doc> doc) override;
 
+    rocksdb::Status GetDocs(const std::string& table_name,
+            std::vector<std::shared_ptr<Doc>> docs,
+            const FieldsFilter& filter) override;
+
     void Dump(bool do_print) override;
 
 protected:

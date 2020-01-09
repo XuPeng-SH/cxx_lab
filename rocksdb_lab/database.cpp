@@ -17,9 +17,10 @@ rocksdb::Status MyDB::GetDoc(const std::string& table_name, long uid, std::share
     return impl_->GetDoc(table_name, uid, doc);
 }
 
-/* rocksdb::Status MyDB::GetDocs(const std::string& table_name, std::vector<std::shared_ptr<Doc>> docs) { */
-/*     return impl_->GetDocs(table_name, uids, docs); */
-/* } */
+rocksdb::Status MyDB::GetDocs(const std::string& table_name, std::vector<std::shared_ptr<Doc>> docs,
+        const FieldsFilter& filter) {
+    return impl_->GetDocs(table_name, docs, filter);
+}
 
 void MyDB::Dump(bool do_print) {
     return impl_->Dump(do_print);
