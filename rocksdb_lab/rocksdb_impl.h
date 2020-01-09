@@ -11,6 +11,7 @@
 #include <shared_mutex>
 #include "database.h"
 #include "doc.h"
+#include "rocksdb_util.h"
 
 namespace db {
 
@@ -112,6 +113,59 @@ private:
     std::map<uint64_t, std::string> tidnamemap_;
     std::map<std::string, std::shared_ptr<DocSchema>> tschemaamp_;
     std::map<uint64_t, uint64_t> offset_;
+};
+
+class KeyHelper {
+public:
+    //$Prefix$tid$fid$val$sid$id
+    static void PrintDBIndexKey(const rocksdb::Slice& key,
+                                std::shared_ptr<DBCache> cache,
+                                const std::string& header = "") {
+        rocksdb::Slice prefix(key.data(), PrefixSize);
+        std::cout << header << "[ " << prefix.ToString() << ":";
+        uint64_t tid, sid, id;
+        uint8_t fid;
+        rocksdb::Slice tid_slice(prefix.data() + PrefixSize, sizeof(tid));
+        Serializer::DeserializeNumeric(tid_slice, tid);
+        auto schema = cache->GetSchema(tid);
+
+        rocksdb::Slice fid_slice(tid_slice.data() + sizeof(tid), sizeof(fid));
+        Serializer::DeserializeNumeric(fid_slice, fid);
+        uint8_t field_type;
+        auto s = schema->GetFieldType(fid, field_type);
+        if (!s) {
+            std::cerr << "Cannot get field type of field_id" << fid << std::endl;
+            return;
+        }
+
+        std::cout << tid << ":" << (int)fid;
+        if (field_type == LongField::FieldTypeValue()) {
+            long val;
+            rocksdb::Slice val_slice(fid_slice.data()+sizeof(fid), sizeof(val));
+            Serializer::DeserializeNumeric(val_slice, val);
+            std::cout << ":" << val;
+        } else if (field_type == FloatField::FieldTypeValue()) {
+            float val;
+            rocksdb::Slice val_slice(fid_slice.data()+sizeof(fid), sizeof(val));
+            Serializer::DeserializeNumeric(val_slice, val);
+            std::cout << ":" << val;
+        } else if (field_type == StringField::FieldTypeValue()) {
+            auto size = key.size() - DBTableFieldIndexPrefix.size()
+                - sizeof(uint64_t) - sizeof(uint8_t) - 2 * sizeof(uint64_t);
+            std::cout << ":" << rocksdb::Slice(fid_slice.data()+sizeof(fid), size).ToString();
+        } else {
+            std::cerr << "TODO" << std::endl;
+            assert(false);
+        }
+        auto sid_addr = key.data() + key.size() - 2 * sizeof(uint64_t);
+        auto id_addr = key.data() + key.size() - 1 * sizeof(uint64_t);
+        rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
+        rocksdb::Slice id_slice(id_addr, sizeof(id));
+        Serializer::DeserializeNumeric(sid_slice, sid);
+        Serializer::DeserializeNumeric(id_slice, id);
+
+        std::cout << ":" << sid << ":" << id << " ]" << std::endl;
+    }
 };
 
 class RocksDBImpl : public DBImpl {

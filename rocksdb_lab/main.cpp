@@ -12,6 +12,7 @@
 #include "rocksdb_util.h"
 #include <rocksdb/comparator.h>
 #include <rocksdb/table.h>
+#include "database.h"
 #include "doc.h"
 #include "utils.h"
 
@@ -122,7 +123,7 @@ int main(int argc, char** argv) {
         thisdb->CreateTable(table_name, *schema);
         for (auto i=0; i<num; i++) {
             Doc mydoc(Helper::NewPK(i+10000), schema);
-            mydoc.AddLongFieldValue("age", i)
+            mydoc.AddLongFieldValue("age", 10+i)
                  .AddStringFieldValue("uid", std::to_string(1000000+i))
                  .Build();
 
@@ -199,6 +200,19 @@ int main(int argc, char** argv) {
     {
         std::shared_ptr<Doc> doc;
         auto s = thisdb->GetDoc("mockt", 10000, doc);
+        cout << s.ToString() << endl;
+    }
+    {
+        std::vector<std::shared_ptr<Doc>> docs;
+        db::FieldsFilter filters;
+        db::FieldFilter filter;
+        long age_upper = 100;
+        long age_lower = 0;
+        Serializer::SerializeNumeric(age_upper, filter.upper_bound);
+        Serializer::SerializeNumeric(age_lower, filter.lower_bound);
+        filter.name = "age";
+        filters.push_back(std::move(filter));
+        auto s = thisdb->GetDocs("mockt", docs, filters);
         cout << s.ToString() << endl;
     }
 

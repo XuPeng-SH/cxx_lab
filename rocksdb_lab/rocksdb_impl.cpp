@@ -1,6 +1,7 @@
 #include "rocksdb_impl.h"
 #include <iostream>
 #include <rocksdb/db.h>
+#include <set>
 #include "rocksdb_util.h"
 #include "utils.h"
 
@@ -135,10 +136,40 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
 
     auto schema = db_cache_->GetSchema(tid);
 
+    /* std::string max_sid_id; */
+    /* Serializer::SerializeNumeric((uint64_t)0, max_sid_id); */
+    /* std::string min_sid_id; */
+    /* Serializer::SerializeNumeric(std::numeric_limits<uint64_t>::max(), min_sid_id); */
+
+    std::set<std::string> filtered;
+    // [Key]$Prefix:$tid:$fid$fval$sid$id -> None
     for (auto& f : filter) {
+        uint8_t field_id;
+        auto found = schema->GetFieldId(f.name, field_id);
+        if (!found) {
+            std::cerr << "Error: Cannot find field_name=" << f.name << std::endl;
+            return rocksdb::Status::InvalidArgument();
+        }
+
         rocksdb::ReadOptions options;
-        options.iterate_upper_bound = f.upper_bound;
-        options.iterate_lower_bound = f.lower_bound;
+
+        std::string upper(DBTableFieldIndexPrefix);
+        std::string lower(DBTableFieldIndexPrefix);
+
+        Serializer::SerializeNumeric(tid, upper);
+        Serializer::SerializeNumeric(field_id, upper);
+        upper.append(f.upper_bound.data(), f.upper_bound.size());
+        Serializer::SerializeNumeric(tid, lower);
+        Serializer::SerializeNumeric(field_id, lower);
+        lower.append(f.lower_bound.data(), f.lower_bound.size());
+
+        rocksdb::Slice l(lower);
+        rocksdb::Slice u(upper);
+
+        std::cout << "XXXX " << lower << std::endl;
+        std::cout << "YYYY " << upper << std::endl;
+        options.iterate_upper_bound = &l;
+        options.iterate_lower_bound = &u;
 
         rocksdb::Iterator* it = db_->NewIterator(options);
 
@@ -146,11 +177,14 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
         for (it->SeekToFirst(); it->Valid(); it->Next()) {
             if (items >= f.number) break;
             auto key = it->key();
-
+            std::string sid_id(key.data() + key.size() - 2 * sizeof(uint64_t), 2 * sizeof(uint64_t));
+            filtered.insert(std::move(sid_id));
         }
 
         delete it;
     }
+
+    std::cout << "filtered size=" << filtered.size() << std::endl;
 
     return rocksdb::Status::OK();
 }
@@ -315,51 +349,7 @@ void RocksDBImpl::Dump(bool do_print) {
             /* std::cout << ", " << schema.Dump() << "]" << std::endl; */
 
         } else if (key.starts_with(DBTableFieldIndexPrefix)) {
-            // [Key]$Prefix:$tid:$fid$fval [Val]$sid$id
-            uint64_t tid;
-            auto tid_addr = key.data() + DBTableFieldIndexPrefix.size();
-            rocksdb::Slice tid_slice(tid_addr, sizeof(tid));
-            Serializer::DeserializeNumeric(tid_slice, tid);
-            auto schema = db_cache_->GetSchema(tid);
-
-            uint8_t fid;
-            auto fid_addr = (char*)(tid_addr) + sizeof(uint64_t);
-            auto fval_addr = (char*)((char*)(tid_addr) + sizeof(uint64_t) + sizeof(uint8_t));
-
-            rocksdb::Slice fid_slice(fid_addr, sizeof(fid));
-            Serializer::DeserializeNumeric(fid_slice, fid);
-
-            std::cout << "[" << DBTableFieldIndexPrefix << ":" << tid << ":" << (int)fid << ":";
-            uint8_t ftype;
-            auto s = schema->GetFieldType(fid, ftype);
-            if (!s) {
-                std::cerr << "Cannot get field type of field_id" << fid << std::endl;
-                return;
-            }
-
-            if (ftype == LongField::FieldTypeValue()) {
-                std::cout << *(long*)(fval_addr);
-            } else if (ftype == FloatField::FieldTypeValue()) {
-                std::cout << *(float*)(fval_addr);
-            } else if (ftype == StringField::FieldTypeValue()) {
-                auto size = key.size() - DBTableFieldIndexPrefix.size()
-                    - sizeof(uint64_t) - sizeof(uint8_t) - 2 * sizeof(uint64_t);
-                std::cout << rocksdb::Slice(fval_addr, size).ToString();
-            } else {
-                std::cerr << "TODO" << std::endl;
-                assert(false);
-            }
-
-            uint64_t sid, id;
-            auto sid_addr = key.data() + key.size() - 2 * sizeof(uint64_t);
-            auto id_addr = key.data() + key.size() - 1 * sizeof(uint64_t);
-            rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
-            rocksdb::Slice id_slice(id_addr, sizeof(id));
-            Serializer::DeserializeNumeric(sid_slice, sid);
-            Serializer::DeserializeNumeric(id_slice, id);
-
-            std::cout << ":" << sid << ":" << id << "]" << std::endl;
-
+            KeyHelper::PrintDBIndexKey(key, db_cache_);
         } else if (key.starts_with(DBTableFieldValuePrefix)) {
             // [Key]$Prefix:$tid:$sid$id$fid    [val]$fval
             uint64_t tid, sid, offset;
@@ -488,12 +478,9 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                 to_delete_index_key.append(addr_to_delete);
 
                 {
-                    std::cout << "DELETE_INDEX[" << DBTableFieldIndexPrefix << ":" << tid << ":" << (int)fid;
-                    if (fid==1)
-                        std::cout <<  ":" << *(long*)(fval_to_delete.data()) << "]" << std::endl;
-                    else
-                        std::cout <<  ":" << fval_to_delete << "]" << std::endl;
+                    KeyHelper::PrintDBIndexKey(to_delete_index_key, db_cache_, "DELETE_INDEX");
                 }
+
                 wb.Delete(to_delete_index_key);
             }
 
@@ -524,29 +511,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
 
 #if 1
             {
-                uint8_t field_type;
-                auto fval_addr = v.data();
-                schema->GetFieldType(fid, field_type);
-                std::cout << "ADDING_INDEX[" << DBTableFieldIndexPrefix << ":" << tid << ":" << (int)fid << ":";
-                if (field_type == LongField::FieldTypeValue()) {
-                    long vv;
-                    Serializer::DeserializeNumeric(rocksdb::Slice(fval_addr, sizeof(vv)), vv);
-                    std::cout << vv;
-                } else if (field_type == FloatField::FieldTypeValue()) {
-                    float vv;
-                    Serializer::DeserializeNumeric(rocksdb::Slice(fval_addr, sizeof(vv)), vv);
-                    std::cout << vv;
-                } else if (field_type == StringField::FieldTypeValue()) {
-                    auto size = key.size() - DBTableFieldIndexPrefix.size()
-                        - sizeof(uint64_t) - sizeof(uint8_t) - 2 * sizeof(uint64_t);
-                    std::cout << rocksdb::Slice(fval_addr, size).ToString();
-                } else {
-                    std::cerr << "TODO" << std::endl;
-                    assert(false);
-                }
-
-                /* std::cout  << v */
-                std::cout  << ":" << sid << ":" << offset << "]" << std::endl;
+                KeyHelper::PrintDBIndexKey(key, db_cache_, "ADDING_INDEX");
             }
 #endif
             val.clear();

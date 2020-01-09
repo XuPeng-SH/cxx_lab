@@ -14,9 +14,9 @@ namespace rocksdb {
 namespace db {
 
 struct FieldFilter {
-    rocksdb::Slice upper_bound;
-    rocksdb::Slice lower_bound;
-    rocksdb::Slice name;
+    std::string upper_bound;
+    std::string lower_bound;
+    std::string name;
     size_t number = std::numeric_limits<size_t>::max();
 };
 
