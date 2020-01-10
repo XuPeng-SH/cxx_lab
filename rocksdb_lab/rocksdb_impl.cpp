@@ -159,8 +159,8 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
         Serializer::SerializeNumeric(tid, upper);
         Serializer::SerializeNumeric(field_id, upper);
         upper.append(f.upper_bound.data(), f.upper_bound.size());
-        Serializer::SerializeNumeric(std::numeric_limits<uint64_t>::max(), upper);
-        Serializer::SerializeNumeric(std::numeric_limits<uint64_t>::max(), upper);
+        Serializer::SerializeNumeric(std::numeric_limits<uint64_t>::min(), upper);
+        Serializer::SerializeNumeric(std::numeric_limits<uint64_t>::min(), upper);
 
         Serializer::SerializeNumeric(tid, lower);
         Serializer::SerializeNumeric(field_id, lower);
@@ -171,8 +171,8 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
         rocksdb::Slice l(lower);
         rocksdb::Slice u(upper);
 
-        options.iterate_upper_bound = &l;
-        options.iterate_lower_bound = &u;
+        options.iterate_lower_bound = &l;
+        options.iterate_upper_bound = &u;
 
         KeyHelper::PrintDBIndexKey(l, db_cache_, "LOWER_BOUND");
         KeyHelper::PrintDBIndexKey(u, db_cache_, "UPPER_BOUND");
@@ -181,7 +181,6 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
 
         size_t items = 0;
         for (it->SeekToFirst(); it->Valid(); it->Next()) {
-            std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl;
             if (items++ >= f.number) break;
             auto key = it->key();
             std::string sid_id(key.data() + key.size() - 2 * sizeof(uint64_t), 2 * sizeof(uint64_t));
