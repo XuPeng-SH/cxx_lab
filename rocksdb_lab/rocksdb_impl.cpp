@@ -370,7 +370,8 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             }
             // $Prefix$tid$uid ==> $sid$id
             wb.Put(key, val);
-        } else {
+        }
+        {
             if(!addr_to_delete.empty()) {
                 std::string field_key(DBTableFieldValuePrefix);
                 Serializer::SerializeNumeric(tid, field_key);
@@ -417,12 +418,14 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             }
 
             // [Key]$Prefix:$tid:$fid$fval$sid$id -> None
-            key.assign(DBTableFieldIndexPrefix);
-            Serializer::SerializeNumeric(tid, key);
-            Serializer::SerializeNumeric(fid, key);
-            key.append(v.data(), v.size());
-            Serializer::SerializeNumeric(sid, key);
-            Serializer::SerializeNumeric(offset, key);
+            {
+                key.assign(DBTableFieldIndexPrefix);
+                Serializer::SerializeNumeric(tid, key);
+                Serializer::SerializeNumeric(fid, key);
+                key.append(v.data(), v.size());
+                Serializer::SerializeNumeric(sid, key);
+                Serializer::SerializeNumeric(offset, key);
+            }
 
 #if 1
             {
