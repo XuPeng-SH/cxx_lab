@@ -294,19 +294,7 @@ void RocksDBImpl::Dump(bool do_print) {
             //$Prefix$tid$uid ==> $sid$id
             KeyHelper::PrintDBUidIdMappingKey(key, val, db_cache_);
         } else if (key.starts_with(DBTableMappingPrefix)) {
-            uint64_t tid;
-            auto tid_addr = key.data() + DBTableMappingPrefix.size();
-            rocksdb::Slice tid_slice(tid_addr, sizeof(tid));
-
-            DocSchema schema;
-            auto s = DocSchema::Deserialize(val, schema);
-            if (!s.ok()) {
-                std::cout << s.ToString() << std::endl;
-            }
-            std::cout << "[" << DBTableMappingPrefix << ":" << tid << "]" << std::endl;
-            /* std::cout << "[" << DBTableMappingPrefix << ":" << *tid_addr; */
-            /* std::cout << ", " << schema.Dump() << "]" << std::endl; */
-
+            KeyHelper::PrintDBTableMappingKey(key, val, db_cache_);
         } else if (key.starts_with(DBTableFieldIndexPrefix)) {
             KeyHelper::PrintDBIndexKey(key, db_cache_);
         } else if (key.starts_with(DBTableFieldValuePrefix)) {

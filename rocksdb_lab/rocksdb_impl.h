@@ -139,6 +139,22 @@ public:
         std::cout << header << "[ " << DBTableSequenceKey << ", " << tid << " ]" << std::endl;
     }
 
+    static void PrintDBTableMappingKey(const rocksdb::Slice& key,
+                                       const rocksdb::Slice& val,
+                                       std::shared_ptr<DBCache> cache,
+                                       const std::string& header = "") {
+        uint64_t tid;
+        auto tid_addr = key.data() + PrefixSize;
+        rocksdb::Slice tid_slice(tid_addr, sizeof(tid));
+
+        DocSchema schema;
+        auto s = DocSchema::Deserialize(val, schema);
+        if (!s.ok()) {
+            std::cout << s.ToString() << std::endl;
+        }
+        std::cout << header << "[ " << DBTableMappingPrefix << ":" << tid << " ]" << std::endl;
+    }
+
     static void PrintDBSegmentNextIDKey(const rocksdb::Slice& key,
                                         const rocksdb::Slice& val,
                                         std::shared_ptr<DBCache> cache,
