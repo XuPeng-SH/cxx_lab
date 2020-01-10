@@ -117,6 +117,18 @@ private:
 
 class KeyHelper {
 public:
+    static void PrintDBTableNextKey(const rocksdb::Slice& key,
+                                    const rocksdb::Slice& val,
+                                    std::shared_ptr<DBCache> cache,
+                                    const std::string& header = "") {
+        uint64_t tid;
+
+        Serializer::DeserializeNumeric(val, tid);
+
+        std::cout << header << "[ " << key.ToString() << ", " << tid << " ]" << std::endl;
+
+    }
+
     // [Key]$Prefix:$tid:$sid$id$fid    [val]$fval
     static void PrintDBFieldValueKeyValue(const rocksdb::Slice& key,
                                      const rocksdb::Slice& val,

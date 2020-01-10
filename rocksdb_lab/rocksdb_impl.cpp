@@ -59,7 +59,9 @@ void RocksDBImpl::Init() {
             auto val = it->value();
             std::string tk = std::string(key.data()+DBTablePrefix.size(), key.size()-DBTablePrefix.size());
             db_cache_->UpdateTableMapping(*(uint64_t*)(val.data()), tk);
-            std::cout << "Found k=" << tk << " tid=" << *(uint64_t*)(val.data()) << " " << __func__ << ":" << __LINE__ << std::endl;
+            {
+                KeyHelper::PrintDBTableNextKey(tk, val, db_cache_, "Initializing ");
+            }
         }
         delete it;
     }
@@ -281,10 +283,7 @@ void RocksDBImpl::Dump(bool do_print) {
         auto key = it->key();
         auto val = it->value();
         if (key.starts_with(DBTablePrefix)) {
-            uint64_t tid;
-            Serializer::DeserializeNumeric(val, tid);
-            std::cout << "[" << key.ToString() << ", " << tid << "]" << std::endl;
-
+            KeyHelper::PrintDBTableNextKey(key, val, db_cache_);
         } else if (key.starts_with(DBTableCurrentSegmentPrefix)) {
             auto tid_addr = key.data() + DBTableCurrentSegmentPrefix.size();
             uint64_t tid;
