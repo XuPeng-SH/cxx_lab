@@ -60,7 +60,7 @@ void RocksDBImpl::Init() {
             std::string tk = std::string(key.data()+DBTablePrefix.size(), key.size()-DBTablePrefix.size());
             db_cache_->UpdateTableMapping(*(uint64_t*)(val.data()), tk);
             {
-                KeyHelper::PrintDBTableNextKey(tk, val, db_cache_, "Initializing ");
+                KeyHelper::PrintDBTableNameKey(tk, val, db_cache_, "Initializing ");
             }
         }
         delete it;
@@ -283,24 +283,11 @@ void RocksDBImpl::Dump(bool do_print) {
         auto key = it->key();
         auto val = it->value();
         if (key.starts_with(DBTablePrefix)) {
-            KeyHelper::PrintDBTableNextKey(key, val, db_cache_);
+            KeyHelper::PrintDBTableNameKey(key, val, db_cache_);
         } else if (key.starts_with(DBTableCurrentSegmentPrefix)) {
-            auto tid_addr = key.data() + DBTableCurrentSegmentPrefix.size();
-            uint64_t tid;
-            rocksdb::Slice tid_sli(tid_addr, sizeof(tid));
-            Serializer::DeserializeNumeric(tid_sli, tid);
-
-            uint64_t sid;
-            Serializer::DeserializeNumeric(val, sid);
-
-            std::cout << "[" << DBTableCurrentSegmentPrefix << ":" << tid << ", " << tid << "]" << std::endl;
-
+            KeyHelper::PrintDBCurrentSegmentKey(key, val, db_cache_);
         } else if (key.starts_with(DBTableSequenceKey)) {
-            uint64_t tid;
-            Serializer::DeserializeNumeric(val, tid);
-
-            std::cout << "[" << DBTableSequenceKey << ", " << tid << "]" << std::endl;
-
+            KeyHelper::PrintDBSequenceKey(key, val, db_cache_);
         } else if (key.starts_with(DBTableSegmentNextIDPrefix)) {
             uint64_t tid, sid, id;
             auto tid_addr = key.data() + DBTableSegmentNextIDPrefix.size();

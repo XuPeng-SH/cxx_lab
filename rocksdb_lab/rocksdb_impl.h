@@ -117,7 +117,7 @@ private:
 
 class KeyHelper {
 public:
-    static void PrintDBTableNextKey(const rocksdb::Slice& key,
+    static void PrintDBTableNameKey(const rocksdb::Slice& key,
                                     const rocksdb::Slice& val,
                                     std::shared_ptr<DBCache> cache,
                                     const std::string& header = "") {
@@ -127,6 +127,32 @@ public:
 
         std::cout << header << "[ " << key.ToString() << ", " << tid << " ]" << std::endl;
 
+    }
+
+    static void PrintDBSequenceKey(const rocksdb::Slice& key,
+                                   const rocksdb::Slice& val,
+                                   std::shared_ptr<DBCache> cache,
+                                   const std::string& header = "") {
+        uint64_t tid;
+        Serializer::DeserializeNumeric(val, tid);
+
+        std::cout << header << "[ " << DBTableSequenceKey << ", " << tid << " ]" << std::endl;
+    }
+
+    static void PrintDBCurrentSegmentKey(const rocksdb::Slice& key,
+                                         const rocksdb::Slice& val,
+                                         std::shared_ptr<DBCache> cache,
+                                         const std::string& header = "") {
+
+        auto tid_addr = key.data() + PrefixSize;
+        uint64_t tid;
+        rocksdb::Slice tid_sli(tid_addr, sizeof(tid));
+        Serializer::DeserializeNumeric(tid_sli, tid);
+
+        uint64_t sid;
+        Serializer::DeserializeNumeric(val, sid);
+
+        std::cout << header << "[ " << DBTableCurrentSegmentPrefix << ":" << tid << ", " << sid << " ]" << std::endl;
     }
 
     // [Key]$Prefix:$tid:$sid$id$fid    [val]$fval
