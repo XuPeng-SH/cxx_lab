@@ -123,7 +123,7 @@ public:
                                     const std::string& header = "") {
         uint64_t tid;
 
-        Serializer::DeserializeNumeric(val, tid);
+        Serializer::Deserialize(val, tid);
 
         std::cout << header << "[ " << key.ToString() << ", " << tid << " ]" << std::endl;
 
@@ -134,7 +134,7 @@ public:
                                    std::shared_ptr<DBCache> cache,
                                    const std::string& header = "") {
         uint64_t tid;
-        Serializer::DeserializeNumeric(val, tid);
+        Serializer::Deserialize(val, tid);
 
         std::cout << header << "[ " << DBTableSequenceKey << ", " << tid << " ]" << std::endl;
     }
@@ -167,9 +167,9 @@ public:
         rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
         rocksdb::Slice id_slice(id_addr, sizeof(id));
 
-        Serializer::DeserializeNumeric(tid_slice, tid);
-        Serializer::DeserializeNumeric(sid_slice, sid);
-        Serializer::DeserializeNumeric(id_slice, id);
+        Serializer::Deserialize(tid_slice, tid);
+        Serializer::Deserialize(sid_slice, sid);
+        Serializer::Deserialize(id_slice, id);
 
         std::cout << header << "[ " << DBTableSegmentNextIDPrefix << tid << ", " << sid;
         std::cout << ":" << id << " ]" << std::endl;
@@ -191,10 +191,10 @@ public:
         rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
         rocksdb::Slice id_slice(id_addr, sizeof(id));
 
-        Serializer::DeserializeNumeric(tid_slice, tid);
-        Serializer::DeserializeNumeric(sid_slice, sid);
-        Serializer::DeserializeNumeric(uid_slice, uid);
-        Serializer::DeserializeNumeric(id_slice, id);
+        Serializer::Deserialize(tid_slice, tid);
+        Serializer::Deserialize(sid_slice, sid);
+        Serializer::Deserialize(uid_slice, uid);
+        Serializer::Deserialize(id_slice, id);
 
         std::cout << header << "[ " << DBTableUidIdMappingPrefix << ":" << tid << ":" << uid;
         std::cout << ", " << sid << ":" << id << " ]" << std::endl;
@@ -208,10 +208,10 @@ public:
         auto tid_addr = key.data() + PrefixSize;
         uint64_t tid;
         rocksdb::Slice tid_sli(tid_addr, sizeof(tid));
-        Serializer::DeserializeNumeric(tid_sli, tid);
+        Serializer::Deserialize(tid_sli, tid);
 
         uint64_t sid;
-        Serializer::DeserializeNumeric(val, sid);
+        Serializer::Deserialize(val, sid);
 
         std::cout << header << "[ " << DBTableCurrentSegmentPrefix << ":" << tid << ", " << sid << " ]" << std::endl;
     }
@@ -233,10 +233,10 @@ public:
         rocksdb::Slice offset_slice(offset_addr, sizeof(offset));
         rocksdb::Slice fid_slice(fid_addr, sizeof(fid));
 
-        Serializer::DeserializeNumeric(tid_slice, tid);
-        Serializer::DeserializeNumeric(sid_slice, sid);
-        Serializer::DeserializeNumeric(offset_slice, offset);
-        Serializer::DeserializeNumeric(fid_slice, fid);
+        Serializer::Deserialize(tid_slice, tid);
+        Serializer::Deserialize(sid_slice, sid);
+        Serializer::Deserialize(offset_slice, offset);
+        Serializer::Deserialize(fid_slice, fid);
 
         std::cout << header << "[ " << DBTableFieldValuePrefix << ":" << tid << ":" << sid << ":" << offset << ":" << (int)fid;
 
@@ -250,11 +250,11 @@ public:
 
         if (field_type == LongField::FieldTypeValue()) {
             long vv;
-            Serializer::DeserializeNumeric(val, vv);
+            Serializer::Deserialize(val, vv);
             std::cout << ":" << vv;
         } else if (field_type == FloatField::FieldTypeValue()) {
             long vv;
-            Serializer::DeserializeNumeric(val, vv);
+            Serializer::Deserialize(val, vv);
             std::cout << ":" << vv;
         } else if (field_type == StringField::FieldTypeValue()) {
             std::cout << ":" << val.ToString();
@@ -276,11 +276,11 @@ public:
         uint64_t tid, sid, id;
         uint8_t fid;
         rocksdb::Slice tid_slice(prefix.data() + PrefixSize, sizeof(tid));
-        Serializer::DeserializeNumeric(tid_slice, tid);
+        Serializer::Deserialize(tid_slice, tid);
         auto schema = cache->GetSchema(tid);
 
         rocksdb::Slice fid_slice(tid_slice.data() + sizeof(tid), sizeof(fid));
-        Serializer::DeserializeNumeric(fid_slice, fid);
+        Serializer::Deserialize(fid_slice, fid);
         uint8_t field_type;
         auto s = schema->GetFieldType(fid, field_type);
         if (!s) {
@@ -292,12 +292,12 @@ public:
         if (field_type == LongField::FieldTypeValue()) {
             long val;
             rocksdb::Slice val_slice(fid_slice.data()+sizeof(fid), sizeof(val));
-            Serializer::DeserializeNumeric(val_slice, val);
+            Serializer::Deserialize(val_slice, val);
             std::cout << ":" << val;
         } else if (field_type == FloatField::FieldTypeValue()) {
             float val;
             rocksdb::Slice val_slice(fid_slice.data()+sizeof(fid), sizeof(val));
-            Serializer::DeserializeNumeric(val_slice, val);
+            Serializer::Deserialize(val_slice, val);
             std::cout << ":" << val;
         } else if (field_type == StringField::FieldTypeValue()) {
             auto size = key.size() - DBTableFieldIndexPrefix.size()
@@ -312,8 +312,8 @@ public:
         auto id_addr = key.data() + key.size() - 1 * sizeof(uint64_t);
         rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
         rocksdb::Slice id_slice(id_addr, sizeof(id));
-        Serializer::DeserializeNumeric(sid_slice, sid);
-        Serializer::DeserializeNumeric(id_slice, id);
+        Serializer::Deserialize(sid_slice, sid);
+        Serializer::Deserialize(id_slice, id);
 
         std::cout << ":" << sid << ":" << id << " ]" << std::endl;
     }

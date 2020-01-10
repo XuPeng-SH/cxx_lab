@@ -265,7 +265,7 @@ public:
     std::string Serialize() const override {
         std::string serialized;
         auto value = BaseT::GetValue();
-        Serializer::SerializeNumeric(value, serialized);
+        Serializer::Serialize(value, serialized);
         return std::move(serialized);
     }
 

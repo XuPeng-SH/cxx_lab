@@ -27,25 +27,35 @@ public:
         // [$field_type_value][$field_name_size][$field_name]
         // |------uint8_t-----|----uint8_t-----|---n bytes--|
 
-        SerializeNumeric(field_type_value, data);
-        SerializeNumeric(field_name_size, data);
+        Serialize(field_type_value, data);
+        Serialize(field_name_size, data);
         data.append((char*)v.Name().data(), field_name_size);
         return rocksdb::Status::OK();
     }
 
-    template <typename NumT>
-    static rocksdb::Status SerializeNumeric(const NumT& v, std::string& data) {
+    template <typename T>
+    static void Serialize(const T& v, std::string& data) {
         auto to_serialized = v;
         SwapEndian(to_serialized);
-        data.append((char*)&to_serialized, sizeof(NumT));
-        return rocksdb::Status::OK();
+        data.append((char*)&to_serialized, sizeof(T));
+    }
+
+    static void Serialize(const rocksdb::Slice& v, std::string& data) {
+        data.append(v.data(), v.size());
+    }
+
+    static void Serialize(const std::string& v, std::string& data) {
+        Serialize(rocksdb::Slice(v), data);
     }
 
     template <typename NumT>
-    static rocksdb::Status DeserializeNumeric(const rocksdb::Slice& strv, NumT& numv) {
+    static void Deserialize(const rocksdb::Slice& strv, NumT& numv) {
         numv = *(NumT*)(strv.data());
         SwapEndian(numv);
-        return rocksdb::Status::OK();
+    }
+
+    static void Deserialize(const rocksdb::Slice& strv, std::string& v) {
+        v.append(strv.data(), strv.size());
     }
 
     static rocksdb::Status DeserializeFieldMeta(const rocksdb::Slice& data, uint8_t& type, std::string& name) {

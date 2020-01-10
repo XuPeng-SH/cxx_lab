@@ -286,12 +286,12 @@ void DocSchemaSerializerHandler::PreHandle(const DocSchema& schema) {
     //    uint8_t      uint8_t       uint8_t       uint8_t        bytes
     uint8_t fields_num = (uint8_t)(schema.Size());
     serialized_ = "";
-    Serializer::SerializeNumeric(fields_num, serialized_);
+    Serializer::Serialize(fields_num, serialized_);
 }
 
 void DocSchemaSerializerHandler::Handle(const DocSchema& schema, const std::string& field_name, uint8_t field_id,
         int idx, size_t offset) {
-    Serializer::SerializeNumeric(field_id, serialized_);
+    Serializer::Serialize(field_id, serialized_);
 
     uint8_t tval;
     if (idx == DocSchema::LongFieldIdx) {
@@ -304,10 +304,10 @@ void DocSchemaSerializerHandler::Handle(const DocSchema& schema, const std::stri
         tval = FloatVectorField::FieldTypeValue();
     }
 
-    Serializer::SerializeNumeric(tval, serialized_);
+    Serializer::Serialize(tval, serialized_);
 
     auto size = (uint8_t)field_name.size();
-    Serializer::SerializeNumeric(size, serialized_);
+    Serializer::Serialize(size, serialized_);
     serialized_.append(field_name);
 }
 

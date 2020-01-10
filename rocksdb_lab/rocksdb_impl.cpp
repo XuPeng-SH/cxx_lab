@@ -69,7 +69,7 @@ void RocksDBImpl::Init() {
         std::string lower(DBTableSegmentNextIDPrefix);
         std::string upper(DBTableSegmentNextIDPrefix);
         uint64_t start = 0;
-        Serializer::SerializeNumeric(start, lower);
+        Serializer::Serialize(start, lower);
         upper += db_seq_id;
         rocksdb::Slice l(lower);
         rocksdb::Slice u(upper);
@@ -81,15 +81,15 @@ void RocksDBImpl::Init() {
             auto key = it->key();
             auto tid_addr = key.data() + DBTableMappingPrefix.size();
             uint64_t tid;
-            Serializer::DeserializeNumeric(rocksdb::Slice(tid_addr, sizeof(tid)), tid);
+            Serializer::Deserialize(rocksdb::Slice(tid_addr, sizeof(tid)), tid);
 
             auto val = it->value();
             uint64_t sid, id;
             auto sid_addr = val.data();
             auto id_addr = val.data() + sizeof(sid);
 
-            Serializer::DeserializeNumeric(rocksdb::Slice(sid_addr, sizeof(sid)), sid);
-            Serializer::DeserializeNumeric(rocksdb::Slice(id_addr, sizeof(id)), id);
+            Serializer::Deserialize(rocksdb::Slice(sid_addr, sizeof(sid)), sid);
+            Serializer::Deserialize(rocksdb::Slice(id_addr, sizeof(id)), id);
 
             db_cache_->UpdateSegMap(tid, sid);
             db_cache_->UpdateTidOffset(tid, id);
@@ -100,7 +100,7 @@ void RocksDBImpl::Init() {
     std::string lower(db::DBTableMappingPrefix);
     std::string upper(db::DBTableMappingPrefix);
     uint64_t start = 0;
-    Serializer::SerializeNumeric(start, lower);
+    Serializer::Serialize(start, lower);
     upper += db_seq_id;
     rocksdb::Slice l(lower);
     rocksdb::Slice u(upper);
@@ -139,9 +139,9 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
     auto schema = db_cache_->GetSchema(tid);
 
     /* std::string max_sid_id; */
-    /* Serializer::SerializeNumeric((uint64_t)0, max_sid_id); */
+    /* Serializer::Serialize((uint64_t)0, max_sid_id); */
     /* std::string min_sid_id; */
-    /* Serializer::SerializeNumeric(std::numeric_limits<uint64_t>::max(), min_sid_id); */
+    /* Serializer::Serialize(std::numeric_limits<uint64_t>::max(), min_sid_id); */
 
     std::set<std::string> filtered;
     // [Key]$Prefix:$tid:$fid$fval$sid$id -> None
@@ -158,17 +158,17 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
         std::string upper(DBTableFieldIndexPrefix);
         std::string lower(DBTableFieldIndexPrefix);
 
-        Serializer::SerializeNumeric(tid, upper);
-        Serializer::SerializeNumeric(field_id, upper);
+        Serializer::Serialize(tid, upper);
+        Serializer::Serialize(field_id, upper);
         upper.append(f.upper_bound.data(), f.upper_bound.size());
-        Serializer::SerializeNumeric(std::numeric_limits<uint64_t>::min(), upper);
-        Serializer::SerializeNumeric(std::numeric_limits<uint64_t>::min(), upper);
+        Serializer::Serialize(std::numeric_limits<uint64_t>::min(), upper);
+        Serializer::Serialize(std::numeric_limits<uint64_t>::min(), upper);
 
-        Serializer::SerializeNumeric(tid, lower);
-        Serializer::SerializeNumeric(field_id, lower);
+        Serializer::Serialize(tid, lower);
+        Serializer::Serialize(field_id, lower);
         lower.append(f.lower_bound.data(), f.lower_bound.size());
-        Serializer::SerializeNumeric(std::numeric_limits<uint64_t>::min(), lower);
-        Serializer::SerializeNumeric(std::numeric_limits<uint64_t>::min(), lower);
+        Serializer::Serialize(std::numeric_limits<uint64_t>::min(), lower);
+        Serializer::Serialize(std::numeric_limits<uint64_t>::min(), lower);
 
         rocksdb::Slice l(lower);
         rocksdb::Slice u(upper);
@@ -186,7 +186,7 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
             if (items++ >= f.number) break;
             auto key = it->key();
             std::string location(key.data() + key.size() - 2 * sizeof(uint64_t), 2 * sizeof(uint64_t));
-            Serializer::SerializeNumeric(field_id, location);
+            Serializer::Serialize(field_id, location);
             filtered.insert(std::move(location));
         }
 
@@ -198,12 +198,12 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
     std::string uid;
     for (auto& location: filtered) {
         std::string key(DBTableFieldValuePrefix);
-        Serializer::SerializeNumeric(tid, key);
+        Serializer::Serialize(tid, key);
         key += location;
         s = db_->Get(rdopt_, key, &uid);
         assert(s.ok());
         long luid;
-        Serializer::DeserializeNumeric(uid, luid);
+        Serializer::Deserialize(uid, luid);
         auto doc = std::make_shared<Doc>(Helper::NewPK(luid), schema);
         docs.push_back(doc);
     }
@@ -225,8 +225,8 @@ rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std
     }
 
     std::string key(DBTableUidIdMappingPrefix);
-    Serializer::SerializeNumeric(tid, key);
-    Serializer::SerializeNumeric(uid, key);
+    Serializer::Serialize(tid, key);
+    Serializer::Serialize(uid, key);
 
     std::string sid_id;
     s = db_->Get(rdopt_, key, &sid_id);
@@ -245,13 +245,13 @@ rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std
     uint8_t start = 0;
     uint8_t end = std::numeric_limits<uint8_t>::max();
 
-    Serializer::SerializeNumeric(tid, lower);
+    Serializer::Serialize(tid, lower);
     lower += sid_id;
-    Serializer::SerializeNumeric(start, lower);
+    Serializer::Serialize(start, lower);
 
-    Serializer::SerializeNumeric(tid, upper);
+    Serializer::Serialize(tid, upper);
     upper += sid_id;
-    Serializer::SerializeNumeric(end, upper);
+    Serializer::Serialize(end, upper);
 
     uint8_t fid;
     uint8_t ftype;
@@ -267,13 +267,13 @@ rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std
         auto key = it->key();
         auto val = it->value();
         auto fid_addr = key.data() + sizeof(uint64_t)*3 + PrefixSize;
-        Serializer::DeserializeNumeric(rocksdb::Slice(fid_addr, sizeof(fid)), fid);
+        Serializer::Deserialize(rocksdb::Slice(fid_addr, sizeof(fid)), fid);
         schema->GetFieldType(fid, ftype);
         const std::string& fname = schema->GetFieldName(fid);
         if (ftype == LongField::FieldTypeValue()) {
             if (fid == 0) continue;
             long value;
-            Serializer::DeserializeNumeric(val, value);
+            Serializer::Deserialize(val, value);
             doc->AddLongFieldValue(fname, value);
         } else if (ftype == FloatField::FieldTypeValue()) {
             float value;
@@ -368,7 +368,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
         auto& v = kv.second;
         if (fid == 0) {
             key.assign(DBTableUidIdMappingPrefix);
-            Serializer::SerializeNumeric(tid, key);
+            Serializer::Serialize(tid, key);
             key.append(v);
 
             {
@@ -383,8 +383,8 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             }
 
             val.clear();
-            Serializer::SerializeNumeric(sid, val);
-            Serializer::SerializeNumeric(offset, val);
+            Serializer::Serialize(sid, val);
+            Serializer::Serialize(offset, val);
             {
                 /* KeyHelper::PrintDBUidIdMappingKey(key, val, db_cache_, "NEW_UID_MAPPING"); */
             }
@@ -394,9 +394,9 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
         {
             if(!addr_to_delete.empty()) {
                 std::string field_key(DBTableFieldValuePrefix);
-                Serializer::SerializeNumeric(tid, field_key);
+                Serializer::Serialize(tid, field_key);
                 field_key.append(addr_to_delete);
-                Serializer::SerializeNumeric(fid, field_key);
+                Serializer::Serialize(fid, field_key);
                 s = db_->Get(rdopt_, field_key, &fval_to_delete);
                 if (!s.ok()) {
                     std::cerr << s.ToString() << std::endl;
@@ -409,8 +409,8 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                 wb.Delete(field_key);
 
                 std::string to_delete_index_key(DBTableFieldIndexPrefix);
-                Serializer::SerializeNumeric(tid, to_delete_index_key);
-                Serializer::SerializeNumeric(fid, to_delete_index_key);
+                Serializer::Serialize(tid, to_delete_index_key);
+                Serializer::Serialize(fid, to_delete_index_key);
                 to_delete_index_key.append(fval_to_delete);
                 to_delete_index_key.append(addr_to_delete);
 
@@ -424,10 +424,10 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             // [Key]$Prefix:$tid:$sid$id$fid    [val]$fval
             std::string field_val_key;
             field_val_key.assign(DBTableFieldValuePrefix);
-            Serializer::SerializeNumeric(tid, field_val_key);
-            Serializer::SerializeNumeric(sid, field_val_key);
-            Serializer::SerializeNumeric(offset, field_val_key);
-            Serializer::SerializeNumeric(fid, field_val_key);
+            Serializer::Serialize(tid, field_val_key);
+            Serializer::Serialize(sid, field_val_key);
+            Serializer::Serialize(offset, field_val_key);
+            Serializer::Serialize(fid, field_val_key);
             {
                 /* KeyHelper::PrintDBFieldValueKeyValue(field_val_key, v, db_cache_, "ADDING_VALUE"); */
             }
@@ -440,11 +440,11 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             // [Key]$Prefix:$tid:$fid$fval$sid$id -> None
             {
                 key.assign(DBTableFieldIndexPrefix);
-                Serializer::SerializeNumeric(tid, key);
-                Serializer::SerializeNumeric(fid, key);
+                Serializer::Serialize(tid, key);
+                Serializer::Serialize(fid, key);
                 key.append(v.data(), v.size());
-                Serializer::SerializeNumeric(sid, key);
-                Serializer::SerializeNumeric(offset, key);
+                Serializer::Serialize(sid, key);
+                Serializer::Serialize(offset, key);
             }
 
 #if 1
@@ -464,17 +464,17 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
         offset = 0;
         updated = true;
         std::string current_seg(DBTableCurrentSegmentPrefix);
-        Serializer::SerializeNumeric(tid, current_seg);
+        Serializer::Serialize(tid, current_seg);
         std::string v;
-        Serializer::SerializeNumeric(sid, v);
+        Serializer::Serialize(sid, v);
         wb.Put(current_seg, v);
     }
 
     std::string next_id_k(DBTableSegmentNextIDPrefix);
-    Serializer::SerializeNumeric(tid, next_id_k);
+    Serializer::Serialize(tid, next_id_k);
     std::string next_id_v;
-    Serializer::SerializeNumeric(sid, next_id_v);
-    Serializer::SerializeNumeric(offset, next_id_v);
+    Serializer::Serialize(sid, next_id_v);
+    Serializer::Serialize(offset, next_id_v);
     wb.Put(next_id_k, next_id_v);
 
     s = db_->Write(*DefaultDBWriteOptions(), &wb);
@@ -511,27 +511,27 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
         rocksdb::WriteBatch wb;
 
         std::string tsk_val;
-        Serializer::SerializeNumeric(next_tid, tsk_val);
+        Serializer::Serialize(next_tid, tsk_val);
         std::cout << "Updating next tid to " << next_tid << std::endl;
         wb.Put(DBTableSequenceKey, tsk_val);
 
         std::string t_v;
-        Serializer::SerializeNumeric(tid, t_v);
+        Serializer::Serialize(tid, t_v);
         std::cout << "Putting " << tid << " to " << table_key << std::endl;
         wb.Put(table_key, t_v);
 
         std::string ts_k(DBTableCurrentSegmentPrefix);
-        Serializer::SerializeNumeric(tid, ts_k);
+        Serializer::Serialize(tid, ts_k);
         std::string ts_v;
-        Serializer::SerializeNumeric(sid, ts_v);
+        Serializer::Serialize(sid, ts_v);
         wb.Put(ts_k, ts_v);
 
         // $Prefix$tid ==> $sid$id
         std::string tss_k(DBTableSegmentNextIDPrefix);
-        Serializer::SerializeNumeric(tid, tss_k);
+        Serializer::Serialize(tid, tss_k);
         std::string tss_v;
-        Serializer::SerializeNumeric(sid, tss_v);
-        Serializer::SerializeNumeric(id, tss_v);
+        Serializer::Serialize(sid, tss_v);
+        Serializer::Serialize(id, tss_v);
         wb.Put(tss_k, tss_v);
 
         std::string schema_serialized;
@@ -541,7 +541,7 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
             assert(false);
         }
         std::string tm_k(DBTableMappingPrefix);
-        Serializer::SerializeNumeric(tid, tm_k);
+        Serializer::Serialize(tid, tm_k);
         wb.Put(tm_k, schema_serialized);
 
         s = db_->Write(*DefaultDBWriteOptions(), &wb);

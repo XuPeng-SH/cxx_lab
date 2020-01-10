@@ -15,6 +15,7 @@
 #include "database.h"
 #include "doc.h"
 #include "utils.h"
+#include "serializer.h"
 
 using namespace std;
 using namespace rocksdb;
@@ -36,14 +37,6 @@ DEFINE_string(tname, "default", "table name");
 
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    /* int a1=257; */
-    /* int a2 = 8; */
-    /* string b1, b2; */
-    /* db::Serializer::SerializeNumeric(a1, b1); */
-    /* db::Serializer::SerializeNumeric(a2, b2); */
-
-    /* std::cout << (b1 > b2) << std::endl; */
-    /* return 0; */
     auto options = db::DefaultOpenOptions();
 
     // Setup threadpool for compaction and flush
@@ -210,8 +203,8 @@ int main(int argc, char** argv) {
         db::FieldFilter filter;
         long age_upper = 2000;
         long age_lower = 0;
-        Serializer::SerializeNumeric(age_upper, filter.upper_bound);
-        Serializer::SerializeNumeric(age_lower, filter.lower_bound);
+        Serializer::Serialize(age_upper, filter.upper_bound);
+        Serializer::Serialize(age_lower, filter.lower_bound);
         filter.name = "age";
         filters.push_back(std::move(filter));
         auto s = thisdb->GetDocs("mockt", docs, filters);
