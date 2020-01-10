@@ -44,7 +44,6 @@ int main(int argc, char** argv) {
 
     /* std::cout << (b1 > b2) << std::endl; */
     /* return 0; */
-
     auto options = db::DefaultOpenOptions();
 
     // Setup threadpool for compaction and flush
@@ -74,6 +73,11 @@ int main(int argc, char** argv) {
     rocksdb::DB::Open(*options, FLAGS_path, &kvdb);
     std::shared_ptr<rocksdb::DB> skvdb(kvdb);
 
+    if (FLAGS_mock){
+        db::demo::mock_uid_id_mapping(skvdb, FLAGS_nb);
+        return 0;
+    }
+
     auto TEST_STR_TO_UINT64 = [&]() {
         auto start = chrono::high_resolution_clock::now();
         db::demo::check_str_to_uint64();
@@ -81,11 +85,6 @@ int main(int argc, char** argv) {
         cout << "check_str_to_uint64 takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
         return 0;
     };
-
-    if (FLAGS_mock){
-        db::demo::mock_uid_id_mapping(skvdb, FLAGS_nb);
-        return 0;
-    }
 
 
     auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
@@ -121,6 +120,7 @@ int main(int argc, char** argv) {
     {
         std::string table_name = "mockt";
         thisdb->CreateTable(table_name, *schema);
+        auto start = chrono::high_resolution_clock::now();
         for (auto i=0; i<num; i++) {
             Doc mydoc(Helper::NewPK(i+10000), schema);
             mydoc.AddLongFieldValue("age", 10+i)
@@ -134,6 +134,8 @@ int main(int argc, char** argv) {
                 return 0;
             }
         }
+        auto end = chrono::high_resolution_clock::now();
+        cout << __FILE__ << ":" << __LINE__ << " " << num << " times add_doc takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
 
     ADD_DOC(FLAGS_nb);
@@ -206,7 +208,7 @@ int main(int argc, char** argv) {
         std::vector<std::shared_ptr<Doc>> docs;
         db::FieldsFilter filters;
         db::FieldFilter filter;
-        long age_upper = 12;
+        long age_upper = 2000;
         long age_lower = 0;
         Serializer::SerializeNumeric(age_upper, filter.upper_bound);
         Serializer::SerializeNumeric(age_lower, filter.lower_bound);

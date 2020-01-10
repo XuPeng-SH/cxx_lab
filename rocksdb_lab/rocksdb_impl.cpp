@@ -185,14 +185,33 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
         for (it->SeekToFirst(); it->Valid(); it->Next()) {
             if (items++ >= f.number) break;
             auto key = it->key();
-            std::string sid_id(key.data() + key.size() - 2 * sizeof(uint64_t), 2 * sizeof(uint64_t));
-            filtered.insert(std::move(sid_id));
+            std::string location(key.data() + key.size() - 2 * sizeof(uint64_t), 2 * sizeof(uint64_t));
+            Serializer::SerializeNumeric(field_id, location);
+            filtered.insert(std::move(location));
         }
 
         delete it;
     }
 
     std::cout << "filtered size=" << filtered.size() << std::endl;
+    // $location = $sid$id$fid
+    std::string uid;
+    for (auto& location: filtered) {
+        std::string key(DBTableFieldValuePrefix);
+        Serializer::SerializeNumeric(tid, key);
+        key += location;
+        s = db_->Get(rdopt_, key, &uid);
+        assert(s.ok());
+        long luid;
+        Serializer::DeserializeNumeric(uid, luid);
+        auto doc = std::make_shared<Doc>(Helper::NewPK(luid), schema);
+        docs.push_back(doc);
+    }
+    std::cout << "docs size=" << docs.size() << std::endl;
+
+    /* for (auto& doc : docs) { */
+    /*     std::cout << "doc : " << doc->UID() << std::endl; */
+    /* } */
 
     return rocksdb::Status::OK();
 }
@@ -252,6 +271,7 @@ rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std
         schema->GetFieldType(fid, ftype);
         const std::string& fname = schema->GetFieldName(fid);
         if (ftype == LongField::FieldTypeValue()) {
+            if (fid == 0) continue;
             long value;
             Serializer::DeserializeNumeric(val, value);
             doc->AddLongFieldValue(fname, value);
@@ -366,7 +386,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             Serializer::SerializeNumeric(sid, val);
             Serializer::SerializeNumeric(offset, val);
             {
-                KeyHelper::PrintDBUidIdMappingKey(key, val, db_cache_, "NEW_UID_MAPPING");
+                /* KeyHelper::PrintDBUidIdMappingKey(key, val, db_cache_, "NEW_UID_MAPPING"); */
             }
             // $Prefix$tid$uid ==> $sid$id
             wb.Put(key, val);
@@ -384,7 +404,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                 }
 
                 {
-                    KeyHelper::PrintDBFieldValueKeyValue(field_key, "", db_cache_, "DELETE_VALUE");
+                    /* KeyHelper::PrintDBFieldValueKeyValue(field_key, "", db_cache_, "DELETE_VALUE"); */
                 }
                 wb.Delete(field_key);
 
@@ -395,7 +415,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                 to_delete_index_key.append(addr_to_delete);
 
                 {
-                    KeyHelper::PrintDBIndexKey(to_delete_index_key, db_cache_, "DELETE_INDEX");
+                    /* KeyHelper::PrintDBIndexKey(to_delete_index_key, db_cache_, "DELETE_INDEX"); */
                 }
 
                 wb.Delete(to_delete_index_key);
@@ -409,7 +429,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             Serializer::SerializeNumeric(offset, field_val_key);
             Serializer::SerializeNumeric(fid, field_val_key);
             {
-                KeyHelper::PrintDBFieldValueKeyValue(field_val_key, v, db_cache_, "ADDING_VALUE");
+                /* KeyHelper::PrintDBFieldValueKeyValue(field_val_key, v, db_cache_, "ADDING_VALUE"); */
             }
             s = wb.Put(field_val_key, v);
             if (!s.ok()) {
@@ -429,7 +449,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
 
 #if 1
             {
-                KeyHelper::PrintDBIndexKey(key, db_cache_, "ADDING_INDEX");
+                /* KeyHelper::PrintDBIndexKey(key, db_cache_, "ADDING_INDEX"); */
             }
 #endif
             val.clear();

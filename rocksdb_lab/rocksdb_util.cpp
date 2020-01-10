@@ -94,6 +94,7 @@ void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db, int num) {
     uint64_t tid = 0;
     uint64_t id = 0;
     uint64_t sid = 0;
+    auto start = std::chrono::high_resolution_clock::now();
     for(int i=0; i<num; i++) {
         uint64_t uid = rand();
         std::string key(DBTableUidIdMappingPrefix);
@@ -111,6 +112,8 @@ void mock_uid_id_mapping(std::shared_ptr<rocksdb::DB> db, int num) {
         }
         ++id;
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << __func__ << " takes " << std::chrono::duration<double, std::milli>(end-start).count() << " ms" << std::endl;
 }
 
 void write_batch_demo(std::shared_ptr<rocksdb::DB> db) {
