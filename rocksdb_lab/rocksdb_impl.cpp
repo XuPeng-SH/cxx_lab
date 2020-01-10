@@ -176,8 +176,8 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
         options.iterate_lower_bound = &l;
         options.iterate_upper_bound = &u;
 
-        KeyHelper::PrintDBIndexKey(l, db_cache_, "LOWER_BOUND");
-        KeyHelper::PrintDBIndexKey(u, db_cache_, "UPPER_BOUND");
+        /* KeyHelper::PrintDBIndexKey(l, db_cache_, "LOWER_BOUND"); */
+        /* KeyHelper::PrintDBIndexKey(u, db_cache_, "UPPER_BOUND"); */
 
         rocksdb::Iterator* it = db_->NewIterator(options);
 
@@ -370,7 +370,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             key.assign(DBTableUidIdMappingPrefix);
             Serializer::Serialize(tid, key);
             key.append(v);
-
+#if 0
             {
                 s = db_->Get(rdopt_, key, &addr_to_delete);
                 if (s.ok()) {
@@ -381,6 +381,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
                     wb.Delete(key);
                 }
             }
+#endif
 
             val.clear();
             Serializer::Serialize(sid, val);
