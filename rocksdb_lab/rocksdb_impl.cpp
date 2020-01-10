@@ -370,7 +370,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             key.assign(DBTableUidIdMappingPrefix);
             Serializer::Serialize(tid, key);
             key.append(v);
-#if 0
+#if 1
             {
                 s = db_->Get(rdopt_, key, &addr_to_delete);
                 if (s.ok()) {
