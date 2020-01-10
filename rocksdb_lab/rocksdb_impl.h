@@ -139,6 +139,51 @@ public:
         std::cout << header << "[ " << DBTableSequenceKey << ", " << tid << " ]" << std::endl;
     }
 
+    static void PrintDBSegmentNextIDKey(const rocksdb::Slice& key,
+                                        const rocksdb::Slice& val,
+                                        std::shared_ptr<DBCache> cache,
+                                        const std::string& header = "") {
+        uint64_t tid, sid, id;
+        auto tid_addr = key.data() + PrefixSize;
+        auto sid_addr = val.data();
+        auto id_addr = val.data() + sizeof(uint64_t);
+        rocksdb::Slice tid_slice(tid_addr, sizeof(tid));
+        rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
+        rocksdb::Slice id_slice(id_addr, sizeof(id));
+
+        Serializer::DeserializeNumeric(tid_slice, tid);
+        Serializer::DeserializeNumeric(sid_slice, sid);
+        Serializer::DeserializeNumeric(id_slice, id);
+
+        std::cout << header << "[ " << DBTableSegmentNextIDPrefix << tid << ", " << sid;
+        std::cout << ":" << id << " ]" << std::endl;
+    }
+
+    static void PrintDBUidIdMappingKey(const rocksdb::Slice& key,
+                                       const rocksdb::Slice& val,
+                                       std::shared_ptr<DBCache> cache,
+                                       const std::string& header = "") {
+        uint64_t tid, sid, id;
+        long uid;
+        auto tid_addr = key.data() + PrefixSize;
+        auto uid_addr = tid_addr + sizeof(tid);
+        auto sid_addr = val.data();
+        auto id_addr = sid_addr + sizeof(sid);
+
+        rocksdb::Slice tid_slice(tid_addr, sizeof(tid));
+        rocksdb::Slice uid_slice(uid_addr, sizeof(uid));
+        rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
+        rocksdb::Slice id_slice(id_addr, sizeof(id));
+
+        Serializer::DeserializeNumeric(tid_slice, tid);
+        Serializer::DeserializeNumeric(sid_slice, sid);
+        Serializer::DeserializeNumeric(uid_slice, uid);
+        Serializer::DeserializeNumeric(id_slice, id);
+
+        std::cout << header << "[ " << DBTableUidIdMappingPrefix << ":" << tid << ":" << uid;
+        std::cout << ", " << sid << ":" << id << " ]" << std::endl;
+    }
+
     static void PrintDBCurrentSegmentKey(const rocksdb::Slice& key,
                                          const rocksdb::Slice& val,
                                          std::shared_ptr<DBCache> cache,

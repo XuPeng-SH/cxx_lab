@@ -289,43 +289,10 @@ void RocksDBImpl::Dump(bool do_print) {
         } else if (key.starts_with(DBTableSequenceKey)) {
             KeyHelper::PrintDBSequenceKey(key, val, db_cache_);
         } else if (key.starts_with(DBTableSegmentNextIDPrefix)) {
-            uint64_t tid, sid, id;
-            auto tid_addr = key.data() + DBTableSegmentNextIDPrefix.size();
-            auto sid_addr = val.data();
-            auto id_addr = val.data() + sizeof(uint64_t);
-            rocksdb::Slice tid_slice(tid_addr, sizeof(tid));
-            rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
-            rocksdb::Slice id_slice(id_addr, sizeof(id));
-
-            Serializer::DeserializeNumeric(tid_slice, tid);
-            Serializer::DeserializeNumeric(sid_slice, sid);
-            Serializer::DeserializeNumeric(id_slice, id);
-
-            std::cout << "[" << DBTableSegmentNextIDPrefix << tid << ", " << sid;
-            std::cout << ":" << id << "]" << std::endl;
-
+            KeyHelper::PrintDBSegmentNextIDKey(key, val, db_cache_);
         } else if (key.starts_with(DBTableUidIdMappingPrefix)) {
             //$Prefix$tid$uid ==> $sid$id
-            uint64_t tid, sid, id;
-            long uid;
-            auto tid_addr = key.data() + DBTableUidIdMappingPrefix.size();
-            auto uid_addr = tid_addr + sizeof(tid);
-            auto sid_addr = val.data();
-            auto id_addr = sid_addr + sizeof(sid);
-
-            rocksdb::Slice tid_slice(tid_addr, sizeof(tid));
-            rocksdb::Slice uid_slice(uid_addr, sizeof(uid));
-            rocksdb::Slice sid_slice(sid_addr, sizeof(sid));
-            rocksdb::Slice id_slice(id_addr, sizeof(id));
-
-            Serializer::DeserializeNumeric(tid_slice, tid);
-            Serializer::DeserializeNumeric(sid_slice, sid);
-            Serializer::DeserializeNumeric(uid_slice, uid);
-            Serializer::DeserializeNumeric(id_slice, id);
-
-            std::cout << "[" << DBTableUidIdMappingPrefix << ":" << tid << ":" << uid;
-            std::cout << ", " << sid << ":" << id << "]" << std::endl;
-
+            KeyHelper::PrintDBUidIdMappingKey(key, val, db_cache_);
         } else if (key.starts_with(DBTableMappingPrefix)) {
             uint64_t tid;
             auto tid_addr = key.data() + DBTableMappingPrefix.size();
@@ -411,10 +378,7 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
             Serializer::SerializeNumeric(sid, val);
             Serializer::SerializeNumeric(offset, val);
             {
-                long uid;
-                Serializer::DeserializeNumeric(v, uid);
-                std::cout << "NEW_UID_MAPPING[" << DBTableUidIdMappingPrefix << ":" << tid << ":" << uid;
-                std::cout << ", " << sid << ":" << offset << "]" << std::endl;
+                KeyHelper::PrintDBUidIdMappingKey(key, val, db_cache_, "NEW_UID_MAPPING");
             }
             // $Prefix$tid$uid ==> $sid$id
             wb.Put(key, val);
