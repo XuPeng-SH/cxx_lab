@@ -16,6 +16,7 @@
 #include "doc.h"
 #include "utils.h"
 #include "serializer.h"
+#include "advanced_fields.h"
 
 using namespace std;
 using namespace rocksdb;
@@ -35,7 +36,17 @@ DEFINE_bool(print, false, "do print");
 
 DEFINE_string(tname, "default", "table name");
 
+/* template <class FieldT> */
+/* void Serialize(const FieldT& field) { */
+/*     cout << field.ToPrintableString() << endl; */
+/* } */
+
 int main(int argc, char** argv) {
+    /* advanced::FloatField f1("f1", 12.5); */
+    /* Serialize(f1); */
+    /* advanced::StringField s1("s1", "hello"); */
+    /* Serialize(s1); */
+    /* return 0; */
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     auto options = db::DefaultOpenOptions();
 
