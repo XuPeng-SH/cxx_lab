@@ -54,7 +54,11 @@ public:
     }
 };
 
-using StringField = StringFieldT<Serializer>;
+using DefaultSerializerT = Serializer;
+
+using Field = FieldT<DefaultSerializerT>;
+
+using StringField = StringFieldT<DefaultSerializerT>;
 
 template <typename SerializerT>
 class FloatFieldT : public FieldT<SerializerT> {
@@ -81,6 +85,6 @@ public:
     }
 };
 
-using FloatField = FloatFieldT<Serializer>;
+using FloatField = FloatFieldT<DefaultSerializerT>;
 
 }

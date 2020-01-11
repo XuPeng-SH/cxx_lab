@@ -36,16 +36,17 @@ DEFINE_bool(print, false, "do print");
 
 DEFINE_string(tname, "default", "table name");
 
-/* template <class FieldT> */
-/* void Serialize(const FieldT& field) { */
-/*     cout << field.ToPrintableString() << endl; */
+/* void Serialize(shared_ptr<advanced::Field> field) { */
+/*     cout << field->ToPrintableString() << endl; */
 /* } */
 
 int main(int argc, char** argv) {
-    /* advanced::FloatField f1("f1", 12.5); */
+    /* shared_ptr<advanced::Field> f1 = make_shared<advanced::FloatField>("f1", 12.5); */
+    /* cout << f1->ToPrintableString() << endl; */
     /* Serialize(f1); */
-    /* advanced::StringField s1("s1", "hello"); */
-    /* Serialize(s1); */
+    /* shared_ptr<advanced::Field> f2 = make_shared<advanced::StringField>("f2", "hello"); */
+    /* cout << f2->ToPrintableString() << endl; */
+    /* Serialize(f2); */
     /* return 0; */
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     auto options = db::DefaultOpenOptions();
