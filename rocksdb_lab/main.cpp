@@ -60,7 +60,21 @@ int main(int argc, char** argv) {
     cout << f3->CodeSize() << endl;
     cout << f4->CodeSize() << endl;
 
-    advanced::Doc tdoc;
+    shared_ptr<advanced::DocSchema> tschema = make_shared<advanced::DocSchema>();
+    tschema->AddField(f1);
+    tschema->AddField(f2);
+
+    advanced::Doc tdoc(tschema);
+    tdoc.AddField(f1);
+    tdoc.AddField(f2);
+
+    auto gf3 = tdoc.GetField("f3");
+    if (!gf3) {
+        cerr << "Cannot get field f3" << endl;
+        return 0;
+    }
+    cout << gf3->Name() << endl;
+    cout << gf3->ToPrintableString() << endl;
 
     return 0;
     gflags::ParseCommandLineFlags(&argc, &argv, true);
