@@ -17,6 +17,7 @@
 #include "utils.h"
 #include "serializer.h"
 #include "advanced_fields.h"
+#include "advanced_doc.h"
 
 using namespace std;
 using namespace rocksdb;
@@ -36,18 +37,32 @@ DEFINE_bool(print, false, "do print");
 
 DEFINE_string(tname, "default", "table name");
 
-/* void Serialize(shared_ptr<advanced::Field> field) { */
-/*     cout << field->ToPrintableString() << endl; */
-/* } */
+void Serialize(shared_ptr<advanced::Field> field) {
+    cout << field->ToPrintableString() << endl;
+}
 
 int main(int argc, char** argv) {
-    /* shared_ptr<advanced::Field> f1 = make_shared<advanced::FloatField>("f1", 12.5); */
-    /* cout << f1->ToPrintableString() << endl; */
-    /* Serialize(f1); */
-    /* shared_ptr<advanced::Field> f2 = make_shared<advanced::StringField>("f2", "hello"); */
-    /* cout << f2->ToPrintableString() << endl; */
-    /* Serialize(f2); */
-    /* return 0; */
+    shared_ptr<advanced::Field> f1 = make_shared<advanced::FloatField>("f1", 12.5);
+    cout << f1->ToPrintableString() << endl;
+    Serialize(f1);
+    shared_ptr<advanced::Field> f2 = make_shared<advanced::StringField>("f2", "hello world");
+    cout << f2->ToPrintableString() << endl;
+    Serialize(f2);
+
+    shared_ptr<advanced::Field> f3 = make_shared<advanced::LongField>("f3", 10000);
+    Serialize(f3);
+
+    shared_ptr<advanced::Field> f4 = make_shared<advanced::IntField>("f4", 20000);
+    Serialize(f4);
+
+    cout << f1->CodeSize() << endl;
+    cout << f2->CodeSize() << endl;
+    cout << f3->CodeSize() << endl;
+    cout << f4->CodeSize() << endl;
+
+    advanced::Doc tdoc;
+
+    return 0;
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     auto options = db::DefaultOpenOptions();
 

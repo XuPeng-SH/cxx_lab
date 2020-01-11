@@ -14,7 +14,7 @@ public:
 
     FieldT(const std::string& name, const std::string& value = "")
         : name_(name), value_(value) {}
-    size_t Size() const { return value_.size(); }
+
     const std::string& Name() const { return name_; }
 
     template <typename ValT>
@@ -24,6 +24,14 @@ public:
 
     virtual const char* TName() const {
         return ThisT::TypeName;
+    }
+
+    virtual size_t CodeSize() const {
+        return value_.size();
+    }
+
+    virtual size_t Elements() const {
+        return 1;
     }
 
     virtual std::string ToPrintableString() const {
@@ -39,15 +47,22 @@ protected:
     std::string value_;
 };
 
-template <typename SerializerT>
+struct StringTraits {
+    using ValueT = std::string;
+    static constexpr const uint8_t TypeValue = 1;
+    static constexpr const char* TypeName = "string";
+};
+
+template <typename SerializerT, typename TypeTrait>
 class StringFieldT : public FieldT<Serializer> {
 public:
-    static constexpr const uint8_t TypeValue = 1;
-    static constexpr const char* TypeName = "String";
+    static constexpr const uint8_t TypeValue = TypeTrait::TypeValue;
+    static constexpr const char* TypeName = TypeTrait::TypeName;
     using BaseT = FieldT<SerializerT>;
-    using ThisT = StringFieldT<SerializerT>;
+    using ThisT = StringFieldT<SerializerT, TypeTrait>;
+    using ValueT = typename TypeTrait::ValueT;
 
-    StringFieldT(const std::string& name, const std::string& value) : BaseT(name, value) {
+    StringFieldT(const std::string& name, const ValueT& value) : BaseT(name, value) {
     }
 
     const char* TName() const override{
@@ -57,7 +72,7 @@ public:
 
 using DefaultSerializerT = Serializer;
 using Field = FieldT<DefaultSerializerT>;
-using StringField = StringFieldT<DefaultSerializerT>;
+using StringField = StringFieldT<DefaultSerializerT, StringTraits>;
 
 template <typename SerializerT, typename TypeTrait>
 class NumericFieldT : public FieldT<SerializerT> {
@@ -70,6 +85,10 @@ public:
 
     NumericFieldT(const std::string& name, const ValueT& value) : BaseT(name) {
         SerializerT::Serialize(value, BaseT::value_);
+    }
+
+    size_t CodeSize() const override{
+        return sizeof(ValueT);
     }
 
     std::string ToPrintableString() const override {
@@ -87,19 +106,19 @@ public:
 
 struct FloatTraits {
     using ValueT = float;
-    static constexpr const uint8_t TypeValue = 1;
+    static constexpr const uint8_t TypeValue = 2;
     static constexpr const char* TypeName = "float";
 };
 
 struct LongTraits {
     using ValueT = long;
-    static constexpr const uint8_t TypeValue = 2;
+    static constexpr const uint8_t TypeValue = 3;
     static constexpr const char* TypeName = "long";
 };
 
 struct IntTraits {
     using ValueT = int;
-    static constexpr const uint8_t TypeValue = 3;
+    static constexpr const uint8_t TypeValue = 4;
     static constexpr const char* TypeName = "int";
 };
 
