@@ -73,8 +73,11 @@ int main(int argc, char** argv) {
 
     cout << sf1 << endl;
 
-    auto ff1 = doc::Deserialize(sf1);
+    auto ff1 = doc::Field::Deserialize(sf1);
     cout << ff1->ToPrintableString() << endl;
+
+    /* auto ff1 = doc::Deserialize(sf1); */
+    /* cout << ff1->ToPrintableString() << endl; */
 
     auto gf3 = tdoc.GetField("f3");
     if (!gf3) {

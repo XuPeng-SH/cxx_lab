@@ -17,11 +17,6 @@ public:
 
     const std::string& Name() const { return name_; }
 
-    /* template <typename ValT> */
-    /* void Serialize(const ValT& val, std::string& serialized) { */
-    /*     SerializerT::Serialize(val, serialized); */
-    /* } */
-
     virtual const char* TName() const {
         return ThisT::TypeName;
     }
@@ -49,6 +44,8 @@ public:
         return true;
         // TODO: Handle has_val scenario
     }
+
+    static std::shared_ptr<FieldT<SerializerT>> Deserialize(const rocksdb::Slice& source);
 
     virtual std::string ToPrintableString() const {
         std::stringstream ss;
@@ -152,20 +149,21 @@ using FloatField = NumericFieldT<DefaultSerializerT, FloatTraits>;
 using LongField = NumericFieldT<DefaultSerializerT, LongTraits>;
 using IntField = NumericFieldT<DefaultSerializerT, IntTraits>;
 
-std::shared_ptr<Field> Deserialize(const rocksdb::Slice& source) {
+template <typename SerializerT>
+std::shared_ptr<FieldT<SerializerT>> FieldT<SerializerT>::Deserialize(const rocksdb::Slice& source) {
     uint8_t field_type, name_size;
     std::string field_name;
-    Serializer::Deserialize(source.data(), field_type);
-    Serializer::Deserialize(source.data() + sizeof(field_type), name_size);
+    SerializerT::Deserialize(source.data(), field_type);
+    SerializerT::Deserialize(source.data() + sizeof(field_type), name_size);
     field_name.assign(source.data() + sizeof(uint8_t) + sizeof(uint8_t), name_size);
-    if (field_type == LongField::TypeValue) {
-        return std::make_shared<LongField>(field_name);
-    } else if (field_type == FloatField::TypeValue) {
-        return std::make_shared<FloatField>(field_name);
-    } else if (field_type == IntField::TypeValue) {
-        return std::make_shared<IntField>(field_name);
-    } else if (field_type == StringField::TypeValue) {
-        return std::make_shared<StringField>(field_name);
+    if (field_type == FloatTraits::TypeValue) {
+        return std::make_shared<NumericFieldT<SerializerT, FloatTraits>>(field_name);
+    } else if (field_type == LongTraits::TypeValue) {
+        return std::make_shared<NumericFieldT<SerializerT, LongTraits>>(field_name);
+    } else if (field_type == IntTraits::TypeValue) {
+        return std::make_shared<NumericFieldT<SerializerT, IntTraits>>(field_name);
+    } else if (field_type == StringTraits::TypeValue) {
+        return std::make_shared<StringFieldT<SerializerT, StringTraits>>(field_name);
     }
 
     std::cerr << "Cannot serialize field str \"" << source.ToString() << "\"" << std::endl;
