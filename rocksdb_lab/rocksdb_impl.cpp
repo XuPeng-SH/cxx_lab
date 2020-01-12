@@ -270,15 +270,15 @@ rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std
         Serializer::Deserialize(rocksdb::Slice(fid_addr, sizeof(fid)), fid);
         schema->GetFieldType(fid, ftype);
         const std::string& fname = schema->GetFieldName(fid);
-        if (ftype == LongField::FieldTypeValue()) {
+        if (ftype == LongField::TypeValue) {
             if (fid == 0) continue;
             long value;
             Serializer::Deserialize(val, value);
             doc->AddLongFieldValue(fname, value);
-        } else if (ftype == FloatField::FieldTypeValue()) {
+        } else if (ftype == FloatField::TypeValue) {
             float value;
             doc->AddFloatFieldValue(fname, value);
-        } else if (ftype == StringField::FieldTypeValue()) {
+        } else if (ftype == StringField::TypeValue) {
             doc->AddStringFieldValue(fname, val.ToString());
         } else {
             std::cerr << "Not Supported: TODO" << std::endl;

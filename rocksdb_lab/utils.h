@@ -19,19 +19,20 @@ class Serializer {
 public:
     /* using ValueT = typename FieldT::ValueT; */
 
-    template <typename FieldT>
-    static rocksdb::Status SerializeFieldMeta(const FieldT& v, std::string& data) {
-        uint8_t field_type_value = v.FieldTypeValue();
-        /* std::cout << __func__ << " type=" << (int)field_type_value << std::endl; */
-        uint8_t field_name_size = (uint8_t)v.Name().size();
-        // [$field_type_value][$field_name_size][$field_name]
-        // |------uint8_t-----|----uint8_t-----|---n bytes--|
+    /* template <typename FieldT> */
+    /* static rocksdb::Status SerializeFieldMeta(const FieldT& v, std::string& data) { */
+    /*     uint8_t field_type_value = FieldT::TypeValue; */
+    /*     /1* uint8_t field_type_value = v.TVale(); *1/ */
+    /*     /1* std::cout << __func__ << " type=" << (int)field_type_value << std::endl; *1/ */
+    /*     uint8_t field_name_size = (uint8_t)v.Name().size(); */
+    /*     // [$field_type_value][$field_name_size][$field_name] */
+    /*     // |------uint8_t-----|----uint8_t-----|---n bytes--| */
 
-        Serialize(field_type_value, data);
-        Serialize(field_name_size, data);
-        data.append((char*)v.Name().data(), field_name_size);
-        return rocksdb::Status::OK();
-    }
+    /*     Serialize(field_type_value, data); */
+    /*     Serialize(field_name_size, data); */
+    /*     data.append((char*)v.Name().data(), field_name_size); */
+    /*     return rocksdb::Status::OK(); */
+    /* } */
 
     template <typename T>
     static void Serialize(const T& v, std::string& data) {

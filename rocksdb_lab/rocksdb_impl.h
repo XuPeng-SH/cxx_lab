@@ -10,8 +10,10 @@
 #include <mutex>
 #include <shared_mutex>
 #include "database.h"
-#include "doc.h"
+#include "advanced_doc.h"
 #include "rocksdb_util.h"
+
+using namespace document;
 
 namespace db {
 
@@ -149,8 +151,8 @@ public:
 
         DocSchema schema;
         auto s = DocSchema::Deserialize(val, schema);
-        if (!s.ok()) {
-            std::cout << s.ToString() << std::endl;
+        if (!s) {
+            std::cerr << "Cannot deserialize doc schema for \"" << val.ToString() << "\"" << std::endl;
         }
         std::cout << header << "[ " << DBTableMappingPrefix << ":" << tid << " ]" << std::endl;
     }
@@ -248,15 +250,15 @@ public:
             return;
         }
 
-        if (field_type == LongField::FieldTypeValue()) {
+        if (field_type == LongField::TypeValue) {
             long vv;
             Serializer::Deserialize(val, vv);
             std::cout << ":" << vv;
-        } else if (field_type == FloatField::FieldTypeValue()) {
-            long vv;
+        } else if (field_type == FloatField::TypeValue) {
+            float vv;
             Serializer::Deserialize(val, vv);
             std::cout << ":" << vv;
-        } else if (field_type == StringField::FieldTypeValue()) {
+        } else if (field_type == StringField::TypeValue) {
             std::cout << ":" << val.ToString();
         } else {
             std::cerr << "TODO" << std::endl;
@@ -289,17 +291,17 @@ public:
         }
 
         std::cout << tid << ":" << (int)fid;
-        if (field_type == LongField::FieldTypeValue()) {
+        if (field_type == LongField::TypeValue) {
             long val;
             rocksdb::Slice val_slice(fid_slice.data()+sizeof(fid), sizeof(val));
             Serializer::Deserialize(val_slice, val);
             std::cout << ":" << val;
-        } else if (field_type == FloatField::FieldTypeValue()) {
+        } else if (field_type == FloatField::TypeValue) {
             float val;
             rocksdb::Slice val_slice(fid_slice.data()+sizeof(fid), sizeof(val));
             Serializer::Deserialize(val_slice, val);
             std::cout << ":" << val;
-        } else if (field_type == StringField::FieldTypeValue()) {
+        } else if (field_type == StringField::TypeValue) {
             auto size = key.size() - DBTableFieldIndexPrefix.size()
                 - sizeof(uint64_t) - sizeof(uint8_t) - 2 * sizeof(uint64_t);
             std::cout << ":" << rocksdb::Slice(fid_slice.data()+sizeof(fid), size).ToString();

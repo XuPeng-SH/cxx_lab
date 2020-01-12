@@ -3,7 +3,10 @@
 #include <rocksdb/db.h>
 #include <memory>
 #include <iostream>
-#include "doc.h"
+#include "advanced_doc.h"
+
+using document::Doc;
+using document::DocSchema;
 
 namespace db {
 

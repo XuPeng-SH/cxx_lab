@@ -13,7 +13,6 @@
 #include <rocksdb/comparator.h>
 #include <rocksdb/table.h>
 #include "database.h"
-#include "doc.h"
 #include "utils.h"
 #include "serializer.h"
 #include "advanced_fields.h"
@@ -42,64 +41,64 @@ void Serialize(shared_ptr<document::Field> field) {
 }
 
 int main(int argc, char** argv) {
-    shared_ptr<document::Field> f1 = make_shared<document::FloatField>("f1", 12.5);
-    cout << f1->ToPrintableString() << endl;
-    Serialize(f1);
-    shared_ptr<document::Field> f2 = make_shared<document::StringField>("f2", "hello world");
-    cout << f2->ToPrintableString() << endl;
-    Serialize(f2);
+    /* shared_ptr<document::Field> f1 = make_shared<document::FloatField>("f1", 12.5); */
+    /* cout << f1->ToPrintableString() << endl; */
+    /* Serialize(f1); */
+    /* shared_ptr<document::Field> f2 = make_shared<document::StringField>("f2", "hello world"); */
+    /* cout << f2->ToPrintableString() << endl; */
+    /* Serialize(f2); */
 
-    shared_ptr<document::Field> f3 = make_shared<document::LongField>("f3", 10000);
-    Serialize(f3);
+    /* shared_ptr<document::Field> f3 = make_shared<document::LongField>("f3", 10000); */
+    /* Serialize(f3); */
 
-    shared_ptr<document::Field> f4 = make_shared<document::IntField>("f4", 20000);
-    Serialize(f4);
+    /* shared_ptr<document::Field> f4 = make_shared<document::IntField>("f4", 20000); */
+    /* Serialize(f4); */
 
-    cout << f1->CodeSize() << endl;
-    cout << f2->CodeSize() << endl;
-    cout << f3->CodeSize() << endl;
-    cout << f4->CodeSize() << endl;
+    /* cout << f1->CodeSize() << endl; */
+    /* cout << f2->CodeSize() << endl; */
+    /* cout << f3->CodeSize() << endl; */
+    /* cout << f4->CodeSize() << endl; */
 
-    shared_ptr<document::DocSchema> tschema = make_shared<document::DocSchema>();
-    tschema->AddField(f1);
-    tschema->AddField(f2);
+    /* shared_ptr<document::DocSchema> tschema = make_shared<document::DocSchema>(); */
+    /* tschema->AddField(f1); */
+    /* tschema->AddField(f2); */
 
-    string schema_serialized;
-    tschema->Serialize(schema_serialized);
-    cout << "schema serialized=" << schema_serialized << endl;
+    /* string schema_serialized; */
+    /* tschema->Serialize(schema_serialized); */
+    /* cout << "schema serialized=" << schema_serialized << endl; */
 
-    shared_ptr<document::DocSchema> ttschema = make_shared<document::DocSchema>();
-    cout << "size of schema_serialized is " << schema_serialized.size() << endl;
-    document::DocSchema::Deserialize(schema_serialized, *ttschema);
+    /* shared_ptr<document::DocSchema> ttschema = make_shared<document::DocSchema>(); */
+    /* cout << "size of schema_serialized is " << schema_serialized.size() << endl; */
+    /* document::DocSchema::Deserialize(schema_serialized, *ttschema); */
 
-    cout << ttschema->ToPrintableString() << endl;
+    /* cout << ttschema->ToPrintableString() << endl; */
 
 
-    document::Doc tdoc(tschema);
-    tdoc.AddField(f1);
-    tdoc.AddField(f2);
+    /* document::Doc tdoc(tschema); */
+    /* tdoc.AddField(f1); */
+    /* tdoc.AddField(f2); */
 
-    std::string sf1;
-    f1->Serialize(sf1);
+    /* std::string sf1; */
+    /* f1->Serialize(sf1); */
 
-    cout << sf1 << endl;
+    /* cout << sf1 << endl; */
 
-    size_t consumed;
-    auto ff1 = document::Field::Deserialize(sf1, consumed);
-    cout << ff1->ToPrintableString() << endl;
-
-    /* auto ff1 = document::Deserialize(sf1); */
+    /* size_t consumed; */
+    /* auto ff1 = document::Field::Deserialize(sf1, consumed); */
     /* cout << ff1->ToPrintableString() << endl; */
 
-    auto gf3 = tdoc.GetField("f3");
-    if (!gf3) {
-        cerr << "Cannot get field f3" << endl;
-        return 0;
-    }
-    cout << gf3->Name() << endl;
-    cout << gf3->ToPrintableString() << endl;
+    /* /1* auto ff1 = document::Deserialize(sf1); *1/ */
+    /* /1* cout << ff1->ToPrintableString() << endl; *1/ */
 
-    return 0;
+    /* auto gf3 = tdoc.GetField("f3"); */
+    /* if (!gf3) { */
+    /*     cerr << "Cannot get field f3" << endl; */
+    /*     return 0; */
+    /* } */
+    /* cout << gf3->Name() << endl; */
+    /* cout << gf3->ToPrintableString() << endl; */
+
+    /* return 0; */
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     auto options = db::DefaultOpenOptions();
 
@@ -146,56 +145,39 @@ int main(int argc, char** argv) {
 
     auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
     auto thisdb = std::make_shared<db::MyDB>(impl);
-    auto schema = std::make_shared<DocSchema>();
-    schema->AddLongField(LongField("_id"));
+    auto schema = std::make_shared<document::DocSchema>();
 
-    StringField uid_field("uid");
-    LongField age_field("age");
+    schema->AddField(make_shared<LongField>("_id"));
 
-    uid_field.SetMaxLength(20);
-    uid_field.SetMinLength(10);
+    auto uid_field = make_shared<StringField>("uid");
+    auto age_field = make_shared<LongField>("age");
 
-    schema->AddLongField(age_field)
-           .AddStringField(uid_field)
-           .Build();
+    schema->AddField(age_field);
+    schema->AddField(uid_field);
 
-    auto CHECK_SERIALIZER = [&]()
-    {
-        std::string meta;
-        Serializer::SerializeFieldMeta(uid_field, meta);
-        uint8_t type;
-        std::string fname;
-        Serializer::DeserializeFieldMeta(meta, type, fname);
-        std::string doc_serialized;
-        schema->Serialize(doc_serialized);
-        DocSchema dschema;
-        DocSchema::Deserialize(doc_serialized, dschema);
-        /* return 0; */
-    };
+    /* auto ADD_DOC = [&](int num) */
+    /* { */
+    /*     std::string table_name = "mockt"; */
+    /*     thisdb->CreateTable(table_name, *schema); */
+    /*     auto start = chrono::high_resolution_clock::now(); */
+    /*     for (auto i=0; i<num; i++) { */
+    /*         Doc mydoc(Helper::NewPK(i+10000), schema); */
+    /*         mydoc.AddLongFieldValue("age", 10+i) */
+    /*              .AddStringFieldValue("uid", std::to_string(1000000+i)) */
+    /*              .Build(); */
 
-    auto ADD_DOC = [&](int num)
-    {
-        std::string table_name = "mockt";
-        thisdb->CreateTable(table_name, *schema);
-        auto start = chrono::high_resolution_clock::now();
-        for (auto i=0; i<num; i++) {
-            Doc mydoc(Helper::NewPK(i+10000), schema);
-            mydoc.AddLongFieldValue("age", 10+i)
-                 .AddStringFieldValue("uid", std::to_string(1000000+i))
-                 .Build();
+    /*         auto s = thisdb->AddDoc(table_name, mydoc); */
+    /*         if (!s.ok()) { */
+    /*             /1* db::demo::read_all(skvdb, nullptr, true); *1/ */
+    /*             std::cout << s.ToString() << " " << __func__ << ":" << __LINE__ << std::endl; */
+    /*             return 0; */
+    /*         } */
+    /*     } */
+    /*     auto end = chrono::high_resolution_clock::now(); */
+    /*     cout << __FILE__ << ":" << __LINE__ << " " << num << " times add_doc takes " << chrono::duration<double, std::milli>(end-start).count() << endl; */
+    /* }; */
 
-            auto s = thisdb->AddDoc(table_name, mydoc);
-            if (!s.ok()) {
-                /* db::demo::read_all(skvdb, nullptr, true); */
-                std::cout << s.ToString() << " " << __func__ << ":" << __LINE__ << std::endl;
-                return 0;
-            }
-        }
-        auto end = chrono::high_resolution_clock::now();
-        cout << __FILE__ << ":" << __LINE__ << " " << num << " times add_doc takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
-    };
-
-    ADD_DOC(FLAGS_nb);
+    /* ADD_DOC(FLAGS_nb); */
 
     std::vector<std::string> vec;
     std::stringstream ss;
@@ -256,24 +238,24 @@ int main(int argc, char** argv) {
     if (FLAGS_rall)
         READ_ALL(FLAGS_print);
 
-    {
-        std::shared_ptr<Doc> doc;
-        auto s = thisdb->GetDoc("mockt", 10000, doc);
-        cout << s.ToString() << endl;
-    }
-    {
-        std::vector<std::shared_ptr<Doc>> docs;
-        db::FieldsFilter filters;
-        db::FieldFilter filter;
-        long age_upper = 2000;
-        long age_lower = 0;
-        Serializer::Serialize(age_upper, filter.upper_bound);
-        Serializer::Serialize(age_lower, filter.lower_bound);
-        filter.name = "age";
-        filters.push_back(std::move(filter));
-        auto s = thisdb->GetDocs("mockt", docs, filters);
-        cout << s.ToString() << endl;
-    }
+    /* { */
+    /*     std::shared_ptr<Doc> doc; */
+    /*     auto s = thisdb->GetDoc("mockt", 10000, doc); */
+    /*     cout << s.ToString() << endl; */
+    /* } */
+    /* { */
+    /*     std::vector<std::shared_ptr<Doc>> docs; */
+    /*     db::FieldsFilter filters; */
+    /*     db::FieldFilter filter; */
+    /*     long age_upper = 2000; */
+    /*     long age_lower = 0; */
+    /*     Serializer::Serialize(age_upper, filter.upper_bound); */
+    /*     Serializer::Serialize(age_lower, filter.lower_bound); */
+    /*     filter.name = "age"; */
+    /*     filters.push_back(std::move(filter)); */
+    /*     auto s = thisdb->GetDocs("mockt", docs, filters); */
+    /*     cout << s.ToString() << endl; */
+    /* } */
 
     auto READ_WITH_UPPER_LOWER = [&](bool do_print) {
         rocksdb::ReadOptions rdopts;

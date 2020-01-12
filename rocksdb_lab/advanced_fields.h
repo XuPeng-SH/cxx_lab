@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include "utils.h"
+#include "iostream"
 
 namespace document {
 

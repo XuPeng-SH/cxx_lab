@@ -5,11 +5,14 @@
 #include <map>
 #include <vector>
 #include <rocksdb/status.h>
-#include "doc.h"
+#include "advanced_doc.h"
 
 namespace rocksdb {
     class DB;
 }
+
+using document::Doc;
+using document::DocSchema;
 
 namespace db {
 

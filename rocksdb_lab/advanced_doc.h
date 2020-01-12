@@ -43,6 +43,15 @@ public:
         return nullptr;
     }
 
+    bool GetFieldType(uint8_t field_id, uint8_t& field_type) const {
+        std::shared_lock<std::shared_timed_mutex> lock(mtx_);
+        if (field_id >= fid_field_.size()) {
+            return false;
+        }
+        field_type = fid_field_[field_id]->TVale();
+        return true;
+    }
+
     const std::shared_ptr<FieldT> GetField(FID_T fid) const {
         std::shared_lock<std::shared_timed_mutex> lock(mtx_);
         if (fid >= fid_field_.size()) return nullptr;
