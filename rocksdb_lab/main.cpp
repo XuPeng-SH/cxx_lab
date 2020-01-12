@@ -37,22 +37,22 @@ DEFINE_bool(print, false, "do print");
 
 DEFINE_string(tname, "default", "table name");
 
-void Serialize(shared_ptr<advanced::Field> field) {
+void Serialize(shared_ptr<doc::Field> field) {
     cout << field->ToPrintableString() << endl;
 }
 
 int main(int argc, char** argv) {
-    shared_ptr<advanced::Field> f1 = make_shared<advanced::FloatField>("f1", 12.5);
+    shared_ptr<doc::Field> f1 = make_shared<doc::FloatField>("f1", 12.5);
     cout << f1->ToPrintableString() << endl;
     Serialize(f1);
-    shared_ptr<advanced::Field> f2 = make_shared<advanced::StringField>("f2", "hello world");
+    shared_ptr<doc::Field> f2 = make_shared<doc::StringField>("f2", "hello world");
     cout << f2->ToPrintableString() << endl;
     Serialize(f2);
 
-    shared_ptr<advanced::Field> f3 = make_shared<advanced::LongField>("f3", 10000);
+    shared_ptr<doc::Field> f3 = make_shared<doc::LongField>("f3", 10000);
     Serialize(f3);
 
-    shared_ptr<advanced::Field> f4 = make_shared<advanced::IntField>("f4", 20000);
+    shared_ptr<doc::Field> f4 = make_shared<doc::IntField>("f4", 20000);
     Serialize(f4);
 
     cout << f1->CodeSize() << endl;
@@ -60,11 +60,11 @@ int main(int argc, char** argv) {
     cout << f3->CodeSize() << endl;
     cout << f4->CodeSize() << endl;
 
-    shared_ptr<advanced::DocSchema> tschema = make_shared<advanced::DocSchema>();
+    shared_ptr<doc::DocSchema> tschema = make_shared<doc::DocSchema>();
     tschema->AddField(f1);
     tschema->AddField(f2);
 
-    advanced::Doc tdoc(tschema);
+    doc::Doc tdoc(tschema);
     tdoc.AddField(f1);
     tdoc.AddField(f2);
 

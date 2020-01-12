@@ -3,7 +3,7 @@
 #include <sstream>
 #include "utils.h"
 
-namespace advanced {
+namespace doc {
 
 template <typename SerializerT>
 class FieldT {
