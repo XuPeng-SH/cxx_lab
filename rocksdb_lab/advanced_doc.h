@@ -9,7 +9,7 @@
 #include <shared_mutex>
 #include <thread>
 
-namespace doc {
+namespace document {
 
 using FID_T = uint8_t;
 

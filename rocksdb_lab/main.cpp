@@ -37,22 +37,22 @@ DEFINE_bool(print, false, "do print");
 
 DEFINE_string(tname, "default", "table name");
 
-void Serialize(shared_ptr<doc::Field> field) {
+void Serialize(shared_ptr<document::Field> field) {
     cout << field->ToPrintableString() << endl;
 }
 
 int main(int argc, char** argv) {
-    shared_ptr<doc::Field> f1 = make_shared<doc::FloatField>("f1", 12.5);
+    shared_ptr<document::Field> f1 = make_shared<document::FloatField>("f1", 12.5);
     cout << f1->ToPrintableString() << endl;
     Serialize(f1);
-    shared_ptr<doc::Field> f2 = make_shared<doc::StringField>("f2", "hello world");
+    shared_ptr<document::Field> f2 = make_shared<document::StringField>("f2", "hello world");
     cout << f2->ToPrintableString() << endl;
     Serialize(f2);
 
-    shared_ptr<doc::Field> f3 = make_shared<doc::LongField>("f3", 10000);
+    shared_ptr<document::Field> f3 = make_shared<document::LongField>("f3", 10000);
     Serialize(f3);
 
-    shared_ptr<doc::Field> f4 = make_shared<doc::IntField>("f4", 20000);
+    shared_ptr<document::Field> f4 = make_shared<document::IntField>("f4", 20000);
     Serialize(f4);
 
     cout << f1->CodeSize() << endl;
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     cout << f3->CodeSize() << endl;
     cout << f4->CodeSize() << endl;
 
-    shared_ptr<doc::DocSchema> tschema = make_shared<doc::DocSchema>();
+    shared_ptr<document::DocSchema> tschema = make_shared<document::DocSchema>();
     tschema->AddField(f1);
     tschema->AddField(f2);
 
@@ -68,14 +68,14 @@ int main(int argc, char** argv) {
     tschema->Serialize(schema_serialized);
     cout << "schema serialized=" << schema_serialized << endl;
 
-    shared_ptr<doc::DocSchema> ttschema = make_shared<doc::DocSchema>();
+    shared_ptr<document::DocSchema> ttschema = make_shared<document::DocSchema>();
     cout << "size of schema_serialized is " << schema_serialized.size() << endl;
-    doc::DocSchema::Deserialize(schema_serialized, *ttschema);
+    document::DocSchema::Deserialize(schema_serialized, *ttschema);
 
     cout << ttschema->ToPrintableString() << endl;
 
 
-    doc::Doc tdoc(tschema);
+    document::Doc tdoc(tschema);
     tdoc.AddField(f1);
     tdoc.AddField(f2);
 
@@ -85,10 +85,10 @@ int main(int argc, char** argv) {
     cout << sf1 << endl;
 
     size_t consumed;
-    auto ff1 = doc::Field::Deserialize(sf1, consumed);
+    auto ff1 = document::Field::Deserialize(sf1, consumed);
     cout << ff1->ToPrintableString() << endl;
 
-    /* auto ff1 = doc::Deserialize(sf1); */
+    /* auto ff1 = document::Deserialize(sf1); */
     /* cout << ff1->ToPrintableString() << endl; */
 
     auto gf3 = tdoc.GetField("f3");
