@@ -78,41 +78,48 @@ class DocSchemaT : public BaseDocT<FieldT> {
 public:
     using ThisT = DocSchemaT<FieldT>;
     using BaseT = BaseDocT<FieldT>;
+    using SerializerType = typename FieldT::SerializerType;
 
-/*     rocksdb::Status Serialize(std::string& data) const { */
+    std::string ToPrintableString() const {
+        std::stringstream ss;
+        ss << "<DocSchema \n";
+        for (auto i=0; i<BaseT::fid_field_.size(); ++i) {
+            ss << "  " << i << ": " << BaseT::fid_field_[i]->ToPrintableString() << "\n";
+        }
+        ss << ">";
+        return ss.str();
+    }
 
-/*     } */
+    bool Serialize(std::string& serialized) const {
+        std::shared_lock<std::shared_timed_mutex> lock(BaseT::mtx_);
+        bool ok = true;
+        uint8_t fields_num = BaseT::fid_field_.size();
+        FieldT::SerializerType::Serialize(fields_num, serialized);
+        for (uint8_t fid = 0; fid < BaseT::fid_field_.size() && ok; fid++) {
+            FieldT::SerializerType::Serialize(fid, serialized);
+            ok &= BaseT::fid_field_[fid]->Serialize(serialized);
+        }
+        return ok;
+    }
 
-/*     static rocksdb::Status Deserialize(const rocksdb::Slice& data, ThisT& schema) { */
-/*         uint8_t fields_num = *(uint8_t*)(data.data()); */
-/*         int offset = 1; */
-/*         uint8_t field_id; */
-/*         uint8_t field_type; */
-/*         uint8_t name_size; */
-/*         std::string field_name; */
-/*         while(fields_num-- > 0) { */
-/*             field_id = *(uint8_t*)(data.data() + offset++); */
-/*             field_type = *(uint8_t*)(data.data() + offset++); */
-/*             name_size = *(uint8_t*)(data.data() + offset++); */
+    static bool Deserialize(const rocksdb::Slice& data, ThisT& schema) {
+        uint8_t fields_num;
 
-/*             field_name.assign(data.data()+offset, name_size); */
-/*             offset += name_size; */
+        SerializerType::Deserialize(data.data(), fields_num);
+        int offset = 1;
+        uint8_t field_id;
+        while(fields_num-- > 0) {
+            SerializerType::Deserialize(data.data() + offset++, field_id);
 
-/*             // TODO: Store and fetch field parameters */
-/*             if (field_type == LongField::FieldTypeValue()) { */
-/*                 LongField f(field_name); */
-/*                 schema.AddLongField(std::move(f)); */
-/*             } else if (field_type == StringField::FieldTypeValue()) { */
-/*                 StringField f(field_name); */
-/*                 schema.AddStringField(std::move(f)); */
-/*             } else if (field_type == FloatField::FieldTypeValue()) { */
-/*                 FloatField f(field_name); */
-/*                 schema.AddFloatField(std::move(f)); */
-/*             } */
-/*         } */
+            size_t consumed;
+            auto field = FieldT::Deserialize(rocksdb::Slice(data.data()+offset, data.size() - offset), consumed);
+            assert(field);
+            schema.AddField(field);
+            offset += consumed;
+        }
 
-/*         return rocksdb::Status::OK(); */
-/*     } */
+        return true;
+    }
 };
 
 using DocSchema = DocSchemaT<Field>;

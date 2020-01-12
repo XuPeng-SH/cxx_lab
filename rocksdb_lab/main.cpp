@@ -64,6 +64,17 @@ int main(int argc, char** argv) {
     tschema->AddField(f1);
     tschema->AddField(f2);
 
+    string schema_serialized;
+    tschema->Serialize(schema_serialized);
+    cout << "schema serialized=" << schema_serialized << endl;
+
+    shared_ptr<doc::DocSchema> ttschema = make_shared<doc::DocSchema>();
+    cout << "size of schema_serialized is " << schema_serialized.size() << endl;
+    doc::DocSchema::Deserialize(schema_serialized, *ttschema);
+
+    cout << ttschema->ToPrintableString() << endl;
+
+
     doc::Doc tdoc(tschema);
     tdoc.AddField(f1);
     tdoc.AddField(f2);
@@ -73,7 +84,8 @@ int main(int argc, char** argv) {
 
     cout << sf1 << endl;
 
-    auto ff1 = doc::Field::Deserialize(sf1);
+    size_t consumed;
+    auto ff1 = doc::Field::Deserialize(sf1, consumed);
     cout << ff1->ToPrintableString() << endl;
 
     /* auto ff1 = doc::Deserialize(sf1); */
