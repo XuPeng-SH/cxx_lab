@@ -17,14 +17,16 @@ public:
 
     const std::string& Name() const { return name_; }
 
-    template <typename ValT>
-    void Serialize(const ValT& val, std::string& serialized) {
-        SerializerT::Serialize(val, serialized);
-    }
+    /* template <typename ValT> */
+    /* void Serialize(const ValT& val, std::string& serialized) { */
+    /*     SerializerT::Serialize(val, serialized); */
+    /* } */
 
     virtual const char* TName() const {
         return ThisT::TypeName;
     }
+
+    virtual const uint8_t TVale() const { return ThisT::TypeValue; }
 
     virtual size_t CodeSize() const {
         return value_.size();
@@ -32,6 +34,20 @@ public:
 
     virtual size_t Elements() const {
         return 1;
+    }
+
+    bool Serialize(std::string& serialized, bool has_val = false) const {
+        uint8_t tval = this->TVale();
+        SerializerT::Serialize(tval, serialized);
+
+        auto size = (uint8_t)name_.size();
+        SerializerT::Serialize(size, serialized);
+        serialized.append(name_);
+
+        if (!has_val) return true;
+
+        return true;
+        // TODO: Handle has_val scenario
     }
 
     virtual std::string ToPrintableString() const {
@@ -62,10 +78,15 @@ public:
     using ThisT = StringFieldT<SerializerT, TypeTrait>;
     using ValueT = typename TypeTrait::ValueT;
 
+    StringFieldT(const std::string& name) : BaseT(name) {
+    }
+
     StringFieldT(const std::string& name, const ValueT& value) : BaseT(name, value) {
     }
 
-    const char* TName() const override{
+    const uint8_t TVale() const override { return ThisT::TypeValue; }
+
+    const char* TName() const override {
         return ThisT::TypeName;
     }
 };
@@ -83,6 +104,9 @@ public:
     using ThisT = NumericFieldT<SerializerT, TypeTrait>;
     using ValueT = typename TypeTrait::ValueT;
 
+    NumericFieldT(const std::string& name) : BaseT(name) {
+    }
+
     NumericFieldT(const std::string& name, const ValueT& value) : BaseT(name) {
         SerializerT::Serialize(value, BaseT::value_);
     }
@@ -98,6 +122,8 @@ public:
         ss << "<" << this->TName() << " " << BaseT::name_ << ":" << v << ">";
         return std::move(ss.str());
     }
+
+    const uint8_t TVale() const override { return ThisT::TypeValue; }
 
     const char* TName() const override{
         return ThisT::TypeName;
@@ -125,5 +151,25 @@ struct IntTraits {
 using FloatField = NumericFieldT<DefaultSerializerT, FloatTraits>;
 using LongField = NumericFieldT<DefaultSerializerT, LongTraits>;
 using IntField = NumericFieldT<DefaultSerializerT, IntTraits>;
+
+std::shared_ptr<Field> Deserialize(const rocksdb::Slice& source) {
+    uint8_t field_type, name_size;
+    std::string field_name;
+    Serializer::Deserialize(source.data(), field_type);
+    Serializer::Deserialize(source.data() + sizeof(field_type), name_size);
+    field_name.assign(source.data() + sizeof(uint8_t) + sizeof(uint8_t), name_size);
+    if (field_type == LongField::TypeValue) {
+        return std::make_shared<LongField>(field_name);
+    } else if (field_type == FloatField::TypeValue) {
+        return std::make_shared<FloatField>(field_name);
+    } else if (field_type == IntField::TypeValue) {
+        return std::make_shared<IntField>(field_name);
+    } else if (field_type == StringField::TypeValue) {
+        return std::make_shared<StringField>(field_name);
+    }
+
+    std::cerr << "Cannot serialize field str \"" << source.ToString() << "\"" << std::endl;
+    return nullptr;
+}
 
 }

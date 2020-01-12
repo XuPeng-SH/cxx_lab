@@ -78,6 +78,41 @@ class DocSchemaT : public BaseDocT<FieldT> {
 public:
     using ThisT = DocSchemaT<FieldT>;
     using BaseT = BaseDocT<FieldT>;
+
+/*     rocksdb::Status Serialize(std::string& data) const { */
+
+/*     } */
+
+/*     static rocksdb::Status Deserialize(const rocksdb::Slice& data, ThisT& schema) { */
+/*         uint8_t fields_num = *(uint8_t*)(data.data()); */
+/*         int offset = 1; */
+/*         uint8_t field_id; */
+/*         uint8_t field_type; */
+/*         uint8_t name_size; */
+/*         std::string field_name; */
+/*         while(fields_num-- > 0) { */
+/*             field_id = *(uint8_t*)(data.data() + offset++); */
+/*             field_type = *(uint8_t*)(data.data() + offset++); */
+/*             name_size = *(uint8_t*)(data.data() + offset++); */
+
+/*             field_name.assign(data.data()+offset, name_size); */
+/*             offset += name_size; */
+
+/*             // TODO: Store and fetch field parameters */
+/*             if (field_type == LongField::FieldTypeValue()) { */
+/*                 LongField f(field_name); */
+/*                 schema.AddLongField(std::move(f)); */
+/*             } else if (field_type == StringField::FieldTypeValue()) { */
+/*                 StringField f(field_name); */
+/*                 schema.AddStringField(std::move(f)); */
+/*             } else if (field_type == FloatField::FieldTypeValue()) { */
+/*                 FloatField f(field_name); */
+/*                 schema.AddFloatField(std::move(f)); */
+/*             } */
+/*         } */
+
+/*         return rocksdb::Status::OK(); */
+/*     } */
 };
 
 using DocSchema = DocSchemaT<Field>;

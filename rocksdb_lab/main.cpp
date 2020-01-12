@@ -68,6 +68,14 @@ int main(int argc, char** argv) {
     tdoc.AddField(f1);
     tdoc.AddField(f2);
 
+    std::string sf1;
+    f1->Serialize(sf1);
+
+    cout << sf1 << endl;
+
+    auto ff1 = doc::Deserialize(sf1);
+    cout << ff1->ToPrintableString() << endl;
+
     auto gf3 = tdoc.GetField("f3");
     if (!gf3) {
         cerr << "Cannot get field f3" << endl;
