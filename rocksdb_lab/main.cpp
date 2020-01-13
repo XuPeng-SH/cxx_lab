@@ -41,7 +41,7 @@ void Serialize(shared_ptr<document::Field> field) {
     cout << field->ToPrintableString() << endl;
 }
 
-int main(int argc, char** argv) {
+void document_demo() {
     shared_ptr<document::Field> f1 = make_shared<document::FloatField>("f1", 12.5);
     cout << f1->ToPrintableString() << endl;
     Serialize(f1);
@@ -94,12 +94,13 @@ int main(int argc, char** argv) {
     auto gf3 = tdoc.GetField("f3");
     if (!gf3) {
         cerr << "Cannot get field f3" << endl;
-        return 0;
+        return;
     }
     cout << gf3->Name() << endl;
     cout << gf3->ToPrintableString() << endl;
+}
 
-    return 0;
+int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     auto options = db::DefaultOpenOptions();
 
