@@ -60,7 +60,7 @@ void RocksDBImpl::Init() {
             std::string tk = std::string(key.data()+DBTablePrefix.size(), key.size()-DBTablePrefix.size());
             db_cache_->UpdateTableMapping(*(uint64_t*)(val.data()), tk);
             {
-                KeyHelper::PrintDBTableNameKey(tk, val, db_cache_, "Initializing ");
+                /* KeyHelper::PrintDBTableNameKey(tk, val, db_cache_, "Initializing "); */
             }
         }
         delete it;
@@ -513,12 +513,12 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
 
         std::string tsk_val;
         Serializer::Serialize(next_tid, tsk_val);
-        std::cout << "Updating next tid to " << next_tid << std::endl;
+        /* std::cout << "Updating next tid to " << next_tid << std::endl; */
         wb.Put(DBTableSequenceKey, tsk_val);
 
         std::string t_v;
         Serializer::Serialize(tid, t_v);
-        std::cout << "Putting " << tid << " to " << table_key << std::endl;
+        /* std::cout << "Putting " << tid << " to " << table_key << std::endl; */
         wb.Put(table_key, t_v);
 
         std::string ts_k(DBTableCurrentSegmentPrefix);
