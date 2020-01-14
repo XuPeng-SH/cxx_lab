@@ -123,6 +123,7 @@ public:
 };
 
 using DocSchema = DocSchemaT<Field>;
+using DocSchemaPtr = std::shared_ptr<DocSchema>;
 
 template <typename FieldT>
 class DocT : public BaseDocT<FieldT> {
@@ -148,5 +149,7 @@ protected:
 };
 
 using Doc = DocT<Field>;
+using DocPtr = std::shared_ptr<Doc>;
+
 
 }

@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
         cout << __FILE__ << ":" << __LINE__ << " " << num << " times add_doc takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
 
-    ADD_DOC(FLAGS_nb);
+    /* ADD_DOC(FLAGS_nb); */
 
     std::vector<std::string> vec;
     std::stringstream ss;
@@ -244,7 +244,8 @@ int main(int argc, char** argv) {
         auto end = chrono::high_resolution_clock::now();
         cout << __FILE__ << ":" << __LINE__ << " tnum=" << tnum << " write takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
-    /* MT_CREATE_TABLE(1); */
+    MT_CREATE_TABLE(32);
+    return 0;
 
     auto READ_ALL = [&](bool do_print) {
         auto start = chrono::high_resolution_clock::now();
@@ -266,8 +267,8 @@ int main(int argc, char** argv) {
         std::vector<std::shared_ptr<Doc>> docs;
         db::FieldsFilter filters;
         db::FieldFilter filter;
-        long age_upper = 2000;
-        long age_lower = 0;
+        long age_upper = 40;
+        long age_lower = 12;
         Serializer::Serialize(age_upper, filter.upper_bound);
         Serializer::Serialize(age_lower, filter.lower_bound);
         filter.name = "age";
@@ -282,7 +283,7 @@ int main(int argc, char** argv) {
         std::string lower(db::DBTableUidIdMappingPrefix);
         uint64_t tid = 0;
         /* uint64_t l_uid = 950079711; */
-        uint64_t l_uid = 265167685;
+        uint64_t l_uid = 1549469410 - 100;
         uint64_t u_uid = 1549469410 + 1;
         upper.append((char*)&tid, sizeof(tid));
         upper.append((char*)&u_uid, sizeof(u_uid));
