@@ -1,10 +1,14 @@
 #include "executor.h"
+#include "rocksdb_util.h"
 #include <iostream>
+#include "rocksdb_impl.h"
 
 
-#define MARK std::cout << "[EXECUTOR] TID=" << std::this_thread::get_id() << ": " << __func__ << ":" << __LINE__ << std::endl
-#define MARK2 std::cout << "========[EXECUTOR] TID=" << std::this_thread::get_id() << ": " << __func__ << ":" << __LINE__ << std::endl
+/* #define MARK std::cout << "[EXECUTOR] TID=" << std::this_thread::get_id() << ": " << __func__ << ":" << __LINE__ << std::endl */
+/* #define MARK2 std::cout << "========[EXECUTOR] TID=" << std::this_thread::get_id() << ": " << __func__ << ":" << __LINE__ << std::endl */
 
+#define MARK
+#define MARK2
 
 rocksdb::Status RequestExector::HandleRequest(RequestPtr request) {
     MARK;
@@ -79,6 +83,14 @@ void RequestExector::WorkingThread(QueuePtr queue) {
 namespace lab {
 
 void request_exector_lab() {
+    auto options = db::DefaultOpenOptions();
+
+    rocksdb::DB *kvdb;
+    rocksdb::DB::Open(*options, "/tmp/request_exector_lab", &kvdb);
+    std::shared_ptr<rocksdb::DB> skvdb(kvdb);
+    auto impl = std::make_shared<db::RocksDBImpl>(skvdb);
+    auto thisdb = std::make_shared<db::MyDB>(impl);
+
     auto schema = std::make_shared<DocSchema>();
     schema->AddLongField(LongField("_id"));
 
@@ -95,10 +107,12 @@ void request_exector_lab() {
     std::string table_name = __func__;
     std::string request_id = "rid1";
 
-    auto executor = std::make_shared<RequestExector>(10);
+    thisdb->CreateTable(table_name, *schema);
+
+    auto executor = std::make_shared<RequestExector>(32);
     auto call_request = [&](int num){
 
-        auto context = std::make_shared<AddDocContext>(request_id, table_name);
+        auto context = std::make_shared<AddDocContext>(thisdb, request_id, table_name);
 
         for (auto i=0; i<num; i++) {
             DocPtr mydoc = std::make_shared<Doc>(Helper::NewPK(i+10000), schema);
@@ -120,12 +134,14 @@ void request_exector_lab() {
 
     std::vector<std::thread> ts;
     for (auto i=0; i<10; ++i) {
-        ts.push_back(std::thread(call_request, 100));
+        ts.push_back(std::thread(call_request, 1));
     }
 
     for (auto& t : ts) {
         t.join();
     }
+
+    thisdb->Dump(true);
 }
 
 }

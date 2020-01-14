@@ -8,6 +8,7 @@
 #include <condition_variable>
 #include <vector>
 #include "doc.h"
+#include "database.h"
 
 /* using namespace document; */
 using DocPtr = std::shared_ptr<Doc>;
@@ -20,6 +21,8 @@ public:
     const std::string& RequestID() const { return request_id_; }
 
     bool IsAsync() const { return async_; }
+
+    virtual ~BaseContext() {}
 
 protected:
     std::string request_id_;
@@ -63,8 +66,10 @@ using RequestPtr = BaseRequest::Ptr;
 
 class AddDocContext : public BaseContext {
 public:
-    AddDocContext(const std::string& request_id, const std::string& table_name, const std::vector<DocPtr>& docs = {})
+    AddDocContext(std::shared_ptr<db::MyDB> db,
+            const std::string& request_id, const std::string& table_name, const std::vector<DocPtr>& docs = {})
         : BaseContext(request_id),
+          db_(db),
           table_name_(table_name),
           docs_(docs) {
     }
@@ -81,11 +86,15 @@ public:
         return docs_;
     }
 
+    std::shared_ptr<db::MyDB> GetDB() { return db_; }
+
 protected:
     std::string table_name_;
     std::vector<DocPtr> docs_;
+    std::shared_ptr<db::MyDB> db_;
 };
 
+using AddDocContextPtr = std::shared_ptr<AddDocContext>;
 
 class AddDocRequest : public BaseRequest {
 public:
@@ -99,7 +108,6 @@ protected:
 
     rocksdb::Status
     OnExecute() override;
-
 };
 
 namespace lab {
