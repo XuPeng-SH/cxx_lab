@@ -1,6 +1,7 @@
 #include "executor.h"
-#include "rocksdb_util.h"
 #include <iostream>
+#include <chrono>
+#include "rocksdb_util.h"
 #include "rocksdb_impl.h"
 
 
@@ -109,15 +110,15 @@ void request_exector_lab() {
 
     thisdb->CreateTable(table_name, *schema);
 
-    auto executor = std::make_shared<RequestExector>(1);
-    auto call_request = [&](int num){
+    auto executor = std::make_shared<RequestExector>(2);
+    auto call_request = [&](int num, int start=0){
 
         auto context = std::make_shared<AddDocContext>(thisdb, request_id, table_name);
 
         for (auto i=0; i<num; i++) {
             DocPtr mydoc = std::make_shared<Doc>(Helper::NewPK(i+10000), schema);
             mydoc->AddLongFieldValue("age", 10+i)
-                 .AddStringFieldValue("uid", std::to_string(1000000+i))
+                 .AddStringFieldValue("uid", std::to_string(1000000+i+start))
                  .Build();
 
             context->AddDoc(mydoc);
@@ -132,16 +133,19 @@ void request_exector_lab() {
         }
     };
 
+    auto start = std::chrono::high_resolution_clock::now();
     std::vector<std::thread> ts;
-    for (auto i=0; i<10; ++i) {
-        ts.push_back(std::thread(call_request, 1));
+    for (auto i=0; i<20; ++i) {
+        ts.push_back(std::thread(call_request, 500, i*1000000));
     }
 
     for (auto& t : ts) {
         t.join();
     }
 
-    thisdb->Dump(true);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << __func__ << " takes " << std::chrono::duration<double, std::milli>(end-start).count() << std::endl;
+    /* thisdb->Dump(true); */
 }
 
 }

@@ -324,6 +324,8 @@ public:
     RocksDBImpl(std::shared_ptr<rocksdb::DB> db);
     rocksdb::Status CreateTable(const std::string& table_name, const DocSchema& schema) override;
     rocksdb::Status AddDoc(const std::string& table_name, const Doc& doc) override;
+    rocksdb::Status AddDocs(const std::string& table_name,
+            const std::vector<std::shared_ptr<Doc>>& docs) override;
 
     rocksdb::Status GetLatestTableId(uint64_t tid);
     rocksdb::Status GetDoc(const std::string& table_name, long uid, std::shared_ptr<Doc> doc) override;

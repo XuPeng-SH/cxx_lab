@@ -327,6 +327,50 @@ void RocksDBImpl::Dump(bool do_print) {
     std::cout << "Found " << count << " KVs" << std::endl;
 }
 
+rocksdb::Status RocksDBImpl::AddDocs(const std::string& table_name,
+        const std::vector<std::shared_ptr<Doc>>& docs) {
+    auto schema = db_cache_->GetSchema(table_name);
+    if (!schema) {
+        std::cout << "NotFound in Cache: table_name=" << table_name << " " << __func__ << ":" << __LINE__ << std::endl;
+        return rocksdb::Status::NotFound();
+    }
+
+    uint64_t tid;
+    auto s = db_cache_->GetTidByTname(table_name, tid);
+    if (!s.ok()) {
+        std::cout << s.ToString() << __func__ << ":" << __LINE__ << std::endl;
+        return s;
+    }
+
+    uint64_t sid;
+    s = db_cache_->GetSegId(tid, sid);
+    if (!s.ok()) {
+        std::cerr << s.ToString() << std::endl;
+        return s;
+    }
+
+    rocksdb::WriteBatch wb;
+    bool updated = false;
+
+    uint64_t offset;
+    s = db_cache_->GetTidOffset(tid, offset);
+
+    for (auto& doc : docs) {
+        AddDoc(*doc, wb, tid, sid, offset, updated);
+    }
+
+    s = db_->Write(*DefaultDBWriteOptions(), &wb);
+    if (!s.ok()) {
+        std::cerr << s.ToString() << std::endl;
+        return s;
+    }
+
+    if (updated) {
+        db_cache_->UpdateSegMap(tid, sid);
+    }
+    db_cache_->UpdateTidOffset(tid, offset);
+    return s;
+}
 
 rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& doc) {
     auto schema = db_cache_->GetSchema(table_name);

@@ -42,14 +42,20 @@ rocksdb::Status AddDocRequest::OnExecute() {
     auto& table_name = context->GetTableName();
     auto& docs = context->GetDocs();
     auto db = context->GetDB();
-    for (auto& doc : docs) {
-        s = db->AddDoc(table_name, *doc);
-        if (!s.ok()) {
-            std::cerr << s.ToString() << std::endl;
-            break;
-        }
 
+    s = db->AddDocs(table_name, docs);
+    if (!s.ok()) {
+        std::cerr << s.ToString() << std::endl;
     }
+
+    /* for (auto& doc : docs) { */
+    /*     s = db->AddDoc(table_name, *doc); */
+    /*     if (!s.ok()) { */
+    /*         std::cerr << s.ToString() << std::endl; */
+    /*         break; */
+    /*     } */
+
+    /* } */
     return s;
 }
 
