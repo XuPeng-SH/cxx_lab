@@ -244,20 +244,32 @@ public:
         uint8_t field_type;
         auto s = schema->GetFieldType(fid, field_type);
         if (!s) {
-            std::cerr << "Cannot get field type of field_id" << fid << std::endl;
+            std::cerr << "Cannot get field type of field_id" << (int)fid << std::endl;
             return;
         }
 
         if (field_type == LongField::FieldTypeValue()) {
             long vv;
             Serializer::Deserialize(val, vv);
-            std::cout << ":" << vv;
+            std::cout << "[:]" << vv;
         } else if (field_type == FloatField::FieldTypeValue()) {
             long vv;
             Serializer::Deserialize(val, vv);
-            std::cout << ":" << vv;
+            std::cout << "<:>" << vv;
         } else if (field_type == StringField::FieldTypeValue()) {
-            std::cout << ":" << val.ToString();
+            std::cout << "{:}" << val.ToString();
+        } else if (field_type == FloatVectorField::FieldTypeValue()) {
+            std::cout << "(:)< ";
+            if (val.size() > 16) {
+                std::cout << "...";
+            } else {
+                float* vec = (float*)val.data();
+                for (auto i=0; i<val.size()/sizeof(float); ++i) {
+                    std::cout << *(vec+i) << " ";
+                }
+            }
+            std::cout << ">";
+            /* std::cout << ":" << val.ToString(); */
         } else {
             std::cerr << "TODO" << std::endl;
             assert(false);
@@ -303,6 +315,12 @@ public:
             auto size = key.size() - DBTableFieldIndexPrefix.size()
                 - sizeof(uint64_t) - sizeof(uint8_t) - 2 * sizeof(uint64_t);
             std::cout << ":" << rocksdb::Slice(fid_slice.data()+sizeof(fid), size).ToString();
+        } else if (field_type == FloatVectorField::FieldTypeValue()) {
+            /* int size = val.size() / sizeof(float); */
+            /* float* data = val.data(); */
+            /* std::cout << ":" */
+            std::cout << ":" << "<vectors>";
+
         } else {
             std::cerr << "TODO" << std::endl;
             assert(false);

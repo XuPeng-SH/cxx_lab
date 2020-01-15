@@ -1,6 +1,7 @@
 #include "executor.h"
 #include <iostream>
 #include <chrono>
+#include <random>
 #include "rocksdb_util.h"
 #include "rocksdb_impl.h"
 
@@ -83,7 +84,23 @@ void RequestExector::WorkingThread(QueuePtr queue) {
 
 namespace lab {
 
+void
+BuildVectors(int64_t n, int dim, std::vector<float>& vectors) {
+    vectors.clear();
+    vectors.resize(n * dim);
+    float* data = vectors.data();
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < dim; j++) data[dim * i + j] = drand48();
+        data[dim * i] += i / 1.;
+    }
+}
+
 void request_exector_lab() {
+    int64_t nb = 1;
+    int dim = 512;
+    std::vector<float> xb;
+    BuildVectors(nb, dim, xb);
+
     auto options = db::DefaultOpenOptions();
 
     rocksdb::DB *kvdb;
@@ -97,12 +114,17 @@ void request_exector_lab() {
 
     StringField uid_field("uid");
     LongField age_field("age");
+    FloatVectorField vector_field("img_vec");
 
     uid_field.SetMaxLength(20);
     uid_field.SetMinLength(10);
 
+    vector_field.SetMaxLength(dim);
+    vector_field.SetMinLength(dim);
+
     schema->AddLongField(age_field)
            .AddStringField(uid_field)
+           .AddFloatVectorField(vector_field)
            .Build();
 
     std::string table_name = __func__;
@@ -119,6 +141,7 @@ void request_exector_lab() {
             DocPtr mydoc = std::make_shared<Doc>(Helper::NewPK(i+10000), schema);
             mydoc->AddLongFieldValue("age", 10+i)
                  .AddStringFieldValue("uid", std::to_string(1000000+i+start))
+                 .AddFloatVectorFieldValue("img_vec", xb)
                  .Build();
 
             context->AddDoc(mydoc);
@@ -135,8 +158,8 @@ void request_exector_lab() {
 
     auto start = std::chrono::high_resolution_clock::now();
     std::vector<std::thread> ts;
-    for (auto i=0; i<20; ++i) {
-        ts.push_back(std::thread(call_request, 500, i*1000000));
+    for (auto i=0; i<1; ++i) {
+        ts.push_back(std::thread(call_request, 10000, i*1000000));
     }
 
     for (auto& t : ts) {
@@ -145,7 +168,7 @@ void request_exector_lab() {
 
     auto end = std::chrono::high_resolution_clock::now();
     std::cout << __func__ << " takes " << std::chrono::duration<double, std::milli>(end-start).count() << std::endl;
-    /* thisdb->Dump(true); */
+    thisdb->Dump(false);
 }
 
 }

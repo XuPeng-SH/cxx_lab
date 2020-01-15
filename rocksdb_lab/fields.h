@@ -324,7 +324,10 @@ public:
 
     std::string Serialize() const override {
         // TODO
-        assert(false);
+        std::string serialized;
+        auto& value = BaseT::GetValue();
+        serialized.append((char*)value.data(), value.size()*sizeof(ElementT));
+        return std::move(serialized);
     }
 
     std::string DumpValue() const override{

@@ -103,9 +103,8 @@ void document_demo() {
 }
 
 int main(int argc, char** argv) {
-    /* lab::add_doc_request_lab(); */
-    /* lab::request_exector_lab(); */
-    /* return 0; */
+    lab::request_exector_lab();
+    return 0;
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     auto options = db::DefaultOpenOptions();
 

@@ -113,6 +113,9 @@ public:
             } else if (field_type == FloatField::FieldTypeValue()) {
                 FloatField f(field_name);
                 schema.AddFloatField(std::move(f));
+            } else if (field_type == FloatVectorField::FieldTypeValue()) {
+                FloatVectorField f(field_name);
+                schema.AddFloatVectorField(std::move(f));
             }
         }
 
