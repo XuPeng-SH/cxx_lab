@@ -335,6 +335,9 @@ public:
     void Dump(bool do_print) override;
 
 protected:
+
+    void AddDoc(const Doc& doc, rocksdb::WriteBatch& wb,
+        uint64_t& tid, uint64_t& sid, uint64_t& offset, bool& has_update);
     void Init();
 
     /* rocksdb::Status StoreSchema(const DocSchema& schema); */

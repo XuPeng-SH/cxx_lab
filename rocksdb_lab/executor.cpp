@@ -109,7 +109,7 @@ void request_exector_lab() {
 
     thisdb->CreateTable(table_name, *schema);
 
-    auto executor = std::make_shared<RequestExector>(32);
+    auto executor = std::make_shared<RequestExector>(1);
     auto call_request = [&](int num){
 
         auto context = std::make_shared<AddDocContext>(thisdb, request_id, table_name);

@@ -345,8 +345,6 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
         return s;
     }
 
-    std::string key;
-    std::string val;
     uint64_t sid;
     s = db_cache_->GetSegId(tid, sid);
     if (!s.ok()) {
@@ -355,13 +353,36 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
     }
 
     rocksdb::WriteBatch wb;
+    bool updated = false;
 
     uint64_t offset;
     s = db_cache_->GetTidOffset(tid, offset);
+
+    AddDoc(doc, wb, tid, sid, offset, updated);
+
+    s = db_->Write(*DefaultDBWriteOptions(), &wb);
+    if (!s.ok()) {
+        std::cerr << s.ToString() << std::endl;
+        return s;
+    }
+
+    if (updated) {
+        db_cache_->UpdateSegMap(tid, sid);
+    }
+    db_cache_->UpdateTidOffset(tid, offset);
+
+    return  rocksdb::Status::OK();
+}
+
+void RocksDBImpl::AddDoc(const Doc& doc, rocksdb::WriteBatch& wb,
+        uint64_t& tid, uint64_t& sid, uint64_t& offset, bool& has_update) {
+    std::string key;
+    std::string val;
     std::map<uint8_t, std::string> doc_serialized;
     doc_serialized = doc.Serialize();
     std::string addr_to_delete;
     std::string fval_to_delete;
+    rocksdb::Status s;
 
     for (auto& kv : doc_serialized) {
         auto& fid = kv.first;
@@ -458,12 +479,11 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
         }
     }
 
-    bool updated = false;
     offset++;
     if (offset >= DBTableSegmentSize) {
         sid++;
         offset = 0;
-        updated = true;
+        has_update = true;
         std::string current_seg(DBTableCurrentSegmentPrefix);
         Serializer::Serialize(tid, current_seg);
         std::string v;
@@ -477,19 +497,6 @@ rocksdb::Status RocksDBImpl::AddDoc(const std::string& table_name, const Doc& do
     Serializer::Serialize(sid, next_id_v);
     Serializer::Serialize(offset, next_id_v);
     wb.Put(next_id_k, next_id_v);
-
-    s = db_->Write(*DefaultDBWriteOptions(), &wb);
-    if (!s.ok()) {
-        std::cerr << s.ToString() << std::endl;
-        return s;
-    }
-
-    if (updated) {
-        db_cache_->UpdateSegMap(tid, sid);
-    }
-    db_cache_->UpdateTidOffset(tid, offset);
-
-    return  rocksdb::Status::OK();
 }
 
 rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const DocSchema& schema) {
