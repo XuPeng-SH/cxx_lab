@@ -143,6 +143,8 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
     /* std::string min_sid_id; */
     /* Serializer::Serialize(std::numeric_limits<uint64_t>::max(), min_sid_id); */
 
+    auto snapshot = db_->GetSnapshot();
+
     std::set<std::string> filtered;
     // [Key]$Prefix:$tid:$fid$fval$sid$id -> None
     for (auto& f : filter) {
@@ -150,10 +152,13 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
         auto found = schema->GetFieldId(f.name, field_id);
         if (!found) {
             std::cerr << "Error: Cannot find field_name=" << f.name << std::endl;
+            db_->ReleaseSnapshot(snapshot);
             return rocksdb::Status::InvalidArgument();
         }
 
         rocksdb::ReadOptions options;
+
+        options.snapshot = snapshot;
 
         std::string upper(DBTableFieldIndexPrefix);
         std::string lower(DBTableFieldIndexPrefix);
@@ -206,12 +211,15 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
         Serializer::Deserialize(uid, luid);
         auto doc = std::make_shared<Doc>(Helper::NewPK(luid), schema);
         docs.push_back(doc);
+        /* KeyHelper::PrintDBFieldValueKeyValue(key, uid, db_cache_); */
     }
     std::cout << "docs size=" << docs.size() << std::endl;
 
     /* for (auto& doc : docs) { */
     /*     std::cout << "doc : " << doc->UID() << std::endl; */
     /* } */
+
+    db_->ReleaseSnapshot(snapshot);
 
     return rocksdb::Status::OK();
 }
