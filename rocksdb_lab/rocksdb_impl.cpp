@@ -201,11 +201,14 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
     std::cout << "filtered size=" << filtered.size() << std::endl;
     // $location = $sid$id$fid
     std::string uid;
+    rocksdb::ReadOptions options;
+    options.snapshot = snapshot;
+
     for (auto& location: filtered) {
         std::string key(DBTableFieldValuePrefix);
         Serializer::Serialize(tid, key);
         key += location;
-        s = db_->Get(rdopt_, key, &uid);
+        s = db_->Get(options, key, &uid);
         assert(s.ok());
         long luid;
         Serializer::Deserialize(uid, luid);
