@@ -104,8 +104,8 @@ void document_demo() {
 
 int main(int argc, char** argv) {
     /* lab::add_doc_request_lab(); */
-    lab::request_exector_lab();
-    return 0;
+    /* lab::request_exector_lab(); */
+    /* return 0; */
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     auto options = db::DefaultOpenOptions();
 
@@ -201,7 +201,7 @@ int main(int argc, char** argv) {
         cout << __FILE__ << ":" << __LINE__ << " " << num << " times add_doc takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
 
-    /* ADD_DOC(FLAGS_nb); */
+    ADD_DOC(FLAGS_nb);
 
     std::vector<std::string> vec;
     std::stringstream ss;
@@ -249,8 +249,8 @@ int main(int argc, char** argv) {
         auto end = chrono::high_resolution_clock::now();
         cout << __FILE__ << ":" << __LINE__ << " tnum=" << tnum << " write takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     };
-    MT_CREATE_TABLE(32);
-    return 0;
+    /* MT_CREATE_TABLE(32); */
+    /* return 0; */
 
     auto READ_ALL = [&](bool do_print) {
         auto start = chrono::high_resolution_clock::now();
@@ -264,15 +264,15 @@ int main(int argc, char** argv) {
         READ_ALL(FLAGS_print);
 
     {
-        std::shared_ptr<Doc> doc;
-        auto s = thisdb->GetDoc("mockt", 10000, doc);
-        cout << s.ToString() << endl;
+        /* std::shared_ptr<Doc> doc; */
+        /* auto s = thisdb->GetDoc("mockt", 10000, doc); */
+        /* cout << s.ToString() << endl; */
     }
     {
         std::vector<std::shared_ptr<Doc>> docs;
         db::FieldsFilter filters;
         db::FieldFilter filter;
-        long age_upper = 40;
+        long age_upper = 20;
         long age_lower = 12;
         Serializer::Serialize(age_upper, filter.upper_bound);
         Serializer::Serialize(age_lower, filter.lower_bound);
