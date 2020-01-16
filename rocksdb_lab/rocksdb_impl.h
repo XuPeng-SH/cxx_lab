@@ -352,6 +352,8 @@ public:
             std::vector<std::shared_ptr<Doc>> docs,
             const FieldsFilter& filter) override;
 
+    rocksdb::Status GetTables(std::vector<TablePtr>& tables) override;
+
     void Dump(bool do_print) override;
 
 protected:

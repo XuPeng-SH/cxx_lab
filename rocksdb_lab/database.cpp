@@ -26,6 +26,10 @@ rocksdb::Status MyDB::GetDocs(const std::string& table_name, std::vector<std::sh
     return impl_->GetDocs(table_name, docs, filter);
 }
 
+rocksdb::Status MyDB::GetTables(std::vector<TablePtr>& tables) {
+    return impl_->GetTables(tables);
+}
+
 void MyDB::Dump(bool do_print) {
     return impl_->Dump(do_print);
 }

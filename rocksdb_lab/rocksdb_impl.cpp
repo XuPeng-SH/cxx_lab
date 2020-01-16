@@ -303,6 +303,10 @@ rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std
     std::cout << doc->Dump() << std::endl;
 }
 
+rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables) {
+    return rocksdb::Status::OK();
+}
+
 void RocksDBImpl::Dump(bool do_print) {
     rocksdb::ReadOptions options;
     size_t count = 0;

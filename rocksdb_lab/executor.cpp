@@ -159,7 +159,7 @@ void request_exector_lab() {
     auto start = std::chrono::high_resolution_clock::now();
     std::vector<std::thread> ts;
     for (auto i=0; i<1; ++i) {
-        ts.push_back(std::thread(call_request, 10000, i*1000000));
+        ts.push_back(std::thread(call_request, 100, i*1000000));
     }
 
     for (auto& t : ts) {
@@ -168,7 +168,7 @@ void request_exector_lab() {
 
     auto end = std::chrono::high_resolution_clock::now();
     std::cout << __func__ << " takes " << std::chrono::duration<double, std::milli>(end-start).count() << std::endl;
-    thisdb->Dump(false);
+    thisdb->Dump(true);
 }
 
 }

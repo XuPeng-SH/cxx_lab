@@ -6,6 +6,7 @@
 #include <vector>
 #include <rocksdb/status.h>
 #include "doc.h"
+#include "datatypes.h"
 
 namespace rocksdb {
     class DB;
@@ -33,6 +34,8 @@ public:
             const std::vector<std::shared_ptr<Doc>>& docs);
     rocksdb::Status GetDoc(const std::string& table_name, long uid, std::shared_ptr<Doc> doc);
     rocksdb::Status GetDocs(const std::string& table_name, std::vector<std::shared_ptr<Doc>> docs, const FieldsFilter& filter);
+
+    rocksdb::Status GetTables(std::vector<TablePtr>& tables);
     void Dump(bool do_print);
 
 private:
@@ -50,6 +53,7 @@ public:
                                     std::vector<std::shared_ptr<Doc>> docs,
                                     const FieldsFilter& filter
                                     ) = 0;
+    virtual rocksdb::Status GetTables(std::vector<TablePtr>& tables) = 0;
     virtual void Dump(bool do_print) = 0;
 
     virtual ~DBImpl() {}

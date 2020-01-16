@@ -18,7 +18,8 @@ using IndexKeyT = std::tuple<uint64_t, uint64_t>;
 class VectorIndexImpl;
 struct IndexHub {
      using VectorMapT = std::map<IndexKeyT, IndexPtr>;
-     rocksdb::Status Recover(const rocksdb::DB& db);
+     /* rocksdb::Status Recover(const rocksdb::DB& db); */
+     bool SetIndex(uint64_t tid, uint64_t sid, IndexPtr index);
 
      IndexPtr GetIndex(uint64_t tid, uint64_t sid);
 
