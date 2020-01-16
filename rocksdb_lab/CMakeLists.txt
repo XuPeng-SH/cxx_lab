@@ -15,16 +15,44 @@ link_directories(/usr/lib/gcc/x86_64-linux-gnu/5/
     /home/xupeng/github/rocksdb/build
     )
 
+if(WITH_FAISS)
+    message("WITH FAISS=${WITH_FAISS}")
+    include_directories(/usr/local/cuda/include)
+    include_directories(/home/xupeng/github/faiss/include)
+    include_directories(/home/xupeng/github/faiss)
+
+    link_directories(/usr/local/cuda/lib64)
+endif()
+
 set(src ${source_files})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -fPIC")
+
+if (WITH_FAISS)
+    add_definitions(-DWITH_FAISS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -fPIC -DELPP_THREAD_SAFE -fopenmp")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -fPIC")
+endif()
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -fPIC")
 
 add_executable(rocksdb_lab ${src})
 
-set(lab_libs
-    rocksdb
-    gflags
-    pthread
-    )
+if(WITH_FAISS)
+    set(lab_libs
+        rocksdb
+        gflags
+        pthread
+        /home/xupeng/github/faiss/libfaiss.a
+        gfortran
+        cudart
+        cublas
+        openblas
+        )
+else()
+    set(lab_libs
+        rocksdb
+        gflags
+        pthread
+        )
+endif()
 
 target_link_libraries(rocksdb_lab ${lab_libs})
