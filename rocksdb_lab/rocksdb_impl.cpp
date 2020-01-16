@@ -304,6 +304,38 @@ rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std
 }
 
 rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables) {
+    auto snapshot = db_->GetSnapshot();
+    rocksdb::ReadOptions options;
+
+    options.snapshot = snapshot;
+
+    std::string upper(DBTablePrefix);
+    std::string lower(DBTablePrefix);
+
+    uint8_t next_max = std::numeric_limits<uint8_t>::max();
+    Serializer::Serialize(next_max, upper);
+
+    rocksdb::Slice l(lower);
+    rocksdb::Slice u(upper);
+
+    options.iterate_lower_bound = &l;
+    options.iterate_upper_bound = &u;
+
+
+    rocksdb::Iterator* it = db_->NewIterator(options);
+
+    size_t items = 0;
+    for (it->SeekToFirst(); it->Valid(); it->Next()) {
+        items++;
+        auto key = it->key();
+        auto val = it->value();
+        KeyHelper::PrintDBTableNameKey(key, val, db_cache_);
+    }
+
+    delete it;
+    std::cout << items << " tables found" << std::endl;
+
+    db_->ReleaseSnapshot(snapshot);
     return rocksdb::Status::OK();
 }
 

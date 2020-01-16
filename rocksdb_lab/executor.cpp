@@ -169,6 +169,9 @@ void request_exector_lab() {
     auto end = std::chrono::high_resolution_clock::now();
     std::cout << __func__ << " takes " << std::chrono::duration<double, std::milli>(end-start).count() << std::endl;
     thisdb->Dump(true);
+
+    std::vector<TablePtr> vec;
+    thisdb->GetTables(vec);
 }
 
 }
