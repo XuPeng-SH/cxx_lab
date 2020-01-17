@@ -7,6 +7,8 @@
 
 using namespace std;
 
+#define PRINT_STATUS(STATUS) std::cout << STATUS.ToString() << " " << __FILE__ << ":" << __LINE__ << std::endl
+
 namespace db {
 
 
@@ -325,15 +327,35 @@ rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables) {
     rocksdb::Iterator* it = db_->NewIterator(options);
 
     size_t items = 0;
+    std::string table_name;
+    uint64_t tid;
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         items++;
         auto key = it->key();
         auto val = it->value();
-        KeyHelper::PrintDBTableNameKey(key, val, db_cache_);
+        table_name.assign(key.data()+PrefixSize, key.size()-PrefixSize);
+        Serializer::Deserialize(val, tid);
+        tables.emplace_back(new Table{table_name, tid});
+        /* KeyHelper::PrintDBTableNameKey(key, val, db_cache_); */
     }
+
 
     delete it;
     std::cout << items << " tables found" << std::endl;
+
+    rocksdb::Status s;
+    for (auto& table : tables) {
+        std::string table_seg_key(DBTableCurrentSegmentPrefix);
+        Serializer::Serialize(table->id, table_seg_key);
+        std::string sid_str;
+        s = db_->Get(rdopt_, table_seg_key, &sid_str);
+        if (!s.ok()) {
+            PRINT_STATUS(s);
+            assert(false);
+        }
+        Serializer::Deserialize(sid_str, table->current_segment_id);
+        std::cout << "[TABLE] " << table->name << " " << table->id << " " << table->current_segment_id << std::endl;
+    }
 
     db_->ReleaseSnapshot(snapshot);
     return rocksdb::Status::OK();

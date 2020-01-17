@@ -21,9 +21,10 @@ static const std::string DBTablePrefix = "TTP";
 
 // (K,V) = (TS:0, 0)     ==> Table ID 0 current used segment is 0
 // (K,V) = (TS:2, 5)     ==> Table ID 2 current used segment is 5
+// [Key]$Prefix:$tid  [Val]$sid
 static const std::string DBTableCurrentSegmentPrefix = "TSP";
 
-// [Key]TSS:$tid:$sid  [Val]$id
+// [Key]$Prefix:$tid:$sid  [Val]$id
 // (K,V) = (TSS:0:0, 0)    ==> Table/Segment ID 0/0 next id is 0
 static const std::string DBTableSegmentNextIDPrefix = "TSS";
 
