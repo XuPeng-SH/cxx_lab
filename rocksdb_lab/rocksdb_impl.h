@@ -359,6 +359,8 @@ public:
 protected:
 
     rocksdb::Status GetTables(std::vector<TablePtr>& tables, const rocksdb::Snapshot* snapshot);
+    rocksdb::Status LoadField(uint64_t tid, uint64_t sid, uint8_t fid, std::vector<std::string>& data,
+            const rocksdb::Snapshot* snapshot);
 
     void AddDoc(const Doc& doc, rocksdb::WriteBatch& wb,
         uint64_t& tid, uint64_t& sid, uint64_t& offset, bool& has_update);

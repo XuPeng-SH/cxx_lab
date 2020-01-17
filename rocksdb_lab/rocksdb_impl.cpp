@@ -314,7 +314,6 @@ rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables) {
 
 rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables, const rocksdb::Snapshot* snapshot) {
     rocksdb::ReadOptions options;
-
     options.snapshot = snapshot;
 
     std::string upper(DBTablePrefix);
@@ -363,6 +362,51 @@ rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables, const rock
         std::cout << "[TABLE] " << table->name << " " << table->id << " " << table->current_segment_id << std::endl;
     }
 
+    std::vector<std::string> data;
+    LoadField(0, 0, 2, data, snapshot);
+    return rocksdb::Status::OK();
+}
+
+// TODO: Need change if using advanced_fields and advanced_doc
+rocksdb::Status RocksDBImpl::LoadField(uint64_t tid, uint64_t sid, uint8_t fid,
+        std::vector<std::string>& data, const rocksdb::Snapshot* snapshot) {
+    rocksdb::ReadOptions options;
+    if (snapshot) options.snapshot = snapshot;
+
+    std::string upper(DBTableFieldValuePrefix);
+    std::string lower(DBTableFieldValuePrefix);
+
+    Serializer::Serialize(tid, upper);
+    Serializer::Serialize(sid, upper);
+    uint8_t next_max = std::numeric_limits<uint8_t>::max();
+    Serializer::Serialize(next_max, upper);
+
+    Serializer::Serialize(tid, lower);
+    Serializer::Serialize(sid, lower);
+    Serializer::Serialize((uint8_t)0, lower);
+
+    rocksdb::Slice l(lower);
+    rocksdb::Slice u(upper);
+
+    options.iterate_lower_bound = &l;
+    options.iterate_upper_bound = &u;
+
+
+    rocksdb::Iterator* it = db_->NewIterator(options);
+
+    size_t items = 0;
+    for (it->SeekToFirst(); it->Valid(); it->Next()) {
+        auto key = it->key();
+        auto val = it->value();
+        const char* fid_val = key.data() + PrefixSize + sizeof(tid) + sizeof(sid) + sizeof(uint64_t);
+        if (*fid_val != fid) continue;
+        items++;
+        data.emplace_back(val.data(), val.size());
+        KeyHelper::PrintDBFieldValueKeyValue(key, val, db_cache_);
+    }
+
+    delete it;
+    std::cout << items << " fields found" << std::endl;
     return rocksdb::Status::OK();
 }
 

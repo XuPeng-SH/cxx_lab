@@ -97,7 +97,7 @@ BuildVectors(int64_t n, int dim, std::vector<float>& vectors) {
 
 void request_exector_lab() {
     int64_t nb = 1;
-    int dim = 512;
+    int dim = 2;
     std::vector<float> xb;
     BuildVectors(nb, dim, xb);
 
@@ -159,7 +159,7 @@ void request_exector_lab() {
     auto start = std::chrono::high_resolution_clock::now();
     std::vector<std::thread> ts;
     for (auto i=0; i<1; ++i) {
-        ts.push_back(std::thread(call_request, 1, i*1000000));
+        ts.push_back(std::thread(call_request, 4, i*1000000));
     }
 
     for (auto& t : ts) {
