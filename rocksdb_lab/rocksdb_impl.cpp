@@ -42,10 +42,10 @@ void RocksDBImpl::Init() {
         assert(false);
     }
 
-    uint64_t tid = *(uint64_t*)(db_seq_id.data());
+    uint64_t tid;
+    Serializer::Deserialize(db_seq_id, tid);
     db_cache_->SetTid(tid);
 
-    /* s = db_->Get(rdopt_, DB) */
 
     rocksdb::ReadOptions options;
     {
@@ -60,7 +60,8 @@ void RocksDBImpl::Init() {
             }
             auto val = it->value();
             std::string tk = std::string(key.data()+DBTablePrefix.size(), key.size()-DBTablePrefix.size());
-            db_cache_->UpdateTableMapping(*(uint64_t*)(val.data()), tk);
+            Serializer::Deserialize(val, tid);
+            db_cache_->UpdateTableMapping(tid, tk);
             {
                 /* KeyHelper::PrintDBTableNameKey(tk, val, db_cache_, "Initializing "); */
             }
@@ -120,7 +121,9 @@ void RocksDBImpl::Init() {
         if (!s.ok()) {
             std::cout << s.ToString() << std::endl;
         }
-        db_cache_->UpdateTableMapping(*((uint64_t*)tid_addr), schema);
+        Serializer::Deserialize(rocksdb::Slice((char*)tid_addr, sizeof(tid)), tid);
+        db_cache_->UpdateTableMapping(tid, schema);
+        /* db_cache_->UpdateTableMapping(*((uint64_t*)tid_addr), schema); */
         /* std::cout << "[[[[[" << DBTableMappingPrefix << ":" << *tid_addr; */
         /* std::cout << ", " << schema.Dump() << "]]]]]" << std::endl; */
     }
@@ -139,11 +142,6 @@ rocksdb::Status RocksDBImpl::GetDocs(const std::string& table_name,
     }
 
     auto schema = db_cache_->GetSchema(tid);
-
-    /* std::string max_sid_id; */
-    /* Serializer::Serialize((uint64_t)0, max_sid_id); */
-    /* std::string min_sid_id; */
-    /* Serializer::Serialize(std::numeric_limits<uint64_t>::max(), min_sid_id); */
 
     auto snapshot = db_->GetSnapshot();
 
@@ -677,6 +675,7 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
         uint64_t sid = 0;
         uint64_t id = 0;
         auto tid = db_cache_->GetTid();
+        /* std::cout << "cache Current tid=" << tid << std::endl; */
         auto next_tid = tid + 1;
         rocksdb::WriteBatch wb;
 
@@ -730,6 +729,8 @@ rocksdb::Status RocksDBImpl::CreateTable(const std::string& table_name, const Do
         }
         /* std::cout << "segid=" << sid << std::endl; */
         db_cache_->SetTid(next_tid, &table_name, &schema);
+        db_cache_->UpdateTableMapping(tid, schema);
+
         /* demo::read_all(db_); */
 
     } else if (!s.ok()) {
