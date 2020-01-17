@@ -358,6 +358,8 @@ public:
 
 protected:
 
+    rocksdb::Status GetTables(std::vector<TablePtr>& tables, const rocksdb::Snapshot* snapshot);
+
     void AddDoc(const Doc& doc, rocksdb::WriteBatch& wb,
         uint64_t& tid, uint64_t& sid, uint64_t& offset, bool& has_update);
     void Init();

@@ -307,6 +307,12 @@ rocksdb::Status RocksDBImpl::GetDoc(const std::string& table_name, long uid, std
 
 rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables) {
     auto snapshot = db_->GetSnapshot();
+    rocksdb::Status s = GetTables(tables, snapshot);
+    db_->ReleaseSnapshot(snapshot);
+    return s;
+}
+
+rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables, const rocksdb::Snapshot* snapshot) {
     rocksdb::ReadOptions options;
 
     options.snapshot = snapshot;
@@ -357,7 +363,6 @@ rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables) {
         std::cout << "[TABLE] " << table->name << " " << table->id << " " << table->current_segment_id << std::endl;
     }
 
-    db_->ReleaseSnapshot(snapshot);
     return rocksdb::Status::OK();
 }
 
