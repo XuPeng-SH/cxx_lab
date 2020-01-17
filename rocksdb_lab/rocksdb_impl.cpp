@@ -544,6 +544,10 @@ void RocksDBImpl::AddDoc(const Doc& doc, rocksdb::WriteBatch& wb,
     std::string fval_to_delete;
     rocksdb::Status s;
 
+    uint64_t sid_used;
+    uint64_t offset_used = offset;
+    bool has_new = true;
+
     for (auto& kv : doc_serialized) {
         auto& fid = kv.first;
         auto& v = kv.second;
@@ -559,14 +563,21 @@ void RocksDBImpl::AddDoc(const Doc& doc, rocksdb::WriteBatch& wb,
                     // 2. Find And Delete All Fields, TODO
                     // 3. Update all bitmap like marker for vector deletion, TODO
                     /* std::cout << "DELETE_ID[" << key << std::endl; */
-                    wb.Delete(key);
+                    Serializer::Deserialize(rocksdb::Slice(addr_to_delete.data(), sizeof(sid_used)), sid_used);
+                    if (sid_used != sid) {
+                        wb.Delete(key);
+                    } else {
+                        has_new = false;
+                        Serializer::Deserialize(rocksdb::Slice(addr_to_delete.data() + sizeof(sid_used), sizeof(offset_used)), offset_used);
+                        addr_to_delete.clear();
+                    }
                 }
             }
 #endif
 
             val.clear();
             Serializer::Serialize(sid, val);
-            Serializer::Serialize(offset, val);
+            Serializer::Serialize(offset_used, val);
             {
                 /* KeyHelper::PrintDBUidIdMappingKey(key, val, db_cache_, "NEW_UID_MAPPING"); */
             }
@@ -608,7 +619,7 @@ void RocksDBImpl::AddDoc(const Doc& doc, rocksdb::WriteBatch& wb,
             field_val_key.assign(DBTableFieldValuePrefix);
             Serializer::Serialize(tid, field_val_key);
             Serializer::Serialize(sid, field_val_key);
-            Serializer::Serialize(offset, field_val_key);
+            Serializer::Serialize(offset_used, field_val_key);
             Serializer::Serialize(fid, field_val_key);
             {
                 /* KeyHelper::PrintDBFieldValueKeyValue(field_val_key, v, db_cache_, "ADDING_VALUE"); */
@@ -626,7 +637,7 @@ void RocksDBImpl::AddDoc(const Doc& doc, rocksdb::WriteBatch& wb,
                 Serializer::Serialize(fid, key);
                 key.append(v.data(), v.size());
                 Serializer::Serialize(sid, key);
-                Serializer::Serialize(offset, key);
+                Serializer::Serialize(offset_used, key);
             }
 
 #if 1
@@ -639,16 +650,18 @@ void RocksDBImpl::AddDoc(const Doc& doc, rocksdb::WriteBatch& wb,
         }
     }
 
-    offset++;
-    if (offset >= DBTableSegmentSize) {
-        sid++;
-        offset = 0;
-        has_update = true;
-        std::string current_seg(DBTableCurrentSegmentPrefix);
-        Serializer::Serialize(tid, current_seg);
-        std::string v;
-        Serializer::Serialize(sid, v);
-        wb.Put(current_seg, v);
+    if (has_new) {
+        offset++;
+        if (offset >= DBTableSegmentSize) {
+            sid++;
+            offset = 0;
+            has_update = true;
+            std::string current_seg(DBTableCurrentSegmentPrefix);
+            Serializer::Serialize(tid, current_seg);
+            std::string v;
+            Serializer::Serialize(sid, v);
+            wb.Put(current_seg, v);
+        }
     }
 
     std::string next_id_k(DBTableSegmentNextIDPrefix);

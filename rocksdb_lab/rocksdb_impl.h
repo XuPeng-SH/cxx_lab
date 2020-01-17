@@ -146,6 +146,7 @@ public:
         uint64_t tid;
         auto tid_addr = key.data() + PrefixSize;
         rocksdb::Slice tid_slice(tid_addr, sizeof(tid));
+        Serializer::Deserialize(tid_slice, tid);
 
         DocSchema schema;
         auto s = DocSchema::Deserialize(val, schema);
