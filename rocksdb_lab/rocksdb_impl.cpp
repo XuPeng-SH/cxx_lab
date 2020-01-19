@@ -360,21 +360,14 @@ rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables, const rock
         std::cout << "[TABLE] " << table->name << " " << table->id << " " << table->current_segment_id << std::endl;
     }
 
-    std::vector<std::string> data;
-    /* LoadField(0, 0, 2, data, snapshot); */
-    LoadField(0, 2, data, snapshot);
+    std::vector<uint8_t> data;
     return rocksdb::Status::OK();
 }
 
 rocksdb::Status RocksDBImpl::LoadField(const std::string& table_name, const std::string& field_name,
-        std::vector<std::string>& data, const rocksdb::Snapshot* snapshot) {
-    bool need_releas_ss = false;
+        std::vector<uint8_t>& data) {
     rocksdb::ReadOptions options;
-    const rocksdb::Snapshot* using_ss = snapshot;
-    if (!using_ss) {
-        using_ss = db_->GetSnapshot();
-        need_releas_ss = true;
-    }
+    const rocksdb::Snapshot* snapshot = db_->GetSnapshot();
     options.snapshot = snapshot;
 
     auto table_key = TableKey(table_name);
@@ -383,7 +376,7 @@ rocksdb::Status RocksDBImpl::LoadField(const std::string& table_name, const std:
     auto s = db_->Get(options, table_key, &table_key_value);
     if (!s.ok()) {
         PRINT_STATUS(s);
-        if (need_releas_ss) db_->ReleaseSnapshot(using_ss);
+        db_->ReleaseSnapshot(snapshot);
         return s;
     }
 
@@ -393,20 +386,32 @@ rocksdb::Status RocksDBImpl::LoadField(const std::string& table_name, const std:
     auto schema = db_cache_->GetSchema(tid);
 
     uint8_t field_id;
-    bool has_field = schema->GetFieldId(field_name, field_id);
-    if (!has_field) {
+    bool check_field = schema->GetFieldId(field_name, field_id);
+    if (!check_field) {
         s = rocksdb::Status::NotFound("field_name not found in table schema");
-        if (need_releas_ss) db_->ReleaseSnapshot(using_ss);
+        db_->ReleaseSnapshot(snapshot);
+        return s;
+    }
+    uint8_t field_type;
+    check_field = schema->GetFieldType(field_id, field_type);
+    if (!check_field) {
+        s = rocksdb::Status::NotFound("field_type not found in table schema");
+        db_->ReleaseSnapshot(snapshot);
+        return s;
+    }
+    if (field_type == StringField::FieldTypeValue()) {
+        s = rocksdb::Status::NotFound("StringField " + field_name + " cannot be loaded right now");
+        db_->ReleaseSnapshot(snapshot);
         return s;
     }
 
-    s = LoadField(tid, field_id, data, using_ss);
+    s = LoadField(tid, field_id, data, snapshot);
 
-    if (need_releas_ss) db_->ReleaseSnapshot(using_ss);
+    db_->ReleaseSnapshot(snapshot);
     return s;
 }
 
-rocksdb::Status RocksDBImpl::LoadField(uint64_t tid, uint8_t fid, std::vector<std::string>& data,
+rocksdb::Status RocksDBImpl::LoadField(uint64_t tid, uint8_t fid, std::vector<uint8_t>& data,
         const rocksdb::Snapshot* snapshot) {
     std::string table_seg_key(DBTableCurrentSegmentPrefix);
     Serializer::Serialize(tid, table_seg_key);
@@ -427,13 +432,13 @@ rocksdb::Status RocksDBImpl::LoadField(uint64_t tid, uint8_t fid, std::vector<st
         }
     }
 
-    std::cout << data.size() << " total fields found" << std::endl;
+    std::cout << data.size() << " total field size found" << std::endl;
     return s;
 }
 
 // TODO: Need change if using advanced_fields and advanced_doc
 rocksdb::Status RocksDBImpl::LoadField(uint64_t tid, uint64_t sid, uint8_t fid,
-        std::vector<std::string>& data, const rocksdb::Snapshot* snapshot) {
+        std::vector<uint8_t>& data, const rocksdb::Snapshot* snapshot) {
     rocksdb::ReadOptions options;
     if (snapshot) options.snapshot = snapshot;
 
@@ -465,7 +470,9 @@ rocksdb::Status RocksDBImpl::LoadField(uint64_t tid, uint64_t sid, uint8_t fid,
         const char* fid_val = key.data() + PrefixSize + sizeof(tid) + sizeof(sid) + sizeof(uint64_t);
         if (*fid_val != fid) continue;
         items++;
-        data.emplace_back(val.data(), val.size());
+        for (auto i=0; i<val.size(); ++i) {
+            data.push_back(val[0]);
+        }
         KeyHelper::PrintDBFieldValueKeyValue(key, val, db_cache_);
     }
 

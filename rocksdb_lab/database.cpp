@@ -30,6 +30,11 @@ rocksdb::Status MyDB::GetTables(std::vector<TablePtr>& tables) {
     return impl_->GetTables(tables);
 }
 
+rocksdb::Status MyDB::LoadField(const std::string& table_name, const std::string& field_name,
+            std::vector<uint8_t>& data) {
+    return impl_->LoadField(table_name, field_name, data);
+}
+
 void MyDB::Dump(bool do_print) {
     return impl_->Dump(do_print);
 }

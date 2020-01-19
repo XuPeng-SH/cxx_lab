@@ -172,6 +172,15 @@ void request_exector_lab() {
 
     std::vector<TablePtr> vec;
     thisdb->GetTables(vec);
+
+    std::vector<uint8_t> field_data;
+    auto s = thisdb->LoadField(table_name, "uid", field_data);
+    std::cout << s.ToString() << std::endl;
+
+    field_data.clear();
+
+    s = thisdb->LoadField(table_name, "img_vec", field_data);
+    std::cout << s.ToString() << std::endl;
 }
 
 }

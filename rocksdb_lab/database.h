@@ -36,6 +36,8 @@ public:
     rocksdb::Status GetDocs(const std::string& table_name, std::vector<std::shared_ptr<Doc>> docs, const FieldsFilter& filter);
 
     rocksdb::Status GetTables(std::vector<TablePtr>& tables);
+    rocksdb::Status LoadField(const std::string& table_name, const std::string& field_name,
+            std::vector<uint8_t>& data);
     void Dump(bool do_print);
 
 private:
@@ -54,6 +56,8 @@ public:
                                     const FieldsFilter& filter
                                     ) = 0;
     virtual rocksdb::Status GetTables(std::vector<TablePtr>& tables) = 0;
+    virtual rocksdb::Status LoadField(const std::string& table_name, const std::string& field_name,
+            std::vector<uint8_t>& data) = 0;
     virtual void Dump(bool do_print) = 0;
 
     virtual ~DBImpl() {}
