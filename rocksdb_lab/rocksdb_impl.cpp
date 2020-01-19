@@ -368,12 +368,20 @@ rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables, const rock
     return rocksdb::Status::OK();
 }
 
+// TODO: Need gloabl snapshot for storage with cache
 rocksdb::Status RocksDBImpl::LoadIndex(const std::string& table_name, const std::string& field_name) {
     std::vector<uint8_t> field_data;
     auto s = LoadField(table_name, field_name, field_data);
     if (!s.ok()) return s;
 
-    /* db_cache_->GetFieldType() */
+    uint8_t field_type;
+    auto schema = db_cache_->GetSchema(table_name);
+    schema->GetFieldType(field_name, field_type);
+
+    if (field_type == FloatVectorField::FieldTypeValue()) {
+        // VectorIndexMgr->Add(tid_sid, dimension, code_size, field_data);
+    }
+
     return s;
 }
 
@@ -383,7 +391,6 @@ rocksdb::Status RocksDBImpl::LoadField(const std::string& table_name, const std:
     auto s = GetTableID(table_name, tid);
     // TODO: Add snapshot to db_cache
     if (!s.ok()) return s;
-
 
     auto schema = db_cache_->GetSchema(tid);
 

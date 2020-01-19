@@ -83,6 +83,14 @@ public:
         return true;
     }
 
+    bool GetFieldType(const std::string& field_name, uint8_t& field_type) {
+        uint8_t field_id;
+        auto check = GetFieldId(field_name, field_id);
+        if (!check) return check;
+
+        return GetFieldType(field_id, field_type);
+    }
+
     rocksdb::Status Serialize(std::string& data) const;
 
 
