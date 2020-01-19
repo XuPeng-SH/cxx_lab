@@ -366,6 +366,46 @@ rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables, const rock
     return rocksdb::Status::OK();
 }
 
+rocksdb::Status RocksDBImpl::LoadField(const std::string& table_name, const std::string& field_name,
+        std::vector<std::string>& data, const rocksdb::Snapshot* snapshot) {
+    bool need_releas_ss = false;
+    rocksdb::ReadOptions options;
+    const rocksdb::Snapshot* using_ss = snapshot;
+    if (!using_ss) {
+        using_ss = db_->GetSnapshot();
+        need_releas_ss = true;
+    }
+    options.snapshot = snapshot;
+
+    auto table_key = TableKey(table_name);
+
+    std::string table_key_value;
+    auto s = db_->Get(options, table_key, &table_key_value);
+    if (!s.ok()) {
+        PRINT_STATUS(s);
+        if (need_releas_ss) db_->ReleaseSnapshot(using_ss);
+        return s;
+    }
+
+    uint64_t tid;
+    Serializer::Deserialize(table_key_value, tid);
+
+    auto schema = db_cache_->GetSchema(tid);
+
+    uint8_t field_id;
+    bool has_field = schema->GetFieldId(field_name, field_id);
+    if (!has_field) {
+        s = rocksdb::Status::NotFound("field_name not found in table schema");
+        if (need_releas_ss) db_->ReleaseSnapshot(using_ss);
+        return s;
+    }
+
+    s = LoadField(tid, field_id, data, using_ss);
+
+    if (need_releas_ss) db_->ReleaseSnapshot(using_ss);
+    return s;
+}
+
 rocksdb::Status RocksDBImpl::LoadField(uint64_t tid, uint8_t fid, std::vector<std::string>& data,
         const rocksdb::Snapshot* snapshot) {
     std::string table_seg_key(DBTableCurrentSegmentPrefix);

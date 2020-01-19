@@ -360,6 +360,8 @@ public:
 protected:
 
     rocksdb::Status GetTables(std::vector<TablePtr>& tables, const rocksdb::Snapshot* snapshot);
+    rocksdb::Status LoadField(const std::string& table_name, const std::string& field_name,
+            std::vector<std::string>& data, const rocksdb::Snapshot* snapshot = nullptr);
     rocksdb::Status LoadField(uint64_t tid, uint8_t fid, std::vector<std::string>& data,
             const rocksdb::Snapshot* snapshot);
     rocksdb::Status LoadField(uint64_t tid, uint64_t sid, uint8_t fid, std::vector<std::string>& data,
