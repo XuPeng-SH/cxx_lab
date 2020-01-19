@@ -358,9 +358,13 @@ public:
     rocksdb::Status LoadField(const std::string& table_name, const std::string& field_name,
             std::vector<uint8_t>& data) override;
 
+    rocksdb::Status LoadIndex(const std::string& table_name, const std::string& field_name);
+
     void Dump(bool do_print) override;
 
 protected:
+
+    rocksdb::Status GetTableID(const std::string& table_name, uint64_t& tid);
 
     rocksdb::Status GetTables(std::vector<TablePtr>& tables, const rocksdb::Snapshot* snapshot);
     rocksdb::Status LoadField(uint64_t tid, uint8_t fid, std::vector<uint8_t>& data,

@@ -23,6 +23,10 @@ RocksDBImpl::RocksDBImpl(std::shared_ptr<rocksdb::DB> db)
     Init();
 }
 
+rocksdb::Status RocksDBImpl::GetTableID(const std::string& table_name, uint64_t& tid) {
+    return db_cache_->GetTidByTname(table_name, tid);
+}
+
 void RocksDBImpl::Init() {
     std::string db_seq_id;
     auto s = db_->Get(rdopt_, DBTableSequenceKey, &db_seq_id);
@@ -364,24 +368,22 @@ rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables, const rock
     return rocksdb::Status::OK();
 }
 
+rocksdb::Status RocksDBImpl::LoadIndex(const std::string& table_name, const std::string& field_name) {
+    std::vector<uint8_t> field_data;
+    auto s = LoadField(table_name, field_name, field_data);
+    if (!s.ok()) return s;
+
+    /* db_cache_->GetFieldType() */
+    return s;
+}
+
 rocksdb::Status RocksDBImpl::LoadField(const std::string& table_name, const std::string& field_name,
         std::vector<uint8_t>& data) {
-    rocksdb::ReadOptions options;
-    const rocksdb::Snapshot* snapshot = db_->GetSnapshot();
-    options.snapshot = snapshot;
-
-    auto table_key = TableKey(table_name);
-
-    std::string table_key_value;
-    auto s = db_->Get(options, table_key, &table_key_value);
-    if (!s.ok()) {
-        PRINT_STATUS(s);
-        db_->ReleaseSnapshot(snapshot);
-        return s;
-    }
-
     uint64_t tid;
-    Serializer::Deserialize(table_key_value, tid);
+    auto s = GetTableID(table_name, tid);
+    // TODO: Add snapshot to db_cache
+    if (!s.ok()) return s;
+
 
     auto schema = db_cache_->GetSchema(tid);
 
@@ -389,25 +391,23 @@ rocksdb::Status RocksDBImpl::LoadField(const std::string& table_name, const std:
     bool check_field = schema->GetFieldId(field_name, field_id);
     if (!check_field) {
         s = rocksdb::Status::NotFound("field_name not found in table schema");
-        db_->ReleaseSnapshot(snapshot);
         return s;
     }
     uint8_t field_type;
     check_field = schema->GetFieldType(field_id, field_type);
     if (!check_field) {
         s = rocksdb::Status::NotFound("field_type not found in table schema");
-        db_->ReleaseSnapshot(snapshot);
         return s;
     }
     if (field_type == StringField::FieldTypeValue()) {
         s = rocksdb::Status::NotFound("StringField " + field_name + " cannot be loaded right now");
-        db_->ReleaseSnapshot(snapshot);
         return s;
     }
 
+    const rocksdb::Snapshot* snapshot = db_->GetSnapshot();
     s = LoadField(tid, field_id, data, snapshot);
-
     db_->ReleaseSnapshot(snapshot);
+
     return s;
 }
 
