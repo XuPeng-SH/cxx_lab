@@ -361,8 +361,34 @@ rocksdb::Status RocksDBImpl::GetTables(std::vector<TablePtr>& tables, const rock
     }
 
     std::vector<std::string> data;
-    LoadField(0, 0, 2, data, snapshot);
+    /* LoadField(0, 0, 2, data, snapshot); */
+    LoadField(0, 2, data, snapshot);
     return rocksdb::Status::OK();
+}
+
+rocksdb::Status RocksDBImpl::LoadField(uint64_t tid, uint8_t fid, std::vector<std::string>& data,
+        const rocksdb::Snapshot* snapshot) {
+    std::string table_seg_key(DBTableCurrentSegmentPrefix);
+    Serializer::Serialize(tid, table_seg_key);
+    std::string sid_str;
+    auto s = db_->Get(rdopt_, table_seg_key, &sid_str);
+    if (!s.ok()) {
+        PRINT_STATUS(s);
+        assert(false);
+    }
+    uint64_t current_sid;
+    Serializer::Deserialize(sid_str, current_sid);
+
+    for(uint64_t sid=0; sid<=current_sid; sid++) {
+        s = LoadField(tid, sid, fid, data, snapshot);
+        if (!s.ok()) {
+            PRINT_STATUS(s);
+            break;
+        }
+    }
+
+    std::cout << data.size() << " total fields found" << std::endl;
+    return s;
 }
 
 // TODO: Need change if using advanced_fields and advanced_doc
@@ -404,7 +430,7 @@ rocksdb::Status RocksDBImpl::LoadField(uint64_t tid, uint64_t sid, uint8_t fid,
     }
 
     delete it;
-    std::cout << items << " fields found" << std::endl;
+    std::cout << "(" << tid << "," << sid << "): " << items << " fields found" << std::endl;
     return rocksdb::Status::OK();
 }
 
