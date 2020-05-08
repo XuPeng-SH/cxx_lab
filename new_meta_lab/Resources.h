@@ -64,11 +64,13 @@ template <typename ResourceT>
 class ResourceHolder {
 public:
     using ResourcePtr = typename ResourceT::Ptr;
-    using IdMapT = std::map<std::string, ResourcePtr>;
+    using IdMapT = std::map<ID_TYPE, ResourcePtr>;
     ResourcePtr GetResource(ID_TYPE id);
 
     bool Add(ResourcePtr resource);
     bool Remove(ID_TYPE id);
+
+    void Dump(const std::string& tag = "");
 
 protected:
     std::mutex mutex_;

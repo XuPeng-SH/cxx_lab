@@ -26,6 +26,16 @@ std::string Collection::ToString() const {
 }
 
 template <typename ResourceT>
+void ResourceHolder<ResourceT>::Dump(const std::string& tag) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    std::cout << "ResourceHolder Dump Start [" << tag <<  "]:" << id_map_.size() << std::endl;
+    for (auto& kv : id_map_) {
+        std::cout << "\t" << kv.second->ToString() << std::endl;
+    }
+    std::cout << "ResourceHolder Dump   End [" << tag <<  "]" << std::endl;
+}
+
+template <typename ResourceT>
 typename ResourceHolder<ResourceT>::ResourcePtr ResourceHolder<ResourceT>::GetResource(ID_TYPE id) {
     std::unique_lock<std::mutex> lock(mutex_);
     auto cit = id_map_.find(id);
