@@ -49,7 +49,16 @@ public:
     /* status DescribeCollection(CollectionSchema& schema) */
 
 private:
-    /* Partitions partitions_; */
+    /* PartitionCommits */
+    /* Partitions */
+    /* Schema::Ptr */
+    /* FieldCommits */
+    /* Fields */
+    /* FieldElements */
+    /* SegmentCommits */
+    /* Segments */
+    /* SegmentFiles */
+
     CollectionCommit::Ptr collection_commit_;
     Collection::Ptr collection_;
 
@@ -59,14 +68,39 @@ Snapshot::Snapshot(ID_TYPE id) {
     collection_commit_ = CollectionCommitsHolder::GetInstance().GetResource(id);
     assert(collection_commit_);
     collection_ = CollectionsHolder::GetInstance().GetResource(collection_commit_->GetCollectionId());
-    auto& mappings =  collection_commit_->GetMappings();
-    for (auto& id : mappings) {
-        std::cout << id << std::endl;
-    }
-    /* if (!collection_commit_) { */
-    /*     std::cout << "Snapshot is Empty" << std::endl; */
-    /* } else { */
-    /*     std::cout << "Has !!" << std::endl; */
+    /* auto& mappings =  collection_commit_->GetMappings(); */
+    /* auto& partition_commits_holder = PartitionCommitsHolder::GetInstance(); */
+    /* auto& partitions_holder = PartitionsHolder::GetInstance(); */
+    /* for (auto& id : mappings) { */
+    /*     partition_commit = partition_commits_holder.GetResource(id); */
+    /*     partition = partitions_holder.GetResource(partition_commit->GetPartitionID()); */
+    /*     partition_commits_[partition_commit->GetPartitionID()] = partition_commit; */
+    /*     partitions_[partition_commit->GetPartitionID()] = partition; */
+    /*     auto& s_c_mappings = partition_commit->GetMappings(); */
+    /*     for (auto& s_c_id : s_c_mappings) { */
+    /*         segment_commit = segment_commits_holder.GetResource(s_c_id); */
+    /*         segment = segments_holder.GetResource(segment_commit->GetSegmentID()); */
+    /*         segment_commits_[segment_commit->GetSegmentID()] = segment_commit; */
+    /*         segments_[segment_commit->GetGetSegmentID()] = segment; */
+    /*         auto& s_f_mappings = segment_commit->GetMappings(); */
+    /*         for (auto& s_f_id : s_f_mappings) { */
+    /*             segment_file = segment_files_holder.GetResource(s_f_id); */
+    /*             segment_files_[segment_commit->GetSegmentID()][s_f_id] = segment_file; */
+    /*         } */
+    /*     } */
+    /* } */
+    /* schema_commit = SchemaCommitsHolder::GetInstance().GetResource(collection_commit_->GetSchemaCommitId()); */
+    /* auto& f_c_mappings =  schema_commit->GetMappings(); */
+    /* for (auto& f_c_id : f_c_mappings) { */
+    /*     field_commit = field_commits_holder.GetResource(f_c_id); */
+    /*     field = fields_holder.GetResource(field_commit->GetFieldID()); */
+    /*     field_commits_[field_commit->GetFieldID()] = field_commit; */
+    /*     fields_[fields_commit->GetFieldID()] = field; */
+    /*     auto& f_e_mappings = field_commit->GetMappings(); */
+    /*     for (auto& f_e_id : f_e_mappings) { */
+    /*         field_element = field_elements_holder.GetResource(f_e_id); */
+    /*         field_elements_[field_commit->GetFieldID()][f_e_id] = field_element; */
+    /*     } */
     /* } */
 }
 
