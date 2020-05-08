@@ -70,7 +70,9 @@ public:
     bool AddNoLock(ResourcePtr resource);
     bool RemoveNoLock(ID_TYPE id);
 
-    void Dump(const std::string& tag = "");
+    virtual void Dump(const std::string& tag = "");
+
+    virtual ~ResourceHolder() {}
 
 protected:
     std::mutex mutex_;
@@ -78,24 +80,20 @@ protected:
 };
 
 
-class CollectionsHolder {
+class CollectionsHolder : public ResourceHolder<Collection, CollectionsHolder> {
 public:
-    using NameMapT = std::map<std::string, CollectionPtr>;
-    using IdMapT = std::map<ID_TYPE, CollectionPtr>;
+    using BaseT = ResourceHolder<Collection, CollectionsHolder>;
+    using ResourcePtr = typename BaseT::ResourcePtr;
+    using NameMapT = std::map<std::string, ResourcePtr>;
 
-    CollectionPtr GetCollection(ID_TYPE id);
-    CollectionPtr GetCollection(const std::string& name);
+    ResourcePtr GetCollection(const std::string& name);
 
-    bool Add(CollectionPtr collection);
+    bool Add(ResourcePtr resource);
     bool Remove(const std::string& name);
     bool Remove(ID_TYPE id);
 
-    void Dump(const std::string& tag = "");
-
 private:
-    std::mutex mutex_;
     NameMapT name_map_;
-    IdMapT id_map_;
 };
 
 using CollectionsHolderPtr = std::shared_ptr<CollectionsHolder>;
