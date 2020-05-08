@@ -21,11 +21,9 @@ using TS_TYPE = int64_t;
 
 /* }; */
 
-class Collection {
+class DBBaseResource {
 public:
-
-    Collection(ID_TYPE id, const std::string& name, State status = PENDING,
-            TS_TYPE created_on = GetMicroSecTimeStamp());
+    DBBaseResource(ID_TYPE id, State status, TS_TYPE created_on);
 
     bool IsActive() const {return status_ == ACTIVE;}
     bool IsDeactive() const {return status_ == DEACTIVE;}
@@ -33,15 +31,30 @@ public:
     ID_TYPE GetID() const {return id_;}
     State GetStatus() const {return status_;}
     TS_TYPE GetCreatedTime() const {return created_on_;}
-    const std::string& GetName() const {return name_;}
 
-    std::string ToString() const;
+    virtual std::string ToString() const;
 
-private:
+    virtual ~DBBaseResource() {}
+
+protected:
     ID_TYPE id_;
-    std::string name_;
     State status_;
     TS_TYPE created_on_;
+};
+
+
+class Collection : public DBBaseResource {
+public:
+
+    Collection(ID_TYPE id, const std::string& name, State status = PENDING,
+            TS_TYPE created_on = GetMicroSecTimeStamp());
+
+    const std::string& GetName() const {return name_;}
+
+    std::string ToString() const override;
+
+private:
+    std::string name_;
 };
 
 using CollectionPtr = std::shared_ptr<Collection>;
@@ -67,3 +80,13 @@ private:
 };
 
 using CollectionsHolderPtr = std::shared_ptr<CollectionsHolder>;
+
+/* class CollectionCommit { */
+/* public: */
+
+/* private: */
+/*     ID_TYPE id_; */
+/*     State status_; */
+/*     TS_TYPE created_on_; */
+/*     std::vector<ID_TYPE> mappings_; */
+/* }; */

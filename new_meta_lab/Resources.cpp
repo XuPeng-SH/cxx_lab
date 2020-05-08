@@ -2,13 +2,24 @@
 #include <sstream>
 #include <iostream>
 
+DBBaseResource::DBBaseResource(ID_TYPE id, State status, TS_TYPE created_on) :
+    id_(id), status_(status), created_on_(created_on) {
+}
+
+std::string DBBaseResource::ToString() const {
+    std::stringstream ss;
+    ss << "ID=" << id_ << ", Status=" << status_ << ", TS=" << created_on_;
+    return ss.str();
+}
+
 Collection::Collection(ID_TYPE id, const std::string& name, State status, TS_TYPE created_on) :
-    id_(id), name_(name), status_(status), created_on_(created_on) {
+    DBBaseResource(id, status, created_on),
+    name_(name) {
 }
 
 std::string Collection::ToString() const {
     std::stringstream ss;
-    ss << "<ID=" << id_ << ", Name=" << name_ << ", Status=" << status_ << ", TS=" << created_on_ << ">";
+    ss << "<" << DBBaseResource::ToString() << ", Name=" << name_ << ">";
     return ss.str();
 }
 
