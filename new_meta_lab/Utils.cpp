@@ -8,25 +8,31 @@ void ReferenceProxy::Ref() {
 }
 
 void ReferenceProxy::UnRef() {
-    std::cout << "refcnt_=" << refcnt_ << std::endl;
     if (refcnt_ == 0) return;
     refcnt_ -= 1;
     if (refcnt_ == 0) {
-        OnDeRefCallBack();
-        for (auto& cb : on_deref_cbs_) {
+        for (auto& cb : on_no_ref_cbs_) {
             cb();
         }
     }
 }
 
-void ReferenceProxy::RegisterOnDeRefCB(OnDeRefCBF cb) {
-    on_deref_cbs_.emplace_back(cb);
+void ReferenceProxy::RegisterOnNoRefCB(OnNoRefCBF cb) {
+    on_no_ref_cbs_.emplace_back(cb);
 }
 
-void ReferenceProxy::OnDeRefCallBack() {
-    return;
-}
+/* void ReferenceProxy::OnDeRefCallBack() { */
+/*     return; */
+/* } */
 
 ReferenceProxy::~ReferenceProxy() {
     /* OnDeRef(); */
+}
+
+ScopedResource::ScopedResource(ReferenceResourcePtr res) : res_(res) {
+    res_->Ref();
+}
+
+ScopedResource::~ScopedResource() {
+    res_->UnRef();
 }

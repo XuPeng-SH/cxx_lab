@@ -1,22 +1,35 @@
 #pragma once
 #include <functional>
 #include <vector>
+#include <memory>
 
-using OnDeRefCBF = std::function<bool(void)>;
+using OnNoRefCBF = std::function<void(void)>;
 
 class ReferenceProxy {
 public:
-    void RegisterOnDeRefCB(OnDeRefCBF cb);
-
-    virtual void OnDeRefCallBack();
+    void RegisterOnNoRefCB(OnNoRefCBF cb);
 
     virtual void Ref();
     virtual void UnRef();
+
+    int RefCnt() const { return refcnt_; }
 
     virtual ~ReferenceProxy();
 
 protected:
 
     int refcnt_ = 0;
-    std::vector<OnDeRefCBF> on_deref_cbs_;
+    std::vector<OnNoRefCBF> on_no_ref_cbs_;
+};
+
+using ReferenceResourcePtr = std::shared_ptr<ReferenceProxy>;
+
+class ScopedResource {
+public:
+    ScopedResource(ReferenceResourcePtr res);
+
+    ~ScopedResource();
+
+protected:
+    ReferenceResourcePtr res_;
 };
