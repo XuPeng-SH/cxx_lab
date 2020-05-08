@@ -118,10 +118,15 @@ public:
     /* } */
     SnapshotsHolder(size_t num_versions = 1) : num_versions_(num_versions) {}
     bool Add(ID_TYPE id) {
-        std::unique_lock<std::mutex> lock(mutex_);
-        if (active_.size() > 0 && id < max_id_) {
-            return false;
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            if (active_.size() > 0 && id < max_id_) {
+                return false;
+            }
         }
+        auto ss = std::make_shared<Snapshot>(id);
+
+        std::unique_lock<std::mutex> lock(mutex_);
         auto it = active_.find(id);
         if (it != active_.end()) {
             return false;
@@ -135,13 +140,24 @@ public:
             max_id_ = id;
         }
 
-        auto ss = std::make_shared<Snapshot>(id);
         active_[id] = ss;
+        if (active_.size() <= num_versions_)
+            return true;
+
+        auto oldest_it = active_.find(min_id_);
+        auto oldest_ss = oldest_it->second;
+        active_.erase(oldest_it);
+        ReadyForRelease(oldest_ss); // TODO: Use different mutex
+        min_id_ = active_.begin()->first;
         return true;
     }
 
 
 private:
+    void ReadyForRelease(Snapshot::Ptr ss) {
+        to_release_.push_back(ss);
+    }
+
     /* SnapshotsHolder()  = default; */
     /* ~SnapshotsHolder() = default; */
     std::mutex mutex_;
