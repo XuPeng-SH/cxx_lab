@@ -7,6 +7,11 @@
 #include <vector>
 #include <assert.h>
 #include <iostream>
+#include <limits>
+#include <cstddef>
+#include <mutex>
+#include <thread>
+
 
 /* struct Node { */
 /*     using Ptr = std::shared_ptr<Node>; */
@@ -44,6 +49,7 @@ using Collections = std::vector<Collection>;
 
 class Snapshot {
 public:
+    using Ptr = std::shared_ptr<Snapshot>;
     Snapshot(ID_TYPE id);
     // TODO
     /* status DescribeCollection(CollectionSchema& schema) */
@@ -102,7 +108,49 @@ Snapshot::Snapshot(ID_TYPE id) {
     /*         field_elements_[field_commit->GetFieldID()][f_e_id] = field_element; */
     /*     } */
     /* } */
-}
+};
+
+class SnapshotsHolder {
+public:
+    /* static SnapshotsHolder& GetInstance() { */
+    /*     static SnapshotsHolder holder; */
+    /*     return holder; */
+    /* } */
+    SnapshotsHolder(size_t num_versions = 1) : num_versions_(num_versions) {}
+    bool Add(ID_TYPE id) {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (active_.size() > 0 && id < max_id_) {
+            return false;
+        }
+        auto it = active_.find(id);
+        if (it != active_.end()) {
+            return false;
+        }
+
+        if (min_id_ > id) {
+            min_id_ = id;
+        }
+
+        if (max_id_ < id) {
+            max_id_ = id;
+        }
+
+        auto ss = std::make_shared<Snapshot>(id);
+        active_[id] = ss;
+        return true;
+    }
+
+
+private:
+    /* SnapshotsHolder()  = default; */
+    /* ~SnapshotsHolder() = default; */
+    std::mutex mutex_;
+    ID_TYPE min_id_ = std::numeric_limits<ID_TYPE>::max();
+    ID_TYPE max_id_ = std::numeric_limits<ID_TYPE>::min();
+    std::map<ID_TYPE, Snapshot::Ptr> active_;
+    std::vector<Snapshot::Ptr> to_release_;
+    size_t num_versions_ = 1;
+};
 
 /* class CollectionSnapshots { */
 /* public: */

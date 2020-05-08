@@ -51,5 +51,11 @@ int main() {
     auto ss = std::make_shared<Snapshot>(1);
     c_c_holder.Dump("4");
 
+    /* auto snapshot = Manager.GetSnapshot(collection_name); */
+    /* Manager.ReleaseSnapshot(snapshot); */
+
+    SnapshotsHolder ss_holder;
+    ss_holder.Add(1);
+
     return 0;
 }
