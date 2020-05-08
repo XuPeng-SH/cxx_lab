@@ -60,15 +60,15 @@ private:
 
 using CollectionPtr = std::shared_ptr<Collection>;
 
-template <typename ResourceT>
+template <typename ResourceT, typename Derived>
 class ResourceHolder {
 public:
     using ResourcePtr = typename ResourceT::Ptr;
     using IdMapT = std::map<ID_TYPE, ResourcePtr>;
     ResourcePtr GetResource(ID_TYPE id);
 
-    bool Add(ResourcePtr resource);
-    bool Remove(ID_TYPE id);
+    bool AddNoLock(ResourcePtr resource);
+    bool RemoveNoLock(ID_TYPE id);
 
     void Dump(const std::string& tag = "");
 

@@ -44,8 +44,8 @@ int main() {
     auto c_c = std::make_shared<CollectionCommit>(1, mappings);
     cout << c_c->ToString() << endl;
 
-    ResourceHolder<Collection> rh;
-    rh.Add(c1);
+    ResourceHolder<Collection, int> rh;
+    rh.AddNoLock(c1);
     rh.Dump("1111");
     return 0;
 }

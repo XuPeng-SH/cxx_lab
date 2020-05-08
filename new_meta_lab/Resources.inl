@@ -25,8 +25,8 @@ std::string Collection::ToString() const {
     return ss.str();
 }
 
-template <typename ResourceT>
-void ResourceHolder<ResourceT>::Dump(const std::string& tag) {
+template <typename ResourceT, typename Derived>
+void ResourceHolder<ResourceT, Derived>::Dump(const std::string& tag) {
     std::unique_lock<std::mutex> lock(mutex_);
     std::cout << "ResourceHolder Dump Start [" << tag <<  "]:" << id_map_.size() << std::endl;
     for (auto& kv : id_map_) {
@@ -35,8 +35,8 @@ void ResourceHolder<ResourceT>::Dump(const std::string& tag) {
     std::cout << "ResourceHolder Dump   End [" << tag <<  "]" << std::endl;
 }
 
-template <typename ResourceT>
-typename ResourceHolder<ResourceT>::ResourcePtr ResourceHolder<ResourceT>::GetResource(ID_TYPE id) {
+template <typename ResourceT, typename Derived>
+typename ResourceHolder<ResourceT, Derived>::ResourcePtr ResourceHolder<ResourceT, Derived>::GetResource(ID_TYPE id) {
     std::unique_lock<std::mutex> lock(mutex_);
     auto cit = id_map_.find(id);
     if (cit == id_map_.end()) {
@@ -45,9 +45,9 @@ typename ResourceHolder<ResourceT>::ResourcePtr ResourceHolder<ResourceT>::GetRe
     return cit->second;
 }
 
-template <typename ResourceT>
-bool ResourceHolder<ResourceT>::Remove(ID_TYPE id) {
-    std::unique_lock<std::mutex> lock(mutex_);
+template <typename ResourceT, typename Derived>
+bool ResourceHolder<ResourceT, Derived>::RemoveNoLock(ID_TYPE id) {
+    /* std::unique_lock<std::mutex> lock(mutex_); */
     auto it = id_map_.find(id);
     if (it == id_map_.end()) {
         return false;
@@ -57,10 +57,10 @@ bool ResourceHolder<ResourceT>::Remove(ID_TYPE id) {
     return true;
 }
 
-template <typename ResourceT>
-bool ResourceHolder<ResourceT>::Add(typename ResourceHolder<ResourceT>::ResourcePtr resource) {
+template <typename ResourceT, typename Derived>
+bool ResourceHolder<ResourceT, Derived>::AddNoLock(typename ResourceHolder<ResourceT, Derived>::ResourcePtr resource) {
     if (!resource) return false;
-    std::unique_lock<std::mutex> lock(mutex_);
+    /* std::unique_lock<std::mutex> lock(mutex_); */
     if (id_map_.find(resource->GetID()) != id_map_.end()) {
         return false;
     }
