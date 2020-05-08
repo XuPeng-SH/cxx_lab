@@ -1,5 +1,6 @@
 #include "Resources.h"
 #include <sstream>
+#include <iostream>
 
 Collection::Collection(ID_TYPE id, const std::string& name, State status, TS_TYPE created_on) :
     id_(id), name_(name), status_(status), created_on_(created_on) {
@@ -32,7 +33,7 @@ CollectionPtr CollectionsHolder::GetCollection(const std::string& name) {
 bool CollectionsHolder::Add(CollectionPtr collection) {
     if (!collection) return false;
     std::unique_lock<std::mutex> lock(mutex_);
-    if (id_map_.find(collection->GetID()) == id_map_.end()) {
+    if (id_map_.find(collection->GetID()) != id_map_.end()) {
         return false;
     }
 
@@ -63,4 +64,13 @@ bool CollectionsHolder::Remove(ID_TYPE id) {
     name_map_.erase(it->second->GetName());
     id_map_.erase(it);
     return true;
+}
+
+void CollectionsHolder::Dump(const std::string& tag) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    std::cout << "CollectionsHolder Dump Start [" << tag <<  "]:" << id_map_.size() << std::endl;
+    for (auto& kv : id_map_) {
+        std::cout << "\t" << kv.second->ToString() << std::endl;
+    }
+    std::cout << "CollectionsHolder Dump   End [" << tag <<  "]" << std::endl;
 }

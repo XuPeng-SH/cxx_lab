@@ -58,6 +58,8 @@ public:
     bool Remove(const std::string& name);
     bool Remove(ID_TYPE id);
 
+    void Dump(const std::string& tag = "");
+
 private:
     std::mutex mutex_;
     NameMapT name_map_;

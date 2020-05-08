@@ -31,7 +31,13 @@ int main() {
         }
     }
 
-    Collection c1(1, "xx");
-    cout << c1.ToString() << endl;
+    CollectionPtr c1 = std::make_shared<Collection>(1, "xx");
+    cout << c1->ToString() << endl;
+    CollectionsHolder holder;
+    holder.Dump("1");
+    holder.Add(c1);
+    holder.Dump("2");
+    holder.Remove(c1->GetID());
+    holder.Dump("3");
     return 0;
 }
