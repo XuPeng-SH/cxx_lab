@@ -2,6 +2,11 @@
 
 #include "Helper.h"
 #include <string>
+#include <map>
+#include <memory>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 
 enum State {
     PENDING = 0,
@@ -38,3 +43,25 @@ private:
     State status_;
     TS_TYPE created_on_;
 };
+
+using CollectionPtr = std::shared_ptr<Collection>;
+
+class CollectionsHolder {
+public:
+    using NameMapT = std::map<std::string, CollectionPtr>;
+    using IdMapT = std::map<ID_TYPE, CollectionPtr>;
+
+    CollectionPtr GetCollection(ID_TYPE id);
+    CollectionPtr GetCollection(const std::string& name);
+
+    bool Add(CollectionPtr collection);
+    bool Remove(const std::string& name);
+    bool Remove(ID_TYPE id);
+
+private:
+    std::mutex mutex_;
+    NameMapT name_map_;
+    IdMapT id_map_;
+};
+
+using CollectionsHolderPtr = std::shared_ptr<CollectionsHolder>;
