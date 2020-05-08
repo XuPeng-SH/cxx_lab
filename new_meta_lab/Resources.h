@@ -19,8 +19,10 @@ using ID_TYPE = int64_t;
 using TS_TYPE = int64_t;
 using MappingT = std::vector<ID_TYPE>;
 
+template <typename Derived>
 class DBBaseResource {
 public:
+    using Ptr = std::shared_ptr<Derived>;
     DBBaseResource(ID_TYPE id, State status, TS_TYPE created_on);
 
     bool IsActive() const {return status_ == ACTIVE;}
@@ -41,8 +43,9 @@ protected:
 };
 
 
-class Collection : public DBBaseResource {
+class Collection : public DBBaseResource<Collection> {
 public:
+    using BaseT = DBBaseResource<Collection>;
 
     Collection(ID_TYPE id, const std::string& name, State status = PENDING,
             TS_TYPE created_on = GetMicroSecTimeStamp());
@@ -56,6 +59,22 @@ private:
 };
 
 using CollectionPtr = std::shared_ptr<Collection>;
+
+template <typename ResourceT>
+class ResourceHolder {
+public:
+    using ResourcePtr = typename ResourceT::Ptr;
+    using IdMapT = std::map<std::string, ResourcePtr>;
+    ResourcePtr GetResource(ID_TYPE id);
+
+    bool Add(ResourcePtr resource);
+    bool Remove(ID_TYPE id);
+
+protected:
+    std::mutex mutex_;
+    IdMapT id_map_;
+};
+
 
 class CollectionsHolder {
 public:
@@ -79,8 +98,9 @@ private:
 
 using CollectionsHolderPtr = std::shared_ptr<CollectionsHolder>;
 
-class CollectionCommit : public DBBaseResource {
+class CollectionCommit : public DBBaseResource<CollectionCommit> {
 public:
+    using BaseT = DBBaseResource<CollectionCommit>;
     CollectionCommit(ID_TYPE id, const MappingT& mappings = {}, State status = PENDING,
             TS_TYPE created_on = GetMicroSecTimeStamp());
 
@@ -91,3 +111,7 @@ public:
 private:
     MappingT mappings_;
 };
+
+using CollectionCommitPtr = std::shared_ptr<CollectionCommit>;
+
+#include "Resources.inl"
