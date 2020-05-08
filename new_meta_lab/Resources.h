@@ -3,6 +3,7 @@
 #include "Helper.h"
 #include <string>
 #include <map>
+#include <vector>
 #include <memory>
 #include <condition_variable>
 #include <mutex>
@@ -16,10 +17,7 @@ enum State {
 
 using ID_TYPE = int64_t;
 using TS_TYPE = int64_t;
-
-/* class Resource { */
-
-/* }; */
+using MappingT = std::vector<ID_TYPE>;
 
 class DBBaseResource {
 public:
@@ -81,12 +79,15 @@ private:
 
 using CollectionsHolderPtr = std::shared_ptr<CollectionsHolder>;
 
-/* class CollectionCommit { */
-/* public: */
+class CollectionCommit : public DBBaseResource {
+public:
+    CollectionCommit(ID_TYPE id, const MappingT& mappings = {}, State status = PENDING,
+            TS_TYPE created_on = GetMicroSecTimeStamp());
 
-/* private: */
-/*     ID_TYPE id_; */
-/*     State status_; */
-/*     TS_TYPE created_on_; */
-/*     std::vector<ID_TYPE> mappings_; */
-/* }; */
+    const MappingT& GetMappings() const { return mappings_; }
+
+    std::string ToString() const override;
+
+private:
+    MappingT mappings_;
+};

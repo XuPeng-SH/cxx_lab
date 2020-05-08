@@ -85,3 +85,21 @@ void CollectionsHolder::Dump(const std::string& tag) {
     }
     std::cout << "CollectionsHolder Dump   End [" << tag <<  "]" << std::endl;
 }
+
+CollectionCommit::CollectionCommit(ID_TYPE id, const MappingT& mappings, State status, TS_TYPE created_on) :
+    DBBaseResource(id, status, created_on), mappings_(mappings) {
+}
+
+std::string CollectionCommit::ToString() const {
+    std::stringstream ss;
+    ss << "<" << DBBaseResource::ToString() << ", Mappings=" << "[";
+    bool first = true;
+    std::string prefix;
+    for (auto& id : mappings_) {
+        if (!first) prefix = ", ";
+        else first = false;
+        ss << prefix << id;
+    }
+    ss << "]>";
+    return ss.str();
+}

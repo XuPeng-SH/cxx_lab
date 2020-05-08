@@ -39,5 +39,9 @@ int main() {
     holder.Dump("2");
     holder.Remove(c1->GetID());
     holder.Dump("3");
+
+    MappingT mappings = {1,2,3,4};
+    auto c_c = std::make_shared<CollectionCommit>(1, mappings);
+    cout << c_c->ToString() << endl;
     return 0;
 }
