@@ -65,16 +65,26 @@ class ResourceHolder {
 public:
     using ResourcePtr = typename ResourceT::Ptr;
     using IdMapT = std::map<ID_TYPE, ResourcePtr>;
+    using Ptr = std::shared_ptr<Derived>;
     ResourcePtr GetResource(ID_TYPE id);
 
     bool AddNoLock(ResourcePtr resource);
     bool RemoveNoLock(ID_TYPE id);
 
+    virtual bool Add(ResourcePtr resource);
+    virtual bool Remove(ID_TYPE id);
+
+    static Derived& GetInstance() {
+        static Derived holder;
+        return holder;
+    }
+
     virtual void Dump(const std::string& tag = "");
 
-    virtual ~ResourceHolder() {}
-
 protected:
+    ResourceHolder() = default;
+    virtual ~ResourceHolder() = default;
+
     std::mutex mutex_;
     IdMapT id_map_;
 };
@@ -88,9 +98,9 @@ public:
 
     ResourcePtr GetCollection(const std::string& name);
 
-    bool Add(ResourcePtr resource);
+    bool Add(ResourcePtr resource) override;
+    bool Remove(ID_TYPE id) override;
     bool Remove(const std::string& name);
-    bool Remove(ID_TYPE id);
 
 private:
     NameMapT name_map_;
@@ -101,17 +111,21 @@ using CollectionsHolderPtr = std::shared_ptr<CollectionsHolder>;
 class CollectionCommit : public DBBaseResource<CollectionCommit> {
 public:
     using BaseT = DBBaseResource<CollectionCommit>;
-    CollectionCommit(ID_TYPE id, const MappingT& mappings = {}, State status = PENDING,
+    CollectionCommit(ID_TYPE id, ID_TYPE collection_id, const MappingT& mappings = {}, State status = PENDING,
             TS_TYPE created_on = GetMicroSecTimeStamp());
 
     const MappingT& GetMappings() const { return mappings_; }
+    ID_TYPE GetCollectionId() const { return collection_id_; };
 
     std::string ToString() const override;
 
 private:
     MappingT mappings_;
+    ID_TYPE collection_id_;
 };
 
 using CollectionCommitPtr = std::shared_ptr<CollectionCommit>;
+
+class CollectionCommitsHolder : public ResourceHolder<CollectionCommit, CollectionCommitsHolder> {};
 
 #include "Resources.inl"

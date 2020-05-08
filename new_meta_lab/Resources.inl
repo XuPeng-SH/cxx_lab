@@ -28,11 +28,12 @@ std::string Collection::ToString() const {
 template <typename ResourceT, typename Derived>
 void ResourceHolder<ResourceT, Derived>::Dump(const std::string& tag) {
     std::unique_lock<std::mutex> lock(mutex_);
-    std::cout << "ResourceHolder Dump Start [" << tag <<  "]:" << id_map_.size() << std::endl;
+    std::cout << typeid(*this).name() << " Dump Start [" << tag <<  "]:" << id_map_.size() << std::endl;
+    /* std::cout << "ResourceHolder Dump Start [" << tag <<  "]:" << id_map_.size() << std::endl; */
     for (auto& kv : id_map_) {
         std::cout << "\t" << kv.second->ToString() << std::endl;
     }
-    std::cout << "ResourceHolder Dump   End [" << tag <<  "]" << std::endl;
+    std::cout << typeid(*this).name() << " Dump   End [" << tag <<  "]" << std::endl;
 }
 
 template <typename ResourceT, typename Derived>
@@ -58,6 +59,12 @@ bool ResourceHolder<ResourceT, Derived>::RemoveNoLock(ID_TYPE id) {
 }
 
 template <typename ResourceT, typename Derived>
+bool ResourceHolder<ResourceT, Derived>::Remove(ID_TYPE id) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    return RemoveNoLock(id);
+}
+
+template <typename ResourceT, typename Derived>
 bool ResourceHolder<ResourceT, Derived>::AddNoLock(typename ResourceHolder<ResourceT, Derived>::ResourcePtr resource) {
     if (!resource) return false;
     /* std::unique_lock<std::mutex> lock(mutex_); */
@@ -67,6 +74,12 @@ bool ResourceHolder<ResourceT, Derived>::AddNoLock(typename ResourceHolder<Resou
 
     id_map_[resource->GetID()] = resource;
     return true;
+}
+
+template <typename ResourceT, typename Derived>
+bool ResourceHolder<ResourceT, Derived>::Add(typename ResourceHolder<ResourceT, Derived>::ResourcePtr resource) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    return AddNoLock(resource);
 }
 
 CollectionsHolder::ResourcePtr
@@ -102,8 +115,9 @@ bool CollectionsHolder::Remove(ID_TYPE id) {
     return BaseT::RemoveNoLock(id);
 }
 
-CollectionCommit::CollectionCommit(ID_TYPE id, const MappingT& mappings, State status, TS_TYPE created_on) :
-    BaseT(id, status, created_on), mappings_(mappings) {
+CollectionCommit::CollectionCommit(ID_TYPE id, ID_TYPE collection_id,
+        const MappingT& mappings, State status, TS_TYPE created_on) :
+    BaseT(id, status, created_on), collection_id_(collection_id), mappings_(mappings) {
 }
 
 std::string CollectionCommit::ToString() const {
