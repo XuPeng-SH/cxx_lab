@@ -62,7 +62,7 @@ ResourceHolder<ResourceT, Derived>::GetResource(ID_TYPE id) {
 }
 
 template <typename ResourceT, typename Derived>
-bool ResourceHolder<ResourceT, Derived>::RemoveNoLock(ID_TYPE id) {
+bool ResourceHolder<ResourceT, Derived>::ReleaseNoLock(ID_TYPE id) {
     /* std::unique_lock<std::mutex> lock(mutex_); */
     auto it = id_map_.find(id);
     if (it == id_map_.end()) {
@@ -74,9 +74,9 @@ bool ResourceHolder<ResourceT, Derived>::RemoveNoLock(ID_TYPE id) {
 }
 
 template <typename ResourceT, typename Derived>
-bool ResourceHolder<ResourceT, Derived>::Remove(ID_TYPE id) {
+bool ResourceHolder<ResourceT, Derived>::Release(ID_TYPE id) {
     std::unique_lock<std::mutex> lock(mutex_);
-    return RemoveNoLock(id);
+    return ReleaseNoLock(id);
 }
 
 template <typename ResourceT, typename Derived>
@@ -136,7 +136,7 @@ bool CollectionsHolder::Add(CollectionsHolder::ResourcePtr resource) {
     return BaseT::AddNoLock(resource);
 }
 
-bool CollectionsHolder::Remove(const std::string& name) {
+bool CollectionsHolder::Release(const std::string& name) {
     std::unique_lock<std::mutex> lock(BaseT::mutex_);
     auto it = name_map_.find(name);
     if (it == name_map_.end()) {
@@ -148,9 +148,9 @@ bool CollectionsHolder::Remove(const std::string& name) {
     return true;
 }
 
-bool CollectionsHolder::Remove(ID_TYPE id) {
+bool CollectionsHolder::Release(ID_TYPE id) {
     std::unique_lock<std::mutex> lock(mutex_);
-    return BaseT::RemoveNoLock(id);
+    return BaseT::ReleaseNoLock(id);
 }
 
 CollectionCommit::CollectionCommit(ID_TYPE id, ID_TYPE collection_id,

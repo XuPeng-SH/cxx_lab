@@ -12,10 +12,9 @@
 
 
 template <typename Derived>
-class DBBaseResource {
+class DBBaseResource : public ReferenceProxy {
 public:
     using Ptr = std::shared_ptr<Derived>;
-    /* using ResourceName = Derived::Trait::ResourceName; */
     DBBaseResource(ID_TYPE id, State status, TS_TYPE created_on);
 
     bool IsActive() const {return status_ == ACTIVE;}
@@ -63,10 +62,10 @@ public:
     ResourcePtr GetResource(ID_TYPE id);
 
     bool AddNoLock(ResourcePtr resource);
-    bool RemoveNoLock(ID_TYPE id);
+    bool ReleaseNoLock(ID_TYPE id);
 
     virtual bool Add(ResourcePtr resource);
-    virtual bool Remove(ID_TYPE id);
+    virtual bool Release(ID_TYPE id);
 
     static Derived& GetInstance() {
         static Derived holder;
@@ -95,8 +94,8 @@ public:
     ResourcePtr GetCollection(const std::string& name);
 
     bool Add(ResourcePtr resource) override;
-    bool Remove(ID_TYPE id) override;
-    bool Remove(const std::string& name);
+    bool Release(ID_TYPE id) override;
+    bool Release(const std::string& name);
 
 private:
     ResourcePtr Load(ID_TYPE id) override;

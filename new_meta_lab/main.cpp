@@ -43,7 +43,17 @@ int main() {
     for (auto i=0; i<100; i++) {
         collections_holder.GetResource(i);
     }
-    collections_holder.Dump("ALLLL");
+
+    cout << c1->RefCnt() << endl;
+    c1->Ref();
+    cout << c1->RefCnt() << endl;
+    c1->Ref();
+    cout << c1->RefCnt() << endl;
+    c1->UnRef();
+    cout << c1->RefCnt() << endl;
+    c1->UnRef();
+    cout << c1->RefCnt() << endl;
+
 
     /* MappingT mappings = {1,2,3,4}; */
     /* auto c_c = std::make_shared<CollectionCommit>(1, 1, mappings); */
