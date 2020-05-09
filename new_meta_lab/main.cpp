@@ -2,11 +2,13 @@
 #include "Utils.h"
 #include "Resources.h"
 #include "Snapshots.h"
+#include "Proxy.h"
 
 using namespace std;
 
 class Resource : public ReferenceProxy {
 public:
+    using Ptr = std::shared_ptr<Resource>;
     void OnDeRefCallBack() {
         cout << "OnDeRefCallBack" << endl;
     }
@@ -28,7 +30,8 @@ int main() {
     {
         auto res = std::make_shared<Resource>();
         {
-            auto scoped = std::make_shared<ScopedResource>(res);
+            using ResourceT = ScopedResource<Resource>;
+            auto scoped = std::make_shared<ResourceT>(res);
         }
     }
 

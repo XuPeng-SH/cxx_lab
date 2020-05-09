@@ -23,13 +23,3 @@ protected:
 };
 
 using ReferenceResourcePtr = std::shared_ptr<ReferenceProxy>;
-
-class ScopedResource {
-public:
-    ScopedResource(ReferenceResourcePtr res);
-
-    ~ScopedResource();
-
-protected:
-    ReferenceResourcePtr res_;
-};

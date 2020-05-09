@@ -21,18 +21,6 @@ void ReferenceProxy::RegisterOnNoRefCB(OnNoRefCBF cb) {
     on_no_ref_cbs_.emplace_back(cb);
 }
 
-/* void ReferenceProxy::OnDeRefCallBack() { */
-/*     return; */
-/* } */
-
 ReferenceProxy::~ReferenceProxy() {
     /* OnDeRef(); */
-}
-
-ScopedResource::ScopedResource(ReferenceResourcePtr res) : res_(res) {
-    res_->Ref();
-}
-
-ScopedResource::~ScopedResource() {
-    res_->UnRef();
 }
