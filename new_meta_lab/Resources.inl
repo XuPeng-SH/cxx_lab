@@ -64,6 +64,7 @@ ResourceHolder<ResourceT, Derived>::GetResource(ID_TYPE id) {
 template <typename ResourceT, typename Derived>
 void
 ResourceHolder<ResourceT, Derived>::OnNoRefCallBack(typename ResourceHolder<ResourceT, Derived>::ResourcePtr resource) {
+    HardDelete(resource->GetID());
     Release(resource->GetID());
 }
 
@@ -82,6 +83,14 @@ template <typename ResourceT, typename Derived>
 bool ResourceHolder<ResourceT, Derived>::Release(ID_TYPE id) {
     std::unique_lock<std::mutex> lock(mutex_);
     return ReleaseNoLock(id);
+}
+
+template <typename ResourceT, typename Derived>
+bool
+ResourceHolder<ResourceT, Derived>::HardDelete(ID_TYPE id) {
+    auto& store = Store::GetInstance();
+    bool ok = store.RemoveCollection(id);
+    return ok;
 }
 
 template <typename ResourceT, typename Derived>

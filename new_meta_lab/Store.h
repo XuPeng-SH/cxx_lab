@@ -18,7 +18,7 @@ public:
         if (it == id_collections_.end()) {
             return nullptr;
         }
-        std::cout << ">>> Load Collection " << id << std::endl;
+        std::cout << "<<< [Load] Collection " << id << std::endl;
         auto& c = it->second;
         auto ret = std::make_shared<Collection>(c->GetID(), c->GetName(), c->GetStatus(), c->GetCreatedTime());
         return ret;
@@ -29,18 +29,31 @@ public:
         if (it == name_collections_.end()) {
             return nullptr;
         }
-        std::cout << ">>> Load Collection " << name << std::endl;
+        std::cout << "<<< [Load] Collection " << name << std::endl;
         auto& c = it->second;
         auto ret = std::make_shared<Collection>(c->GetID(), c->GetName(), c->GetStatus(), c->GetCreatedTime());
         return ret;
+    }
+
+    bool RemoveCollection(ID_TYPE id) {
+        auto it = id_collections_.find(id);
+        if (it == id_collections_.end()) {
+            return false;
+        }
+
+        auto name = it->second->GetName();
+        id_collections_.erase(it);
+        name_collections_.erase(name);
+        std::cout << ">>> [Remove] Collection " << id << std::endl;
+        return true;
     }
 
 private:
     Store() {
         srand(time(0));
         int random;
-        random = rand() % 10 + 10;
-        for (auto i=1; i<random; i++) {
+        random = rand() % 5 + 5;
+        for (auto i=1; i<=random; i++) {
             std::stringstream name;
             name << "collection_" << i;
             auto c = std::make_shared<Collection>(i, name.str());

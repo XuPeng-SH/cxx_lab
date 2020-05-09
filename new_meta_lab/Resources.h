@@ -66,7 +66,7 @@ public:
 
     virtual bool Add(ResourcePtr resource);
     virtual bool Release(ID_TYPE id);
-    /* virtual bool HardDelete(ID_TYPE id); */
+    virtual bool HardDelete(ID_TYPE id);
 
     static Derived& GetInstance() {
         static Derived holder;
