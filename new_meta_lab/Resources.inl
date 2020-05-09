@@ -156,7 +156,14 @@ bool CollectionsHolder::Release(const std::string& name) {
 
 bool CollectionsHolder::Release(ID_TYPE id) {
     std::unique_lock<std::mutex> lock(mutex_);
-    return BaseT::ReleaseNoLock(id);
+    auto it = id_map_.find(id);
+    if (it == id_map_.end()) {
+        return false;
+    }
+
+    BaseT::id_map_.erase(it);
+    name_map_.erase(it->second->GetName());
+    return true;
 }
 
 CollectionCommit::CollectionCommit(ID_TYPE id, ID_TYPE collection_id,
