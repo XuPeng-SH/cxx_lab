@@ -40,24 +40,26 @@ int main() {
     auto c1 = collections_holder.GetResource(4);
     collections_holder.Dump("111111");
 
-    cout << c1->RefCnt() << endl;
-    c1->Ref();
-    cout << c1->RefCnt() << endl;
-    c1->Ref();
-    cout << c1->RefCnt() << endl;
-    c1->UnRef();
-    cout << c1->RefCnt() << endl;
+    cout << c1->Get()->RefCnt() << endl;
+    c1->Get()->Ref();
+    cout << c1->Get()->RefCnt() << endl;
+    c1->Get()->Ref();
+    cout << c1->Get()->RefCnt() << endl;
+    c1->Get()->UnRef();
+    cout << c1->Get()->RefCnt() << endl;
     /* collections_holder.Dump("Pre OnDeRefCallBack"); */
-    c1->UnRef();
+    c1->Get()->UnRef();
+    cout << c1->Get()->RefCnt() << endl;
     /* collections_holder.Dump("Post OnNoRefCallBack"); */
 
-    /* c1 = collections_holder.GetResource(1); */
-    /* collections_holder.Dump("Again"); */
 
-    for (auto i=0; i<100; ++i) {
-        collections_holder.GetResource(i);
-    }
+    /* for (auto i=0; i<100; ++i) { */
+    /*     collections_holder.GetResource(i); */
+    /* } */
 
+    collections_holder.Dump();
+    c1->Get()->UnRef();
+    cout << c1->Get()->RefCnt() << endl;
     collections_holder.Dump();
 
 

@@ -50,15 +50,16 @@ ResourceHolder<ResourceT, Derived>::Load(const std::string& name) {
 }
 
 template <typename ResourceT, typename Derived>
-typename ResourceHolder<ResourceT, Derived>::ResourcePtr
+typename ResourceHolder<ResourceT, Derived>::ScopedPtr
 ResourceHolder<ResourceT, Derived>::GetResource(ID_TYPE id) {
     std::unique_lock<std::mutex> lock(mutex_);
     auto cit = id_map_.find(id);
     if (cit == id_map_.end()) {
         auto ret = Load(id);
-        return ret;
+        if (!ret) return nullptr;
+        return std::make_shared<ScopedT>(ret);
     }
-    return cit->second;
+    return std::make_shared<ScopedT>(cit->second);
 }
 
 template <typename ResourceT, typename Derived>
@@ -134,15 +135,16 @@ CollectionsHolder::Load(const std::string& name) {
     return nullptr;
 }
 
-CollectionsHolder::ResourcePtr
+CollectionsHolder::ScopedPtr
 CollectionsHolder::GetCollection(const std::string& name) {
     std::unique_lock<std::mutex> lock(BaseT::mutex_);
     auto cit = name_map_.find(name);
     if (cit == name_map_.end()) {
         auto ret = Load(name);
-        return ret;
+        if (!ret) return nullptr;
+        return std::make_shared<BaseT::ScopedT>(ret);
     }
-    return cit->second;
+    return std::make_shared<BaseT::ScopedT>(cit->second);
 }
 
 bool CollectionsHolder::Add(CollectionsHolder::ResourcePtr resource) {

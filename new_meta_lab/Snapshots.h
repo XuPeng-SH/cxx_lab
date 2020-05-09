@@ -71,9 +71,9 @@ private:
 };
 
 Snapshot::Snapshot(ID_TYPE id) {
-    collection_commit_ = CollectionCommitsHolder::GetInstance().GetResource(id);
-    assert(collection_commit_);
-    collection_ = CollectionsHolder::GetInstance().GetResource(collection_commit_->GetCollectionId());
+    /* collection_commit_ = CollectionCommitsHolder::GetInstance().GetResource(id); */
+    /* assert(collection_commit_); */
+    /* collection_ = CollectionsHolder::GetInstance().GetResource(collection_commit_->GetCollectionId()); */
     /* auto& mappings =  collection_commit_->GetMappings(); */
     /* auto& partition_commits_holder = PartitionCommitsHolder::GetInstance(); */
     /* auto& partitions_holder = PartitionsHolder::GetInstance(); */

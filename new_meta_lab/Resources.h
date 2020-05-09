@@ -2,6 +2,7 @@
 
 #include "Helper.h"
 #include "Schema.h"
+#include "Proxy.h"
 #include <string>
 #include <map>
 #include <vector>
@@ -57,9 +58,11 @@ template <typename ResourceT, typename Derived>
 class ResourceHolder {
 public:
     using ResourcePtr = typename ResourceT::Ptr;
+    using ScopedT = ScopedResource<ResourceT>;
+    using ScopedPtr = std::shared_ptr<ScopedT>;
     using IdMapT = std::map<ID_TYPE, ResourcePtr>;
     using Ptr = std::shared_ptr<Derived>;
-    ResourcePtr GetResource(ID_TYPE id);
+    ScopedPtr GetResource(ID_TYPE id);
 
     bool AddNoLock(ResourcePtr resource);
     bool ReleaseNoLock(ID_TYPE id);
@@ -94,7 +97,7 @@ public:
     using ResourcePtr = typename BaseT::ResourcePtr;
     using NameMapT = std::map<std::string, ResourcePtr>;
 
-    ResourcePtr GetCollection(const std::string& name);
+    ScopedPtr GetCollection(const std::string& name);
 
     bool Add(ResourcePtr resource) override;
     bool Release(ID_TYPE id) override;
@@ -127,6 +130,7 @@ private:
 
 using CollectionCommitPtr = std::shared_ptr<CollectionCommit>;
 
-class CollectionCommitsHolder : public ResourceHolder<CollectionCommit, CollectionCommitsHolder> {};
+class CollectionCommitsHolder : public ResourceHolder<CollectionCommit, CollectionCommitsHolder> {
+};
 
 #include "Resources.inl"
