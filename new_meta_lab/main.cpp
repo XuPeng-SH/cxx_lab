@@ -34,13 +34,39 @@ int main() {
     /* cout << c1->Get()->RefCnt() << endl; */
     /* collections_holder.Dump(); */
 
-    SnapshotsHolder ss_holder(2);
+    SnapshotsHolder ss_holder(1);
 
     thread gc_thread(&SnapshotsHolder::BackgroundGC, &ss_holder);
 
     ss_holder.Add(1);
     ss_holder.Add(2);
     ss_holder.Add(3);
+
+    {
+        auto ss = ss_holder.GetSnapshot(1);
+        if (!ss) cout << 1 << " ss is nullptr" << endl;
+    }
+
+    {
+        auto ss = ss_holder.GetSnapshot(2);
+        if (!ss) cout << 2 << " ss is nullptr" << endl;
+    }
+
+    {
+        auto ss = ss_holder.GetSnapshot(3);
+        if (!ss) cout << 3 << " ss is nullptr" << endl;
+        else {
+            cout << "3 ss refcnt = " << ss->Get()->RefCnt() << endl;
+        }
+    }
+    {
+        auto ss = ss_holder.GetSnapshot(3, false);
+        if (!ss) cout << 3 << " ss is nullptr" << endl;
+        else {
+            cout << "3 ss refcnt = " << ss->Get()->RefCnt() << endl;
+        }
+    }
+
     ss_holder.Add(4);
 
     sleep(1);

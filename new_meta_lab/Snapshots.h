@@ -129,10 +129,9 @@ Snapshot::Snapshot(ID_TYPE id) {
 
 class SnapshotsHolder {
 public:
-    /* static SnapshotsHolder& GetInstance() { */
-    /*     static SnapshotsHolder holder; */
-    /*     return holder; */
-    /* } */
+    using ScopedSnapshotT = ScopedResource<Snapshot>;
+    using ScopedPtr = std::shared_ptr<ScopedSnapshotT>;
+
     SnapshotsHolder(size_t num_versions = 1) : num_versions_(num_versions), done_(false) {}
     bool Add(ID_TYPE id) {
         {
@@ -179,7 +178,7 @@ public:
 
     void NotifyDone();
 
-    Snapshot::Ptr GetSnapshot();
+    ScopedPtr GetSnapshot(ID_TYPE id = 0, bool scoped = true);
 
 private:
     void ReadyForRelease(Snapshot::Ptr ss) {
@@ -199,6 +198,24 @@ private:
     size_t num_versions_ = 1;
     std::atomic<bool> done_;
 };
+
+SnapshotsHolder::ScopedPtr
+SnapshotsHolder::GetSnapshot(ID_TYPE id, bool scoped) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (id == 0 || id == max_id_) {
+        auto ss = active_[id];
+        return std::make_shared<ScopedSnapshotT>(ss, scoped);
+    }
+    if (id < min_id_ || id > max_id_) {
+        return nullptr;
+    }
+
+    auto it = active_.find(id);
+    if (it == active_.end()) {
+        return nullptr;
+    }
+    return std::make_shared<ScopedSnapshotT>(it->second, scoped);
+}
 
 void
 SnapshotsHolder::NotifyDone() {
