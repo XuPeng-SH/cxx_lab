@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include <unistd.h>
 #include "Utils.h"
 #include "Resources.h"
 #include "Snapshots.h"
@@ -33,7 +34,7 @@ int main() {
     /* cout << c1->Get()->RefCnt() << endl; */
     /* collections_holder.Dump(); */
 
-    SnapshotsHolder ss_holder;
+    SnapshotsHolder ss_holder(2);
 
     thread gc_thread(&SnapshotsHolder::BackgroundGC, &ss_holder);
 
@@ -41,8 +42,8 @@ int main() {
     ss_holder.Add(2);
     ss_holder.Add(3);
     ss_holder.Add(4);
-    ss_holder.Add(5);
 
+    sleep(1);
     ss_holder.NotifyDone();
     gc_thread.join();
 

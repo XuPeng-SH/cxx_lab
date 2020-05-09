@@ -12,6 +12,7 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include <chrono>
 
 
 /* struct Node { */
@@ -58,8 +59,8 @@ public:
 
     ID_TYPE GetID() const { return collection_commit_->Get()->GetID();}
 
-private:
     void UnRefAll();
+private:
 
     /* PartitionCommits */
     /* Partitions */
@@ -78,12 +79,16 @@ private:
 void Snapshot::UnRefAll() {
     collection_commit_->Get()->UnRef();
     collection_->Get()->UnRef();
+    /* auto c = collection_->Get(); */
+    /* std::cout << "XXXXXXXXXXXXXXXXX Collection " << c->GetID() << " RefCnt=" << c->RefCnt()  << std::endl; */
 }
 
 Snapshot::Snapshot(ID_TYPE id) {
     collection_commit_ = CollectionCommitsHolder::GetInstance().GetResource(id, false);
     assert(collection_commit_);
     collection_ = CollectionsHolder::GetInstance().GetResource(collection_commit_->Get()->GetCollectionId(), false);
+    collection_commit_->Get()->Ref();
+    collection_->Get()->Ref();
     /* std::cout << "c_c refcnt=" <<  collection_commit_->Get()->RefCnt() << std::endl; */
     /* auto& mappings =  collection_commit_->GetMappings(); */
     /* auto& partition_commits_holder = PartitionCommitsHolder::GetInstance(); */
@@ -142,6 +147,8 @@ public:
 
             std::unique_lock<std::mutex> lock(mutex_);
             if (done_) { return false; };
+            ss->RegisterOnNoRefCB(std::bind(&Snapshot::UnRefAll, ss));
+            ss->Ref();
             auto it = active_.find(id);
             if (it != active_.end()) {
                 return false;
@@ -209,16 +216,18 @@ SnapshotsHolder::BackgroundGC() {
         std::vector<Snapshot::Ptr> sss;
         {
             std::unique_lock<std::mutex> lock(gcmutex_);
-            cv_.wait(lock, [this]() {return to_release_.size() > 0;});
+            cv_.wait_for(lock, std::chrono::milliseconds(100), [this]() {return to_release_.size() > 0;});
             if (to_release_.size() > 0) {
                 std::cout << "size = " << to_release_.size() << std::endl;
                 sss = to_release_;
                 to_release_.clear();
             }
         }
-        if (sss.size() == 0) break;
 
-        std::cout << "BG Handling " << sss.size() << std::endl;
+        for (auto& ss : sss) {
+            ss->UnRef();
+            std::cout << "BG Handling " << ss->GetID() << " RefCnt=" << ss->RefCnt() << std::endl;
+        }
 
     }
 }
