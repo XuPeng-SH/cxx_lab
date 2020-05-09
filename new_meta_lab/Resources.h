@@ -62,7 +62,7 @@ public:
     using ScopedPtr = std::shared_ptr<ScopedT>;
     using IdMapT = std::map<ID_TYPE, ResourcePtr>;
     using Ptr = std::shared_ptr<Derived>;
-    ScopedPtr GetResource(ID_TYPE id, bool scoped = true);
+    ScopedT GetResource(ID_TYPE id, bool scoped = true);
 
     bool AddNoLock(ResourcePtr resource);
     bool ReleaseNoLock(ID_TYPE id);
@@ -97,7 +97,7 @@ public:
     using ResourcePtr = typename BaseT::ResourcePtr;
     using NameMapT = std::map<std::string, ResourcePtr>;
 
-    ScopedPtr GetCollection(const std::string& name, bool scoped = true);
+    ScopedT GetCollection(const std::string& name, bool scoped = true);
 
     bool Add(ResourcePtr resource) override;
     bool Release(ID_TYPE id) override;

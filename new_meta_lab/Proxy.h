@@ -7,6 +7,7 @@ public:
     using ThisT = ScopedResource<ResourceT>;
     using Ptr = std::shared_ptr<ThisT>;
     using ResourcePtr = typename ResourceT::Ptr;
+    ScopedResource();
     ScopedResource(ResourcePtr res, bool scoped = true);
 
     ResourcePtr Get() { return res_; }
@@ -26,6 +27,9 @@ protected:
     bool scoped_;
 };
 
+template <typename ResourceT>
+ScopedResource<ResourceT>::ScopedResource() : res_(nullptr), scoped_(false) {
+}
 
 template <typename ResourceT>
 ScopedResource<ResourceT>::ScopedResource(ScopedResource<ResourceT>::ResourcePtr res,

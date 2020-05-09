@@ -15,49 +15,18 @@
 #include <chrono>
 
 
-/* struct Node { */
-/*     using Ptr = std::shared_ptr<Node>; */
-/*     bool IsHead() const { return prev_ == nullptr; } */
-/*     bool IsTail() const { return next_ == nullptr; } */
-
-/* privtae: */
-/*     friend class LinkList; */
-/*     Ptr prev_ = nullptr; */
-/*     Ptr next_ = nullptr; */
-/* }; */
-
-/* class LinkList { */
-/* public: */
-/*     void Append(Node::Ptr node) { */
-/*         if (!head_) { */
-/*             head_ = node; */
-/*             tail_ = node; */
-/*             return; */
-/*         } */
-
-/*         node->prev_ = tail_; */
-/*         tail_ = node; */
-/*         node->next_ = nullptr; */
-/*     } */
-
-/* private: */
-/*     Node::Ptr head_ = nullptr; */
-/*     Node::Ptr tail_ = nullptr; */
-/* }; */
-
-
 using Strings = std::vector<std::string>;
 using Collections = std::vector<Collection>;
 
-using CollectionScopedPtr = ScopedResource<Collection>::Ptr;
-using CollectionCommitScopedPtr = ScopedResource<CollectionCommit>::Ptr;
+using CollectionScopedT = ScopedResource<Collection>;
+using CollectionCommitScopedT = ScopedResource<CollectionCommit>;
 
 class Snapshot : public ReferenceProxy {
 public:
     using Ptr = std::shared_ptr<Snapshot>;
     Snapshot(ID_TYPE id);
 
-    ID_TYPE GetID() const { return collection_commit_->Get()->GetID();}
+    ID_TYPE GetID() const { return collection_commit_->GetID();}
 
     void UnRefAll();
 private:
@@ -72,13 +41,13 @@ private:
     /* Segments */
     /* SegmentFiles */
 
-    CollectionScopedPtr collection_;
-    CollectionCommitScopedPtr collection_commit_;
+    CollectionScopedT collection_;
+    CollectionCommitScopedT collection_commit_;
 };
 
 void Snapshot::UnRefAll() {
-    collection_commit_->Get()->UnRef();
-    collection_->Get()->UnRef();
+    collection_commit_->UnRef();
+    collection_->UnRef();
     /* auto c = collection_->Get(); */
     /* std::cout << "XXXXXXXXXXXXXXXXX Collection " << c->GetID() << " RefCnt=" << c->RefCnt()  << std::endl; */
 }
@@ -86,9 +55,9 @@ void Snapshot::UnRefAll() {
 Snapshot::Snapshot(ID_TYPE id) {
     collection_commit_ = CollectionCommitsHolder::GetInstance().GetResource(id, false);
     assert(collection_commit_);
-    collection_ = CollectionsHolder::GetInstance().GetResource(collection_commit_->Get()->GetCollectionId(), false);
-    collection_commit_->Get()->Ref();
-    collection_->Get()->Ref();
+    collection_ = CollectionsHolder::GetInstance().GetResource(collection_commit_->GetCollectionId(), false);
+    collection_commit_->Ref();
+    collection_->Ref();
     /* std::cout << "c_c refcnt=" <<  collection_commit_->Get()->RefCnt() << std::endl; */
     /* auto& mappings =  collection_commit_->GetMappings(); */
     /* auto& partition_commits_holder = PartitionCommitsHolder::GetInstance(); */
