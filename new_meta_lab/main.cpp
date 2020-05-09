@@ -42,28 +42,19 @@ int main() {
     ss_holder.Add(2);
     ss_holder.Add(3);
 
-    {
-        auto ss = ss_holder.GetSnapshot(1);
-        if (!ss) cout << 1 << " ss is nullptr" << endl;
-    }
-
-    {
-        auto ss = ss_holder.GetSnapshot(2);
-        if (!ss) cout << 2 << " ss is nullptr" << endl;
-    }
 
     {
         auto ss = ss_holder.GetSnapshot(3);
         if (!ss) cout << 3 << " ss is nullptr" << endl;
         else {
-            cout << "3 ss refcnt = " << ss->Get()->RefCnt() << endl;
+            cout << "3 ss refcnt = " << ss->RefCnt() << endl;
         }
     }
     {
         auto ss = ss_holder.GetSnapshot(3, false);
         if (!ss) cout << 3 << " ss is nullptr" << endl;
         else {
-            cout << "3 ss refcnt = " << ss->Get()->RefCnt() << endl;
+            cout << "3 ss refcnt = " << ss->RefCnt() << endl;
         }
     }
 

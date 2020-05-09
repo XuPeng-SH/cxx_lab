@@ -178,7 +178,7 @@ public:
 
     void NotifyDone();
 
-    ScopedPtr GetSnapshot(ID_TYPE id = 0, bool scoped = true);
+    ScopedSnapshotT GetSnapshot(ID_TYPE id = 0, bool scoped = true);
 
 private:
     void ReadyForRelease(Snapshot::Ptr ss) {
@@ -199,22 +199,24 @@ private:
     std::atomic<bool> done_;
 };
 
-SnapshotsHolder::ScopedPtr
+SnapshotsHolder::ScopedSnapshotT
 SnapshotsHolder::GetSnapshot(ID_TYPE id, bool scoped) {
     std::unique_lock<std::mutex> lock(mutex_);
     if (id == 0 || id == max_id_) {
         auto ss = active_[id];
-        return std::make_shared<ScopedSnapshotT>(ss, scoped);
+        return ScopedSnapshotT(ss, scoped);
     }
     if (id < min_id_ || id > max_id_) {
-        return nullptr;
+        return ScopedSnapshotT(nullptr, false);
     }
 
     auto it = active_.find(id);
     if (it == active_.end()) {
-        return nullptr;
+        return ScopedSnapshotT(nullptr, false);
+        /* return nullptr; */
     }
-    return std::make_shared<ScopedSnapshotT>(it->second, scoped);
+    return ScopedSnapshotT(it->second, scoped);
+    /* return std::make_shared<ScopedSnapshotT>(it->second, scoped); */
 }
 
 void
