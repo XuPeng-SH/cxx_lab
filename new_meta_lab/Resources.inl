@@ -30,7 +30,6 @@ template <typename ResourceT, typename Derived>
 void ResourceHolder<ResourceT, Derived>::Dump(const std::string& tag) {
     std::unique_lock<std::mutex> lock(mutex_);
     std::cout << typeid(*this).name() << " Dump Start [" << tag <<  "]:" << id_map_.size() << std::endl;
-    /* std::cout << "ResourceHolder Dump Start [" << tag <<  "]:" << id_map_.size() << std::endl; */
     for (auto& kv : id_map_) {
         std::cout << "\t" << kv.second->ToString() << std::endl;
     }
@@ -56,7 +55,7 @@ ResourceHolder<ResourceT, Derived>::GetResource(ID_TYPE id, bool scoped) {
     auto cit = id_map_.find(id);
     if (cit == id_map_.end()) {
         auto ret = Load(id);
-        if (!ret) return ScopedT(nullptr, false);
+        if (!ret) return ScopedT();
         return ScopedT(ret, scoped);
     }
     return ScopedT(cit->second, scoped);
@@ -95,7 +94,6 @@ ResourceHolder<ResourceT, Derived>::HardDelete(ID_TYPE id) {
 template <typename ResourceT, typename Derived>
 bool ResourceHolder<ResourceT, Derived>::AddNoLock(typename ResourceHolder<ResourceT, Derived>::ResourcePtr resource) {
     if (!resource) return false;
-    /* std::unique_lock<std::mutex> lock(mutex_); */
     if (id_map_.find(resource->GetID()) != id_map_.end()) {
         return false;
     }
@@ -146,7 +144,7 @@ CollectionsHolder::GetCollection(const std::string& name, bool scoped) {
     auto cit = name_map_.find(name);
     if (cit == name_map_.end()) {
         auto ret = Load(name);
-        if (!ret) return BaseT::ScopedT(nullptr, false);
+        if (!ret) return BaseT::ScopedT();
         return BaseT::ScopedT(ret, scoped);
     }
     return BaseT::ScopedT(cit->second, scoped);

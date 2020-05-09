@@ -176,16 +176,14 @@ SnapshotsHolder::GetSnapshot(ID_TYPE id, bool scoped) {
         return ScopedSnapshotT(ss, scoped);
     }
     if (id < min_id_ || id > max_id_) {
-        return ScopedSnapshotT(nullptr, false);
+        return ScopedSnapshotT();
     }
 
     auto it = active_.find(id);
     if (it == active_.end()) {
-        return ScopedSnapshotT(nullptr, false);
-        /* return nullptr; */
+        return ScopedSnapshotT();
     }
     return ScopedSnapshotT(it->second, scoped);
-    /* return std::make_shared<ScopedSnapshotT>(it->second, scoped); */
 }
 
 void
@@ -219,16 +217,3 @@ SnapshotsHolder::BackgroundGC() {
 
     }
 }
-
-/* class CollectionSnapshots { */
-/* public: */
-
-/* private: */
-/*     std::map<ID_TYPE, Snapshot> snapshots_; */
-/* }; */
-
-/* class Snapshots { */
-
-
-/* private: */
-/* }; */
