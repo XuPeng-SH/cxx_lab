@@ -11,8 +11,8 @@ public:
 
     ResourcePtr Get() { return res_; }
 
-    ResourceT operator*() { return *res_; }
-    ResourcePtr operator->() { return res_; }
+    ResourceT operator*() const { return *res_; }
+    ResourcePtr operator->() const { return res_; }
 
     operator bool () const {
         if (res_) return true;
