@@ -47,6 +47,9 @@
 using Strings = std::vector<std::string>;
 using Collections = std::vector<Collection>;
 
+using CollectionScopedPtr = ScopedResource<Collection>::Ptr;
+using CollectionCommitScopedPtr = ScopedResource<CollectionCommit>::Ptr;
+
 class Snapshot {
 public:
     using Ptr = std::shared_ptr<Snapshot>;
@@ -65,15 +68,17 @@ private:
     /* Segments */
     /* SegmentFiles */
 
-    CollectionCommit::Ptr collection_commit_;
-    Collection::Ptr collection_;
+    /* CollectionCommit::Ptr collection_commit_; */
+    CollectionScopedPtr collection_;
+    CollectionCommitScopedPtr collection_commit_;
+    /* Collection::Ptr collection_; */
 
 };
 
 Snapshot::Snapshot(ID_TYPE id) {
-    /* collection_commit_ = CollectionCommitsHolder::GetInstance().GetResource(id); */
-    /* assert(collection_commit_); */
-    /* collection_ = CollectionsHolder::GetInstance().GetResource(collection_commit_->GetCollectionId()); */
+    collection_commit_ = CollectionCommitsHolder::GetInstance().GetResource(id);
+    assert(collection_commit_);
+    collection_ = CollectionsHolder::GetInstance().GetResource(collection_commit_->Get()->GetCollectionId());
     /* auto& mappings =  collection_commit_->GetMappings(); */
     /* auto& partition_commits_holder = PartitionCommitsHolder::GetInstance(); */
     /* auto& partitions_holder = PartitionsHolder::GetInstance(); */

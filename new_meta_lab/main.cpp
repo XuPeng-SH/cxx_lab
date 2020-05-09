@@ -63,7 +63,6 @@ int main() {
     collections_holder.Dump();
 
 
-
     /* MappingT mappings = {1,2,3,4}; */
     /* auto c_c = std::make_shared<CollectionCommit>(1, 1, mappings); */
     /* cout << c_c->ToString() << endl; */
