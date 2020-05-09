@@ -55,7 +55,8 @@ ResourceHolder<ResourceT, Derived>::GetResource(ID_TYPE id) {
     std::unique_lock<std::mutex> lock(mutex_);
     auto cit = id_map_.find(id);
     if (cit == id_map_.end()) {
-        return nullptr;
+        auto ret = Load(id);
+        return ret;
     }
     return cit->second;
 }

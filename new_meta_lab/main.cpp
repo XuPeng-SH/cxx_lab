@@ -35,30 +35,28 @@ int main() {
         }
     }
 
-    CollectionPtr c1 = std::make_shared<Collection>(1, "xx");
-    cout << c1->ToString() << endl;
-    auto& holder = CollectionsHolder::GetInstance();
-    holder.Dump("1");
-    holder.Add(c1);
-    holder.Dump("2");
-    holder.Remove(c1->GetID());
-    holder.Dump("3");
+    auto& collections_holder = CollectionsHolder::GetInstance();
+    collections_holder.Dump("-----");
+    auto c1 = collections_holder.GetResource(1);
+    collections_holder.Dump("111111");
 
-    MappingT mappings = {1,2,3,4};
-    auto c_c = std::make_shared<CollectionCommit>(1, 1, mappings);
-    cout << c_c->ToString() << endl;
+    for (auto i=0; i<100; i++) {
+        collections_holder.GetResource(i);
+    }
+    collections_holder.Dump("ALLLL");
 
-    auto& c_c_holder = CollectionCommitsHolder::GetInstance();
-    c_c_holder.Add(c_c);
+    /* MappingT mappings = {1,2,3,4}; */
+    /* auto c_c = std::make_shared<CollectionCommit>(1, 1, mappings); */
+    /* cout << c_c->ToString() << endl; */
 
-    auto ss = std::make_shared<Snapshot>(1);
-    c_c_holder.Dump("4");
+    /* auto& c_c_holder = CollectionCommitsHolder::GetInstance(); */
+    /* c_c_holder.Add(c_c); */
 
-    /* auto snapshot = Manager.GetSnapshot(collection_name); */
-    /* Manager.ReleaseSnapshot(snapshot); */
+    /* auto ss = std::make_shared<Snapshot>(1); */
+    /* c_c_holder.Dump("4"); */
 
-    SnapshotsHolder ss_holder;
-    ss_holder.Add(1);
+    /* SnapshotsHolder ss_holder; */
+    /* ss_holder.Add(1); */
 
     return 0;
 }
