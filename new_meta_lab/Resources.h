@@ -75,6 +75,8 @@ public:
     virtual void Dump(const std::string& tag = "");
 
 protected:
+    virtual void OnNoRefCallBack(ResourcePtr resource);
+
     virtual ResourcePtr Load(ID_TYPE id);
     virtual ResourcePtr Load(const std::string& name);
     ResourceHolder() = default;

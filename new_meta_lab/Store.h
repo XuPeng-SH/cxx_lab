@@ -18,6 +18,7 @@ public:
         if (it == id_collections_.end()) {
             return nullptr;
         }
+        std::cout << ">>> Load Collection " << id << std::endl;
         auto& c = it->second;
         auto ret = std::make_shared<Collection>(c->GetID(), c->GetName(), c->GetStatus(), c->GetCreatedTime());
         return ret;
@@ -28,6 +29,7 @@ public:
         if (it == name_collections_.end()) {
             return nullptr;
         }
+        std::cout << ">>> Load Collection " << name << std::endl;
         auto& c = it->second;
         auto ret = std::make_shared<Collection>(c->GetID(), c->GetName(), c->GetStatus(), c->GetCreatedTime());
         return ret;

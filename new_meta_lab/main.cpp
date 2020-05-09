@@ -40,9 +40,9 @@ int main() {
     auto c1 = collections_holder.GetResource(1);
     collections_holder.Dump("111111");
 
-    for (auto i=0; i<100; i++) {
-        collections_holder.GetResource(i);
-    }
+    /* for (auto i=0; i<100; i++) { */
+    /*     collections_holder.GetResource(i); */
+    /* } */
 
     cout << c1->RefCnt() << endl;
     c1->Ref();
@@ -51,8 +51,13 @@ int main() {
     cout << c1->RefCnt() << endl;
     c1->UnRef();
     cout << c1->RefCnt() << endl;
+    collections_holder.Dump("Pre OnDeRefCallBack");
     c1->UnRef();
-    cout << c1->RefCnt() << endl;
+    collections_holder.Dump("Post OnNoRefCallBack");
+
+    c1 = collections_holder.GetResource(1);
+    collections_holder.Dump("Again");
+
 
 
     /* MappingT mappings = {1,2,3,4}; */

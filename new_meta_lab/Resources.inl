@@ -62,8 +62,13 @@ ResourceHolder<ResourceT, Derived>::GetResource(ID_TYPE id) {
 }
 
 template <typename ResourceT, typename Derived>
+void
+ResourceHolder<ResourceT, Derived>::OnNoRefCallBack(typename ResourceHolder<ResourceT, Derived>::ResourcePtr resource) {
+    Release(resource->GetID());
+}
+
+template <typename ResourceT, typename Derived>
 bool ResourceHolder<ResourceT, Derived>::ReleaseNoLock(ID_TYPE id) {
-    /* std::unique_lock<std::mutex> lock(mutex_); */
     auto it = id_map_.find(id);
     if (it == id_map_.end()) {
         return false;
@@ -102,6 +107,7 @@ CollectionsHolder::Load(ID_TYPE id) {
     auto& store = Store::GetInstance();
     auto c = store.GetCollection(id);
     if (c) {
+        c->RegisterOnNoRefCB(std::bind(&CollectionsHolder::OnNoRefCallBack, this, c));
         AddNoLock(c);
         return c;
     }
