@@ -1,4 +1,5 @@
 #include "Resources.h"
+#include "Store.h"
 #include <sstream>
 #include <iostream>
 
@@ -37,7 +38,20 @@ void ResourceHolder<ResourceT, Derived>::Dump(const std::string& tag) {
 }
 
 template <typename ResourceT, typename Derived>
-typename ResourceHolder<ResourceT, Derived>::ResourcePtr ResourceHolder<ResourceT, Derived>::GetResource(ID_TYPE id) {
+typename ResourceHolder<ResourceT, Derived>::ResourcePtr
+ResourceHolder<ResourceT, Derived>::Load(ID_TYPE id) {
+    return nullptr;
+}
+
+template <typename ResourceT, typename Derived>
+typename ResourceHolder<ResourceT, Derived>::ResourcePtr
+ResourceHolder<ResourceT, Derived>::Load(const std::string& name) {
+    return nullptr;
+}
+
+template <typename ResourceT, typename Derived>
+typename ResourceHolder<ResourceT, Derived>::ResourcePtr
+ResourceHolder<ResourceT, Derived>::GetResource(ID_TYPE id) {
     std::unique_lock<std::mutex> lock(mutex_);
     auto cit = id_map_.find(id);
     if (cit == id_map_.end()) {
@@ -83,11 +97,34 @@ bool ResourceHolder<ResourceT, Derived>::Add(typename ResourceHolder<ResourceT, 
 }
 
 CollectionsHolder::ResourcePtr
+CollectionsHolder::Load(ID_TYPE id) {
+    auto& store = Store::GetInstance();
+    auto c = store.GetCollection(id);
+    if (c) {
+        AddNoLock(c);
+        return c;
+    }
+    return nullptr;
+}
+
+CollectionsHolder::ResourcePtr
+CollectionsHolder::Load(const std::string& name) {
+    auto& store = Store::GetInstance();
+    auto c = store.GetCollection(name);
+    if (c) {
+        AddNoLock(c);
+        return c;
+    }
+    return nullptr;
+}
+
+CollectionsHolder::ResourcePtr
 CollectionsHolder::GetCollection(const std::string& name) {
     std::unique_lock<std::mutex> lock(BaseT::mutex_);
     auto cit = name_map_.find(name);
     if (cit == name_map_.end()) {
-        return nullptr;
+        auto ret = Load(name);
+        return ret;
     }
     return cit->second;
 }

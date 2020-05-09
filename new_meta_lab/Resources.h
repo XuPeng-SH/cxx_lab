@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Helper.h"
+#include "Schema.h"
 #include <string>
 #include <map>
 #include <vector>
@@ -9,20 +10,12 @@
 #include <mutex>
 #include <thread>
 
-enum State {
-    PENDING = 0,
-    ACTIVE = 1,
-    DEACTIVE = 2
-};
-
-using ID_TYPE = int64_t;
-using TS_TYPE = int64_t;
-using MappingT = std::vector<ID_TYPE>;
 
 template <typename Derived>
 class DBBaseResource {
 public:
     using Ptr = std::shared_ptr<Derived>;
+    /* using ResourceName = Derived::Trait::ResourceName; */
     DBBaseResource(ID_TYPE id, State status, TS_TYPE created_on);
 
     bool IsActive() const {return status_ == ACTIVE;}
@@ -37,6 +30,7 @@ public:
     virtual ~DBBaseResource() {}
 
 protected:
+
     ID_TYPE id_;
     State status_;
     TS_TYPE created_on_;
@@ -82,6 +76,8 @@ public:
     virtual void Dump(const std::string& tag = "");
 
 protected:
+    virtual ResourcePtr Load(ID_TYPE id);
+    virtual ResourcePtr Load(const std::string& name);
     ResourceHolder() = default;
     virtual ~ResourceHolder() = default;
 
@@ -103,6 +99,9 @@ public:
     bool Remove(const std::string& name);
 
 private:
+    ResourcePtr Load(ID_TYPE id) override;
+    ResourcePtr Load(const std::string& name) override;
+
     NameMapT name_map_;
 };
 
