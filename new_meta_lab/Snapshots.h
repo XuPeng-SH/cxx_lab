@@ -54,10 +54,7 @@ class Snapshot {
 public:
     using Ptr = std::shared_ptr<Snapshot>;
     Snapshot(ID_TYPE id);
-    // TODO
-    /* status DescribeCollection(CollectionSchema& schema) */
-
-    void Unref();
+    void UnRef();
 
 private:
     /* PartitionCommits */
@@ -70,20 +67,19 @@ private:
     /* Segments */
     /* SegmentFiles */
 
-    /* CollectionCommit::Ptr collection_commit_; */
     CollectionScopedPtr collection_;
     CollectionCommitScopedPtr collection_commit_;
-    /* Collection::Ptr collection_; */
-
 };
+
+void Snapshot::UnRef() {
+    collection_commit_->Get()->UnRef();
+    collection_->Get()->UnRef();
+}
 
 Snapshot::Snapshot(ID_TYPE id) {
     collection_commit_ = CollectionCommitsHolder::GetInstance().GetResource(id, false);
-    /* std::cout << "c_c refcnt=" <<  collection_commit_->Get()->RefCnt() << std::endl; */
-    /* collection_commit_->Get()->Ref(); */
     assert(collection_commit_);
     collection_ = CollectionsHolder::GetInstance().GetResource(collection_commit_->Get()->GetCollectionId(), false);
-    /* collection_->Get()->Ref(); */
     /* std::cout << "c_c refcnt=" <<  collection_commit_->Get()->RefCnt() << std::endl; */
     /* auto& mappings =  collection_commit_->GetMappings(); */
     /* auto& partition_commits_holder = PartitionCommitsHolder::GetInstance(); */
@@ -121,11 +117,6 @@ Snapshot::Snapshot(ID_TYPE id) {
     /* } */
 };
 
-/* void */
-/* Snapshot::UnRef() { */
-/*     collection_commit_->Get()->UnRef(); */
-/*     collection_->Get()->UnRef(); */
-/* }; */
 
 class SnapshotsHolder {
 public:
@@ -169,6 +160,7 @@ public:
         return true;
     }
 
+    Snapshot::Ptr GetSnapshot();
 
 private:
     void ReadyForRelease(Snapshot::Ptr ss) {
