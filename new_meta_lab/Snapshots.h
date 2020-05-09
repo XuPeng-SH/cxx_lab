@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <mutex>
 #include <thread>
+#include <atomic>
 
 
 /* struct Node { */
@@ -50,13 +51,16 @@ using Collections = std::vector<Collection>;
 using CollectionScopedPtr = ScopedResource<Collection>::Ptr;
 using CollectionCommitScopedPtr = ScopedResource<CollectionCommit>::Ptr;
 
-class Snapshot {
+class Snapshot : public ReferenceProxy {
 public:
     using Ptr = std::shared_ptr<Snapshot>;
     Snapshot(ID_TYPE id);
-    void UnRef();
+
+    ID_TYPE GetID() const { return collection_commit_->Get()->GetID();}
 
 private:
+    void UnRefAll();
+
     /* PartitionCommits */
     /* Partitions */
     /* Schema::Ptr */
@@ -71,7 +75,7 @@ private:
     CollectionCommitScopedPtr collection_commit_;
 };
 
-void Snapshot::UnRef() {
+void Snapshot::UnRefAll() {
     collection_commit_->Get()->UnRef();
     collection_->Get()->UnRef();
 }
@@ -124,7 +128,7 @@ public:
     /*     static SnapshotsHolder holder; */
     /*     return holder; */
     /* } */
-    SnapshotsHolder(size_t num_versions = 1) : num_versions_(num_versions) {}
+    SnapshotsHolder(size_t num_versions = 1) : num_versions_(num_versions), done_(false) {}
     bool Add(ID_TYPE id) {
         {
             std::unique_lock<std::mutex> lock(mutex_);
@@ -132,50 +136,92 @@ public:
                 return false;
             }
         }
-        auto ss = std::make_shared<Snapshot>(id);
+        Snapshot::Ptr oldest_ss;
+        {
+            auto ss = std::make_shared<Snapshot>(id);
 
-        std::unique_lock<std::mutex> lock(mutex_);
-        auto it = active_.find(id);
-        if (it != active_.end()) {
-            return false;
+            std::unique_lock<std::mutex> lock(mutex_);
+            if (done_) { return false; };
+            auto it = active_.find(id);
+            if (it != active_.end()) {
+                return false;
+            }
+
+            if (min_id_ > id) {
+                min_id_ = id;
+            }
+
+            if (max_id_ < id) {
+                max_id_ = id;
+            }
+
+            active_[id] = ss;
+            if (active_.size() <= num_versions_)
+                return true;
+
+            auto oldest_it = active_.find(min_id_);
+            oldest_ss = oldest_it->second;
+            active_.erase(oldest_it);
+            min_id_ = active_.begin()->first;
         }
-
-        if (min_id_ > id) {
-            min_id_ = id;
-        }
-
-        if (max_id_ < id) {
-            max_id_ = id;
-        }
-
-        active_[id] = ss;
-        if (active_.size() <= num_versions_)
-            return true;
-
-        auto oldest_it = active_.find(min_id_);
-        auto oldest_ss = oldest_it->second;
-        active_.erase(oldest_it);
         ReadyForRelease(oldest_ss); // TODO: Use different mutex
-        min_id_ = active_.begin()->first;
         return true;
     }
+
+    void BackgroundGC();
+
+    void NotifyDone();
 
     Snapshot::Ptr GetSnapshot();
 
 private:
     void ReadyForRelease(Snapshot::Ptr ss) {
+        std::unique_lock<std::mutex> lock(gcmutex_);
         to_release_.push_back(ss);
+        lock.unlock();
+        cv_.notify_one();
     }
 
-    /* SnapshotsHolder()  = default; */
-    /* ~SnapshotsHolder() = default; */
     std::mutex mutex_;
+    std::mutex gcmutex_;
+    std::condition_variable cv_;
     ID_TYPE min_id_ = std::numeric_limits<ID_TYPE>::max();
     ID_TYPE max_id_ = std::numeric_limits<ID_TYPE>::min();
     std::map<ID_TYPE, Snapshot::Ptr> active_;
     std::vector<Snapshot::Ptr> to_release_;
     size_t num_versions_ = 1;
+    std::atomic<bool> done_;
 };
+
+void
+SnapshotsHolder::NotifyDone() {
+    std::unique_lock<std::mutex> lock(gcmutex_);
+    done_ = true;
+    cv_.notify_all();
+}
+
+void
+SnapshotsHolder::BackgroundGC() {
+    while (true) {
+        if (done_.load(std::memory_order_acquire)) {
+            break;
+        }
+        std::vector<Snapshot::Ptr> sss;
+        {
+            std::unique_lock<std::mutex> lock(gcmutex_);
+            cv_.wait(lock, [this]() {return to_release_.size() > 0;});
+            if (to_release_.size() > 0) {
+                std::cout << "size = " << to_release_.size() << std::endl;
+                sss = to_release_;
+                to_release_.clear();
+            }
+        }
+        if (sss.size() == 0) break;
+
+        std::cout << "BG Handling " << sss.size() << std::endl;
+
+    }
+}
 
 /* class CollectionSnapshots { */
 /* public: */
