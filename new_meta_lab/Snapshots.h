@@ -57,6 +57,8 @@ public:
     // TODO
     /* status DescribeCollection(CollectionSchema& schema) */
 
+    void Unref();
+
 private:
     /* PartitionCommits */
     /* Partitions */
@@ -76,9 +78,13 @@ private:
 };
 
 Snapshot::Snapshot(ID_TYPE id) {
-    collection_commit_ = CollectionCommitsHolder::GetInstance().GetResource(id);
+    collection_commit_ = CollectionCommitsHolder::GetInstance().GetResource(id, false);
+    /* std::cout << "c_c refcnt=" <<  collection_commit_->Get()->RefCnt() << std::endl; */
+    /* collection_commit_->Get()->Ref(); */
     assert(collection_commit_);
-    collection_ = CollectionsHolder::GetInstance().GetResource(collection_commit_->Get()->GetCollectionId());
+    collection_ = CollectionsHolder::GetInstance().GetResource(collection_commit_->Get()->GetCollectionId(), false);
+    /* collection_->Get()->Ref(); */
+    /* std::cout << "c_c refcnt=" <<  collection_commit_->Get()->RefCnt() << std::endl; */
     /* auto& mappings =  collection_commit_->GetMappings(); */
     /* auto& partition_commits_holder = PartitionCommitsHolder::GetInstance(); */
     /* auto& partitions_holder = PartitionsHolder::GetInstance(); */
@@ -114,6 +120,12 @@ Snapshot::Snapshot(ID_TYPE id) {
     /*     } */
     /* } */
 };
+
+/* void */
+/* Snapshot::UnRef() { */
+/*     collection_commit_->Get()->UnRef(); */
+/*     collection_->Get()->UnRef(); */
+/* }; */
 
 class SnapshotsHolder {
 public:

@@ -35,46 +35,34 @@ int main() {
         }
     }
 
-    auto& collections_holder = CollectionsHolder::GetInstance();
-    collections_holder.Dump("-----");
-    auto c1 = collections_holder.GetResource(4);
-    collections_holder.Dump("111111");
+    /* auto& collections_holder = CollectionsHolder::GetInstance(); */
+    /* collections_holder.Dump("-----"); */
+    /* auto c1 = collections_holder.GetResource(4); */
+    /* collections_holder.Dump("111111"); */
 
-    cout << c1->Get()->RefCnt() << endl;
-    c1->Get()->Ref();
-    cout << c1->Get()->RefCnt() << endl;
-    c1->Get()->Ref();
-    cout << c1->Get()->RefCnt() << endl;
-    c1->Get()->UnRef();
-    cout << c1->Get()->RefCnt() << endl;
-    /* collections_holder.Dump("Pre OnDeRefCallBack"); */
-    c1->Get()->UnRef();
-    cout << c1->Get()->RefCnt() << endl;
-    /* collections_holder.Dump("Post OnNoRefCallBack"); */
+    /* cout << c1->Get()->RefCnt() << endl; */
+    /* c1->Get()->Ref(); */
+    /* cout << c1->Get()->RefCnt() << endl; */
+    /* c1->Get()->Ref(); */
+    /* cout << c1->Get()->RefCnt() << endl; */
+    /* c1->Get()->UnRef(); */
+    /* cout << c1->Get()->RefCnt() << endl; */
+    /* c1->Get()->UnRef(); */
+    /* cout << c1->Get()->RefCnt() << endl; */
 
 
-    /* for (auto i=0; i<100; ++i) { */
-    /*     collections_holder.GetResource(i); */
-    /* } */
+    /* /1* for (auto i=0; i<100; ++i) { *1/ */
+    /* /1*     collections_holder.GetResource(i); *1/ */
+    /* /1* } *1/ */
 
-    collections_holder.Dump();
-    c1->Get()->UnRef();
-    cout << c1->Get()->RefCnt() << endl;
-    collections_holder.Dump();
+    /* collections_holder.Dump(); */
+    /* c1->Get()->UnRef(); */
+    /* cout << c1->Get()->RefCnt() << endl; */
+    /* collections_holder.Dump(); */
 
-
-    /* MappingT mappings = {1,2,3,4}; */
-    /* auto c_c = std::make_shared<CollectionCommit>(1, 1, mappings); */
-    /* cout << c_c->ToString() << endl; */
-
-    /* auto& c_c_holder = CollectionCommitsHolder::GetInstance(); */
-    /* c_c_holder.Add(c_c); */
-
-    /* auto ss = std::make_shared<Snapshot>(1); */
-    /* c_c_holder.Dump("4"); */
-
-    /* SnapshotsHolder ss_holder; */
-    /* ss_holder.Add(1); */
+    SnapshotsHolder ss_holder;
+    ss_holder.Add(1);
+    ss_holder.Add(2);
 
     return 0;
 }

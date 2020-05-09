@@ -62,7 +62,7 @@ public:
     using ScopedPtr = std::shared_ptr<ScopedT>;
     using IdMapT = std::map<ID_TYPE, ResourcePtr>;
     using Ptr = std::shared_ptr<Derived>;
-    ScopedPtr GetResource(ID_TYPE id);
+    ScopedPtr GetResource(ID_TYPE id, bool scoped = true);
 
     bool AddNoLock(ResourcePtr resource);
     bool ReleaseNoLock(ID_TYPE id);
@@ -97,7 +97,7 @@ public:
     using ResourcePtr = typename BaseT::ResourcePtr;
     using NameMapT = std::map<std::string, ResourcePtr>;
 
-    ScopedPtr GetCollection(const std::string& name);
+    ScopedPtr GetCollection(const std::string& name, bool scoped = true);
 
     bool Add(ResourcePtr resource) override;
     bool Release(ID_TYPE id) override;
@@ -106,6 +106,7 @@ public:
 private:
     ResourcePtr Load(ID_TYPE id) override;
     ResourcePtr Load(const std::string& name) override;
+    bool HardDelete(ID_TYPE id) override;
 
     NameMapT name_map_;
 };
@@ -131,6 +132,13 @@ private:
 using CollectionCommitPtr = std::shared_ptr<CollectionCommit>;
 
 class CollectionCommitsHolder : public ResourceHolder<CollectionCommit, CollectionCommitsHolder> {
+public:
+    using BaseT = ResourceHolder<CollectionCommit, CollectionCommitsHolder>;
+    using ResourcePtr = typename BaseT::ResourcePtr;
+
+private:
+    ResourcePtr Load(ID_TYPE id) override;
+    bool HardDelete(ID_TYPE id) override;
 };
 
 #include "Resources.inl"

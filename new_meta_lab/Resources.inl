@@ -51,15 +51,15 @@ ResourceHolder<ResourceT, Derived>::Load(const std::string& name) {
 
 template <typename ResourceT, typename Derived>
 typename ResourceHolder<ResourceT, Derived>::ScopedPtr
-ResourceHolder<ResourceT, Derived>::GetResource(ID_TYPE id) {
+ResourceHolder<ResourceT, Derived>::GetResource(ID_TYPE id, bool scoped) {
     std::unique_lock<std::mutex> lock(mutex_);
     auto cit = id_map_.find(id);
     if (cit == id_map_.end()) {
         auto ret = Load(id);
         if (!ret) return nullptr;
-        return std::make_shared<ScopedT>(ret);
+        return std::make_shared<ScopedT>(ret, scoped);
     }
-    return std::make_shared<ScopedT>(cit->second);
+    return std::make_shared<ScopedT>(cit->second, scoped);
 }
 
 template <typename ResourceT, typename Derived>
@@ -89,9 +89,7 @@ bool ResourceHolder<ResourceT, Derived>::Release(ID_TYPE id) {
 template <typename ResourceT, typename Derived>
 bool
 ResourceHolder<ResourceT, Derived>::HardDelete(ID_TYPE id) {
-    auto& store = Store::GetInstance();
-    bool ok = store.RemoveCollection(id);
-    return ok;
+    return false;
 }
 
 template <typename ResourceT, typename Derived>
@@ -103,6 +101,7 @@ bool ResourceHolder<ResourceT, Derived>::AddNoLock(typename ResourceHolder<Resou
     }
 
     id_map_[resource->GetID()] = resource;
+    resource->RegisterOnNoRefCB(std::bind(&Derived::OnNoRefCallBack, this, resource));
     return true;
 }
 
@@ -117,11 +116,17 @@ CollectionsHolder::Load(ID_TYPE id) {
     auto& store = Store::GetInstance();
     auto c = store.GetCollection(id);
     if (c) {
-        c->RegisterOnNoRefCB(std::bind(&CollectionsHolder::OnNoRefCallBack, this, c));
         AddNoLock(c);
         return c;
     }
     return nullptr;
+}
+
+bool
+CollectionsHolder::HardDelete(ID_TYPE id) {
+    auto& store = Store::GetInstance();
+    bool ok = store.RemoveCollection(id);
+    return ok;
 }
 
 CollectionsHolder::ResourcePtr
@@ -136,15 +141,15 @@ CollectionsHolder::Load(const std::string& name) {
 }
 
 CollectionsHolder::ScopedPtr
-CollectionsHolder::GetCollection(const std::string& name) {
+CollectionsHolder::GetCollection(const std::string& name, bool scoped) {
     std::unique_lock<std::mutex> lock(BaseT::mutex_);
     auto cit = name_map_.find(name);
     if (cit == name_map_.end()) {
         auto ret = Load(name);
         if (!ret) return nullptr;
-        return std::make_shared<BaseT::ScopedT>(ret);
+        return std::make_shared<BaseT::ScopedT>(ret, scoped);
     }
-    return std::make_shared<BaseT::ScopedT>(cit->second);
+    return std::make_shared<BaseT::ScopedT>(cit->second, scoped);
 }
 
 bool CollectionsHolder::Add(CollectionsHolder::ResourcePtr resource) {
@@ -176,6 +181,25 @@ bool CollectionsHolder::Release(ID_TYPE id) {
     name_map_.erase(it->second->GetName());
     return true;
 }
+
+CollectionCommitsHolder::ResourcePtr
+CollectionCommitsHolder::Load(ID_TYPE id) {
+    auto& store = Store::GetInstance();
+    auto c = store.GetCollectionCommit(id);
+    if (c) {
+        AddNoLock(c);
+        return c;
+    }
+    return nullptr;
+}
+
+bool
+CollectionCommitsHolder::HardDelete(ID_TYPE id) {
+    auto& store = Store::GetInstance();
+    bool ok = store.RemoveCollectionCommit(id);
+    return ok;
+}
+
 
 CollectionCommit::CollectionCommit(ID_TYPE id, ID_TYPE collection_id,
         const MappingT& mappings, State status, TS_TYPE created_on) :
