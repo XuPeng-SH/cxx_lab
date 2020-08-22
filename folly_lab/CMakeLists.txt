@@ -24,6 +24,7 @@ set(lab_libs
     folly
     pthread
     glog
+    gflags
     dl
     double-conversion
     boost_context
