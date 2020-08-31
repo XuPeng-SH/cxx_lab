@@ -11,6 +11,23 @@
 
 using namespace std;
 
+template<class T>
+void func(T&& param) {
+    if (std::is_same<T,int>::value)
+        std::cout << "param is an int\n";
+    else
+        std::cout << "param is not an int\n";
+    /* if (std::is_same<typename std::decay<T>::type,int>::value) */
+    /*     std::cout << "param is an int\n"; */
+    /* else */
+    /*     std::cout << "param is not an int\n"; */
+}
+
+void lab1() {
+    int three = 3;
+    func(three);  //prints "param is not an int"!!!!
+}
+
 int main(int argc, char** argv) {
     auto do_print = [](int v) {
         /* throw runtime_error("xx"); */
@@ -41,6 +58,8 @@ int main(int argc, char** argv) {
     folly::via(&executor, [] () {
         cout << "dummy run" << endl;
     });
+
+    lab1();
 
     return 0;
 }
