@@ -11,5 +11,7 @@ using namespace std;
 
 int main(int argc, char** argv) {
     multi_index_lab();
+    complex_multi_index_lab();
+    hash_multi_index_lab();
     return 0;
 }
