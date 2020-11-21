@@ -4,10 +4,85 @@
 #include <vector>
 #include <functional>
 #include <thread>
+#include <chrono>
+#include <queue>
+#include <condition_variable>
+#include <mutex>
+#include <atomic>
+#include <future>
 
 namespace aio = boost::asio;
 using error_code = boost::system::error_code;
-auto interval = boost::posix_time::seconds(2);
+auto interval = boost::posix_time::seconds(1);
+
+using Handler = std::function<void(void)>;
+
+class Pool {
+ public:
+     Pool(size_t size = 1) {
+         for (auto i = 0; i < size; ++i) {
+             workers_.emplace_back(std::thread(std::bind(&Pool::WorkThread, this)));
+         }
+     }
+
+     template <typename F, typename... Args>
+     auto Enqueue(F&& f, Args&&... args) -> std::future<typename std::result_of<F(Args...)>::type> {
+        using RType = typename std::result_of<F(Args...)>::type;
+        auto handler = std::make_shared<std::packaged_task<RType()>>(
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+        );
+
+        std::future<RType> fut = handler->get_future();
+        {
+            std::unique_lock<std::mutex> lck(mutex_);
+            if (terminated_) {
+                throw std::runtime_error("Pool already terminated");
+            }
+            queue_.emplace([handler](){(*handler)();});
+        }
+        cond_.notify_one();
+        return fut;
+     }
+
+     ~Pool() {
+         {
+             std::unique_lock<std::mutex> lck(mutex_);
+             terminated_ = true;
+         }
+         cond_.notify_all();
+         for (auto& w : workers_) {
+             w.join();
+         }
+         std::cout << "Pool destoryed" << std::endl;
+     }
+
+ private:
+     void
+     WorkThread() {
+         for(;;) {
+            Handler handler;
+            {
+                std::unique_lock<std::mutex> lck(mutex_);
+                std::cout << "WorkThread-" << std::this_thread::get_id() << std::endl;
+                cond_.wait(lck, [this]{
+                    return terminated_ || !queue_.empty();
+                });
+
+                if (terminated_) {
+                    break;
+                }
+                handler = std::move(queue_.front());
+                queue_.pop();
+            }
+            handler();
+         }
+     }
+     std::vector<std::thread> workers_;
+     std::queue<Handler> queue_;
+     std::condition_variable cond_;
+     std::mutex mutex_;
+     std::atomic_bool terminated_ = false;
+};
 
 class Server {
  public:
@@ -21,6 +96,9 @@ class Server {
 
      void
      ShutDown() {
+         /* for (auto& t : ts_) { */
+         /*     t.join(); */
+         /* } */
          boost::system::error_code ec;
          timer_.cancel();
          if (ec) {
@@ -37,6 +115,12 @@ class Server {
      void
      Reschedule() {
          std::cout << "Reschedule " << std::endl;
+         auto t = std::thread([]() {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::cout << "New thread to handle req done" << std::endl;
+         });
+         t.detach();
+         /* ts_.push_back(std::move(t)); */
          boost::system::error_code ec;
          auto new_expires = timer_.expires_at() + interval;
          timer_.expires_at(new_expires, ec);
@@ -47,9 +131,28 @@ class Server {
      }
 
      aio::deadline_timer timer_;
+     std::vector<std::thread> ts_;
 };
 
 int main() {
+    auto pool = Pool(2);
+    auto fut1 = pool.Enqueue([](int sec){
+        std::this_thread::sleep_for(std::chrono::seconds(sec));
+        std::cout << "Sleep " << sec << std::endl;
+    }, 1);
+    auto fut2 = pool.Enqueue([](int sec){
+        std::this_thread::sleep_for(std::chrono::seconds(sec));
+        std::cout << "Sleep " << sec << std::endl;
+    }, 1);
+    auto fut3 = pool.Enqueue([](int sec){
+        std::this_thread::sleep_for(std::chrono::seconds(sec));
+        std::cout << "Sleep " << sec << std::endl;
+    }, 1);
+
+    fut1.get();
+    fut2.get();
+    fut3.get();
+    return 0;
     aio::io_service io_service;
     Server server(&io_service);
     server.Start();
