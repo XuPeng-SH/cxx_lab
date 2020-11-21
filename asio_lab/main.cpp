@@ -84,9 +84,11 @@ class Pool {
      std::atomic_bool terminated_ = false;
 };
 
+using PoolPtr = std::shared_ptr<Pool>;
+
 class Server {
  public:
-     Server(aio::io_service* io) : timer_(*io, interval) {}
+     Server(aio::io_service* io, PoolPtr pool) : timer_(*io, interval), pool_(pool) {}
 
      bool
      Start() {
@@ -96,9 +98,6 @@ class Server {
 
      void
      ShutDown() {
-         /* for (auto& t : ts_) { */
-         /*     t.join(); */
-         /* } */
          boost::system::error_code ec;
          timer_.cancel();
          if (ec) {
@@ -115,12 +114,12 @@ class Server {
      void
      Reschedule() {
          std::cout << "Reschedule " << std::endl;
-         auto t = std::thread([]() {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            std::cout << "New thread to handle req done" << std::endl;
-         });
-         t.detach();
-         /* ts_.push_back(std::move(t)); */
+         auto f = [](int ms) {
+            auto id = std::this_thread::get_id();
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+            std::cout << "[" << id << "] Sleep for " << ms << " ms" << std::endl;
+         };
+         pool_->Enqueue(f, 100);
          boost::system::error_code ec;
          auto new_expires = timer_.expires_at() + interval;
          timer_.expires_at(new_expires, ec);
@@ -131,30 +130,31 @@ class Server {
      }
 
      aio::deadline_timer timer_;
-     std::vector<std::thread> ts_;
+     PoolPtr pool_;
 };
 
 int main() {
-    auto pool = Pool(2);
-    auto fut1 = pool.Enqueue([](int sec){
-        std::this_thread::sleep_for(std::chrono::seconds(sec));
-        std::cout << "Sleep " << sec << std::endl;
-    }, 1);
-    auto fut2 = pool.Enqueue([](int sec){
-        std::this_thread::sleep_for(std::chrono::seconds(sec));
-        std::cout << "Sleep " << sec << std::endl;
-    }, 1);
-    auto fut3 = pool.Enqueue([](int sec){
-        std::this_thread::sleep_for(std::chrono::seconds(sec));
-        std::cout << "Sleep " << sec << std::endl;
-    }, 1);
+    /* auto pool = Pool(2); */
+    /* auto fut1 = pool.Enqueue([](int sec){ */
+    /*     std::this_thread::sleep_for(std::chrono::seconds(sec)); */
+    /*     std::cout << "Sleep " << sec << std::endl; */
+    /* }, 1); */
+    /* auto fut2 = pool.Enqueue([](int sec){ */
+    /*     std::this_thread::sleep_for(std::chrono::seconds(sec)); */
+    /*     std::cout << "Sleep " << sec << std::endl; */
+    /* }, 1); */
+    /* auto fut3 = pool.Enqueue([](int sec){ */
+    /*     std::this_thread::sleep_for(std::chrono::seconds(sec)); */
+    /*     std::cout << "Sleep " << sec << std::endl; */
+    /* }, 1); */
 
-    fut1.get();
-    fut2.get();
-    fut3.get();
-    return 0;
+    /* fut1.get(); */
+    /* fut2.get(); */
+    /* fut3.get(); */
+    /* return 0; */
+    auto pool = std::make_shared<Pool>(5);
     aio::io_service io_service;
-    Server server(&io_service);
+    Server server(&io_service, pool);
     server.Start();
     boost::system::error_code ec;
     io_service.run(ec);
