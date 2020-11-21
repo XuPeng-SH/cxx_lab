@@ -13,7 +13,7 @@
 
 namespace aio = boost::asio;
 using error_code = boost::system::error_code;
-auto interval = boost::posix_time::seconds(1);
+auto interval = boost::posix_time::milliseconds(100);
 
 using Handler = std::function<void(void)>;
 
@@ -35,10 +35,14 @@ class Pool {
         std::future<RType> fut = handler->get_future();
         {
             std::unique_lock<std::mutex> lck(mutex_);
+            cond_.wait(lck, [this]{
+                return terminated_ || (queue_.size() < 8);
+            });
             if (terminated_) {
                 throw std::runtime_error("Pool already terminated");
             }
             queue_.emplace([handler](){(*handler)();});
+            std::cout << "Queue Size: " << queue_.size() << std::endl;
         }
         cond_.notify_one();
         return fut;
@@ -73,6 +77,7 @@ class Pool {
                 }
                 handler = std::move(queue_.front());
                 queue_.pop();
+                cond_.notify_one();
             }
             handler();
          }
@@ -119,7 +124,7 @@ class Server {
             std::this_thread::sleep_for(std::chrono::milliseconds(ms));
             std::cout << "[" << id << "] Sleep for " << ms << " ms" << std::endl;
          };
-         pool_->Enqueue(f, 100);
+         pool_->Enqueue(f, 800);
          boost::system::error_code ec;
          auto new_expires = timer_.expires_at() + interval;
          timer_.expires_at(new_expires, ec);
@@ -152,7 +157,7 @@ int main() {
     /* fut2.get(); */
     /* fut3.get(); */
     /* return 0; */
-    auto pool = std::make_shared<Pool>(5);
+    auto pool = std::make_shared<Pool>(4);
     aio::io_service io_service;
     Server server(&io_service, pool);
     server.Start();
