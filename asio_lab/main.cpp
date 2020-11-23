@@ -10,6 +10,7 @@
 #include <mutex>
 #include <atomic>
 #include <future>
+#include <csignal>
 
 namespace aio = boost::asio;
 using error_code = boost::system::error_code;
@@ -141,6 +142,7 @@ class Server {
          if (ec) {
              std::cout << "Fail to cancel: " << ec << std::endl;
          }
+         std::cout << "Executing ShutDown" << std::endl;
      }
 
  private:
@@ -173,7 +175,22 @@ class Server {
      std::vector<TimerHandlerPtr> handlers_;
 };
 
+Handler signal_func = nullptr;
+
+void
+HandleSignal(int signum) {
+    switch (signum) {
+        default:
+            std::cout << "Received Sig: " << signum << std::endl;
+            if (signal_func) {
+                signal_func();
+            }
+            exit(0);
+    }
+}
+
 int main() {
+    signal(SIGINT, HandleSignal);
     /* auto pool = Pool(2); */
     /* auto fut1 = pool.Enqueue([](int sec){ */
     /*     std::this_thread::sleep_for(std::chrono::seconds(sec)); */
@@ -195,6 +212,9 @@ int main() {
     auto pool = std::make_shared<Pool>(4);
     aio::io_service io_service;
     Server server(&io_service, pool);
+    signal_func = [&server]() {
+        server.ShutDown();
+    };
     server.RegisterTimerHandler(100, [](const boost::system::error_code&) {
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
         std::cout << "T1 EXE " << std::this_thread::get_id() << std::endl;
@@ -205,6 +225,7 @@ int main() {
     });
     server.Start();
     boost::system::error_code ec;
+
     io_service.run(ec);
     if (ec) {
         std::cout << "IO service run failed: " << ec << std::endl;
