@@ -91,14 +91,47 @@ class Pool {
 
 using PoolPtr = std::shared_ptr<Pool>;
 
+using THandlerT = std::function<void(const boost::system::error_code&)>;
+
+struct TimerHandler {
+    TimerHandler(aio::io_service& io, int interval_ms, THandlerT h, PoolPtr executors) :
+        interval(interval_ms), timer(io, interval), handler(h), pool(executors) {}
+    boost::posix_time::milliseconds interval;
+    aio::deadline_timer timer;
+    THandlerT handler;
+    PoolPtr pool;
+
+    void
+    Reschedule(const boost::system::error_code& e) {
+        pool->Enqueue(handler, e);
+        boost::system::error_code ec;
+        auto new_expires = timer.expires_at() + interval;
+        timer.expires_at(new_expires, ec);
+        if (ec) {
+            std::cout << "Fail to Reschedule: " << ec << std::endl;
+        }
+        timer.async_wait(std::bind(&TimerHandler::Reschedule, this, std::placeholders::_1));
+    }
+};
+
+using TimerHandlerPtr = std::shared_ptr<TimerHandler>;
+
 class Server {
  public:
-     Server(aio::io_service* io, PoolPtr pool) : timer_(*io, interval), pool_(pool) {}
+     Server(aio::io_service* io, PoolPtr pool) : io_(io), timer_(*io, interval), pool_(pool) {}
+
+     void
+     RegisterTimerHandler(int interval_ms, THandlerT h) {
+         handlers_.emplace_back(std::make_shared<TimerHandler>(*io_, interval_ms, h, pool_));
+     }
 
      bool
      Start() {
          std::cout << "Start server" << std::endl;
-         timer_.async_wait(std::bind(&Server::Refresh, this, std::placeholders::_1));
+         /* timer_.async_wait(std::bind(&Server::Refresh, this, std::placeholders::_1)); */
+         for (auto& th : handlers_) {
+             th->timer.async_wait(std::bind(&TimerHandler::Reschedule, th, std::placeholders::_1));
+         }
      }
 
      void
@@ -134,8 +167,10 @@ class Server {
          timer_.async_wait(std::bind(&Server::Refresh, this, std::placeholders::_1));
      }
 
+     aio::io_service* io_;
      aio::deadline_timer timer_;
      PoolPtr pool_;
+     std::vector<TimerHandlerPtr> handlers_;
 };
 
 int main() {
@@ -160,6 +195,14 @@ int main() {
     auto pool = std::make_shared<Pool>(4);
     aio::io_service io_service;
     Server server(&io_service, pool);
+    server.RegisterTimerHandler(100, [](const boost::system::error_code&) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        std::cout << "T1 EXE " << std::this_thread::get_id() << std::endl;
+    });
+    server.RegisterTimerHandler(100, [](const boost::system::error_code&) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        std::cout << "T2 EXE " << std::this_thread::get_id() << std::endl;
+    });
     server.Start();
     boost::system::error_code ec;
     io_service.run(ec);
