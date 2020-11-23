@@ -91,39 +91,44 @@ class Pool {
 };
 
 using PoolPtr = std::shared_ptr<Pool>;
+using ThreadPoolPtr = std::shared_ptr<Pool>;
 
-using THandlerT = std::function<void(const boost::system::error_code&)>;
-
-struct TimerHandler {
-    TimerHandler(aio::io_service& io, int interval_ms, THandlerT h, PoolPtr executors) :
-        interval(interval_ms), timer(io, interval), handler(h), pool(executors) {}
-    boost::posix_time::milliseconds interval;
-    aio::deadline_timer timer;
-    THandlerT handler;
-    PoolPtr pool;
+struct TimerContext {
+    using HandlerT =std::function<void(const boost::system::error_code&)>;
+    TimerContext(boost::asio::io_service& io, int interval_us, HandlerT& handler, ThreadPoolPtr pool)
+        : io_(io), interval_(interval_us), handler_(handler), timer_(io, interval_), pool_(pool) {}
 
     void
-    Reschedule(const boost::system::error_code& e) {
-        pool->Enqueue(handler, e);
-        boost::system::error_code ec;
-        auto new_expires = timer.expires_at() + interval;
-        timer.expires_at(new_expires, ec);
-        if (ec) {
-            std::cout << "Fail to Reschedule: " << ec << std::endl;
-        }
-        timer.async_wait(std::bind(&TimerHandler::Reschedule, this, std::placeholders::_1));
-    }
+    Reschedule(const boost::system::error_code& ec);
+
+    boost::asio::io_service& io_;
+    boost::posix_time::microseconds interval_;
+    boost::asio::deadline_timer timer_;
+    HandlerT handler_;
+    ThreadPoolPtr pool_;
 };
 
-using TimerHandlerPtr = std::shared_ptr<TimerHandler>;
+void
+TimerContext::Reschedule(const boost::system::error_code& ec) {
+    pool_->Enqueue(handler_, ec);
+    boost::system::error_code e;
+    auto new_expires = timer_.expires_at() + interval_;
+    timer_.expires_at(new_expires, e);
+    if (e) {
+        std::cout << "Fail to Reschedule: " << e << std::endl;
+    }
+    timer_.async_wait(std::bind(&TimerContext::Reschedule, this, std::placeholders::_1));
+}
+
+using TimerContextPtr = std::shared_ptr<TimerContext>;
 
 class Server {
  public:
      Server(aio::io_service* io, PoolPtr pool) : io_(io), timer_(*io, interval), pool_(pool) {}
 
      void
-     RegisterTimerHandler(int interval_ms, THandlerT h) {
-         handlers_.emplace_back(std::make_shared<TimerHandler>(*io_, interval_ms, h, pool_));
+     RegisterTimerHandler(int interval_ms, TimerContext::HandlerT h) {
+         handlers_.emplace_back(std::make_shared<TimerContext>(*io_, interval_ms, h, pool_));
      }
 
      bool
@@ -131,7 +136,7 @@ class Server {
          std::cout << "Start server" << std::endl;
          /* timer_.async_wait(std::bind(&Server::Refresh, this, std::placeholders::_1)); */
          for (auto& th : handlers_) {
-             th->timer.async_wait(std::bind(&TimerHandler::Reschedule, th, std::placeholders::_1));
+             th->timer_.async_wait(std::bind(&TimerContext::Reschedule, th, std::placeholders::_1));
          }
      }
 
@@ -172,7 +177,8 @@ class Server {
      aio::io_service* io_;
      aio::deadline_timer timer_;
      PoolPtr pool_;
-     std::vector<TimerHandlerPtr> handlers_;
+     std::vector<TimerContextPtr> handlers_;
+     /* std::vector<TimerHandlerPtr> handlers_; */
 };
 
 Handler signal_func = nullptr;
