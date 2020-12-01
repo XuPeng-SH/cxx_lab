@@ -9,7 +9,7 @@
 #include <string.h>
 #include <string>
 
-#include "utc.h"
+#include "ns.h"
 
 #define STACK_SIZE (1024*1024)
 static char child_stack[STACK_SIZE];
@@ -37,5 +37,15 @@ int utc_main() {
             NULL);
     waitpid(child_pid, NULL, 0);
     printf("UTC main end\n");
+    return 0;
+}
+
+int ipc_utc_main() {
+    printf("IPC-UTC main start: \n");
+    int child_pid = clone(child_main, child_stack + STACK_SIZE,
+            SIGCHLD | CLONE_NEWUTS | CLONE_NEWIPC,
+            NULL);
+    waitpid(child_pid, NULL, 0);
+    printf("IPC-UTC main end\n");
     return 0;
 }
