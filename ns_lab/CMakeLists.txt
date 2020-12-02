@@ -21,6 +21,7 @@ add_executable(ns_lab ${src})
 
 set(lab_libs
     gflags
+    cap
     pthread
     boost_system
     )
