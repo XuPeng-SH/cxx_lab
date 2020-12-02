@@ -59,3 +59,13 @@ int pid_ipc_utc_main() {
     printf("PID-IPC-UTC main end\n");
     return 0;
 }
+
+int ns_pid_ipc_utc_main() {
+    printf("NS-PID-IPC-UTC main start: \n");
+    int child_pid = clone(child_main, child_stack + STACK_SIZE,
+            SIGCHLD | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWNS,
+            NULL);
+    waitpid(child_pid, NULL, 0);
+    printf("NS-PID-IPC-UTC main end\n");
+    return 0;
+}
