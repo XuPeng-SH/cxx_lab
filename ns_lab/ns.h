@@ -2,3 +2,4 @@
 
 int utc_main();
 int ipc_utc_main();
+int pid_ipc_utc_main();

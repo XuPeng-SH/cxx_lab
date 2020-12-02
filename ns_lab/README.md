@@ -36,7 +36,7 @@ key        msqid      owner      perms      used-bytes   messages
 
 3. Run program
 ```bash
->>> ./ns_lab -main=ipc_utc
+>>> ./ns_lab -main=i_u
 ```
 
 4. Show ipc queues in new utc. No queue is expected.
@@ -52,3 +52,21 @@ key        msqid      owner      perms      used-bytes   messages
 ```bash
 >>> ipcrm -q 0
 ```
+
+### PID IPC UTC
+> This case will show how to start a new pid, ipc and utc env
+
+#### Steps
+
+1. Run program
+```bash
+>>> ./ns_lab -main=p_i_u
+```
+
+2. Show pid number in new shell. It should be 1. If w/o CLONE_NEWPID, the pid should be a large number
+```bash
+>>> echo $$
+1
+```
+
+3. Exit program

@@ -11,8 +11,13 @@ int main(int argc, char** argv) {
     int ret = 0;
     if (FLAGS_main == "utc") {
         ret = utc_main();
-    } else if (FLAGS_main == "ipc_utc") {
+    } else if (FLAGS_main == "i_u") {
         ret = ipc_utc_main();
+    } else if (FLAGS_main == "p_i_u") {
+        ret = pid_ipc_utc_main();
+    } else {
+        cout << "Error: Bad main=" << FLAGS_main << endl;
+        cout << "Candidates: utc, i_u, p_i_u" << endl;
     }
     return ret;
 }

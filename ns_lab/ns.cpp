@@ -49,3 +49,13 @@ int ipc_utc_main() {
     printf("IPC-UTC main end\n");
     return 0;
 }
+
+int pid_ipc_utc_main() {
+    printf("PID-IPC-UTC main start: \n");
+    int child_pid = clone(child_main, child_stack + STACK_SIZE,
+            SIGCHLD | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID,
+            NULL);
+    waitpid(child_pid, NULL, 0);
+    printf("PID-IPC-UTC main end\n");
+    return 0;
+}
