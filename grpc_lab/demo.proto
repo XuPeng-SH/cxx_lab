@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package demo.grpc;
+
+message Index {
+    int32 index_type = 1;
+    string index_name = 2;
+}
+
+message QueryParam {
+    int32 index_type = 1;
+}
+
+service MyService {
+    rpc Get(QueryParam) returns (Index) {}
+}
