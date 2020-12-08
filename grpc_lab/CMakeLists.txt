@@ -6,11 +6,13 @@ aux_source_directory(./ source_files)
 
 include_directories(/usr/include)
 include_directories(/usr/local/include)
+include_directories(/home/xupeng/libs/third-party/install/include)
 
 link_directories(/usr/lib/gcc/x86_64-linux-gnu/5/
     /usr/lib/x86_64-linux-gnu
     /usr/lib
     /usr/local/lib
+    /home/xupeng/libs/third-party/install/lib/
     )
 
 set(src ${source_files})

@@ -1,5 +1,7 @@
 #include <iostream>
 #include <gflags/gflags.h>
+#include <chrono>
+#include <thread>
 
 #include "server.h"
 #include "async_client.h"
@@ -19,13 +21,25 @@ int main(int argc, char** argv) {
         server.Run();
     } else if (FLAGS_mode == "client") {
         auto client = AsyncClient::Build(FLAGS_host, FLAGS_port);
-        auto resp = client->GetIndex(FLAGS_index);
-        if (not resp) {
-            cout << "[Request][Index]: " << FLAGS_index << " --> " << " [No Response]" << endl;
-        } else {
-            cout << "[Request][Index]: " << FLAGS_index << " --> " << " [";
-            cout << resp->name << "][";
-            cout << resp->index << "]" << endl;
+        {
+            client->Run();
+            std::cout << "Start to sending" << std::endl;
+            for (auto i = 1; i < 10; ++i) {
+                auto resp = client->AsyncGetIndex(i, FLAGS_index + i);
+                /* resp->ctx.TryCancel(); */
+            }
+            std::cout << "Sent" << std::endl;
+            client->Stop();
+        }
+        {
+            /* auto resp = client->GetIndex(FLAGS_index); */
+            /* if (not resp) { */
+            /*     cout << "[Request][Index]: " << FLAGS_index << " --> " << " [No Response]" << endl; */
+            /* } else { */
+            /*     cout << "[Request][Index]: " << FLAGS_index << " --> " << " ["; */
+            /*     cout << resp->name << "]["; */
+            /*     cout << resp->index << "]" << endl; */
+            /* } */
         }
     } else {
         cerr << "FLAGS_mode: " << FLAGS_mode << " is invalid!" << endl;

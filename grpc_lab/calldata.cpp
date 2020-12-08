@@ -1,6 +1,8 @@
 #include "calldata.h"
 #include <assert.h>
 #include <string>
+#include <chrono>
+#include <thread>
 
 using ::grpc::Status;
 
@@ -22,6 +24,7 @@ CallData::OnProcess() {
     new CallData(service_, cq_);
     response_.set_index_type(request_.index_type());
     response_.set_index_name("index_" + std::to_string(request_.index_type()));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     status_ = FINISH;
     responder_.Finish(response_, Status::OK, this);
 }
