@@ -48,16 +48,41 @@ struct Employee {
 void complex_multi_index_lab() {
     using EmployeeContainer = boost::multi_index_container<Employee,
           boost::multi_index::indexed_by<
-              boost::multi_index::ordered_unique<boost::multi_index::identity<Employee>>,
+              boost::multi_index::ordered_non_unique<
+                boost::multi_index::tag<Employee>,
+                boost::multi_index::identity<Employee>
+              >,
               boost::multi_index::ordered_non_unique<boost::multi_index::member<Employee, std::string, &Employee::name>>
           >
     >;
 
     EmployeeContainer employees;
-    employees.insert({2, "xp"});
-    employees.insert({1, "zh"});
-    employees.insert({3, "na"});
-    employees.insert({4, "oh"});
+    employees.insert({4, "xp"});
+    employees.insert({2, "zh"});
+    employees.insert({6, "na"});
+    employees.insert({8, "oh"});
+
+    auto& index = employees.get<Employee>();
+    Employee e;
+    e.id = 5;
+    std::cout << "count for id=" << e.id << " is " << index.count(e) << std::endl;
+
+    auto it = index.lower_bound(e);
+    if (it != index.end()) {
+        std::cout << "find lower_bound for target " << e.id << std::endl;
+        std::cout << "find lower_bound for real " << it->id << std::endl;
+    }
+
+    std::cout << "employees pre erase size = " << employees.size() << std::endl;
+    employees.erase(index.begin(), it);
+    std::cout << "employees post erase size = " << employees.size() << std::endl;
+
+    e.id = 10;
+    it = index.lower_bound(e);
+    if (it != index.end()) {
+        std::cout << "find lower_bound for target " << e.id << std::endl;
+        std::cout << "find lower_bound for real " << it->id << std::endl;
+    }
 
     for (auto& e : employees) {
         std::cout << "complex rank id " << e.id << " " << e.name << std::endl;
