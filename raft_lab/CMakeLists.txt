@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(FollyLab)
+project(Raftlab)
 set(CMAKE_CXX_STANDARD 17)
 
 aux_source_directory(./ source_files)
@@ -18,10 +18,13 @@ link_directories(/usr/lib/gcc/x86_64-linux-gnu/5/
 set(src ${source_files})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -fPIC")
 
-add_executable(folly_lab ${src})
+add_executable(raft_lab ${src})
 
 set(lab_libs
     folly
+    protobuf
+    grpc
+    grpc++
     pthread
     glog
     gflags
@@ -32,4 +35,4 @@ set(lab_libs
     event_core
     )
 
-target_link_libraries(folly_lab ${lab_libs})
+target_link_libraries(raft_lab ${lab_libs})
