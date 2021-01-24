@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <memory.h>
 
 using namespace std;
 constexpr const char* PROMPT = "db > ";
@@ -47,6 +48,36 @@ process_cmd(const string& cmd) {
     }
     return status;
 }
+
+struct UserSchema {
+    constexpr static const uint16_t NameSize = 32;
+    constexpr static const uint16_t EMailSize = 255;
+    uint32_t id;
+    char username[NameSize];
+    char email[EMailSize];
+
+    void
+    SetUserName(const char* un) {
+        memset(username, 0, NameSize);
+        if (!un) return;
+        strncpy(username, un, sizeof(username));
+    }
+    void
+    SetEmail(const char* e) {
+        memset(email, 0, EMailSize);
+        if (!e) return;
+        strncpy(email, e, sizeof(email));
+    }
+
+    void
+    SerializeTo(void* destination) const {
+        memcpy(destination, this, sizeof(UserSchema));
+    }
+    void
+    DeserializeFrom(void* source) {
+        memcpy((void*)this, source, sizeof(UserSchema));
+    }
+};
 
 Status
 prepare_select_st(const string& st, Statement& out) {
@@ -105,22 +136,52 @@ process_input(const string& input, Statement& out) {
 }
 
 int main(int argc, char** argv) {
-    while (true) {
-        cout << PROMPT;
-        string input;
-        getline(cin, input);
-        Statement st;
-        auto status = process_input(input, st);
-        if (!status.ok()) {
-            if (status.type == StatusType::EXIT) {
-                cout << PROMPT << status.err_msg << endl;
-                break;
-            } else {
-                cout << PROMPT << status.err_msg << endl;
-            }
-            continue;
-        }
-        status = execute_statement(st);
-    }
+    cout << "size of UserSchema is: " << sizeof(UserSchema) << endl;
+    char buff[1000];
+    memset(buff, 0, 1000);
+
+    UserSchema user1;
+    user1.id = 1;
+    user1.SetUserName("XuPeng");
+    user1.SetEmail("xupeng3112@163.com");
+    user1.SerializeTo(buff);
+
+    UserSchema user2;
+    user2.id = 2;
+    user2.SetUserName("Nana");
+    user2.SetEmail("nana@163.com");
+    user2.SerializeTo(buff + sizeof(UserSchema));
+
+    UserSchema other1, other2;
+    other1.DeserializeFrom(buff);
+    other2.DeserializeFrom(buff + sizeof(UserSchema));
+    cout << "user1.username=" << user1.username << endl;
+    cout << "user1.email=" << user1.email << endl;
+    cout << "user2.username=" << user2.username << endl;
+    cout << "user2.email=" << user2.email << endl;
+
+    cout << "other1.username=" << other1.username << endl;
+    cout << "other1.email=" << other1.email << endl;
+    cout << "other2.username=" << other2.username << endl;
+    cout << "other2.email=" << other2.email << endl;
+
+
+    /* while (true) { */
+    /*     cout << PROMPT; */
+    /*     string input; */
+    /*     getline(cin, input); */
+    /*     Statement st; */
+    /*     auto status = process_input(input, st); */
+    /*     if (!status.ok()) { */
+    /*         if (status.type == StatusType::EXIT) { */
+    /*             cout << PROMPT << status.err_msg << endl; */
+    /*             break; */
+    /*         } else { */
+    /*             cout << PROMPT << status.err_msg << endl; */
+    /*         } */
+    /*         continue; */
+    /*     } */
+    /*     status = execute_statement(st); */
+    /* } */
     return 0;
 }
