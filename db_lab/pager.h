@@ -8,6 +8,7 @@
 
 #include "consts.h"
 #include "status.h"
+#include "user_schema.h"
 
 struct Pager {
     constexpr static const uint32_t PAGE_SIZE = 4 * 1024;

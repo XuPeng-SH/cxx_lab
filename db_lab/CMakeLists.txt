@@ -19,6 +19,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -fPIC")
 add_executable(db_lab ${src})
 
 set(lab_libs
+    gflags
     pthread
     )
 

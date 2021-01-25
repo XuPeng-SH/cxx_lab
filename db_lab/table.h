@@ -4,6 +4,7 @@
 #include <string>
 
 #include "status.h"
+#include "pager.h"
 
 struct Table : public std::enable_shared_from_this<Table> {
     uint32_t num_rows;
@@ -60,19 +61,26 @@ struct Table : public std::enable_shared_from_this<Table> {
         bool end_of_table;
     };
 
+    void
+    Append(UserSchema& row) {
+        auto c = LastCursor();
+        row.SerializeTo(c->Value());
+        num_rows += 1;
+    }
+
     std::shared_ptr<Cursor>
     StartCursor() {
         auto c = std::make_shared<Cursor>();
         c->table = shared_from_this();
         c->row_num = 0;
-        c->end_of_table = (c->table->num_rows == 0);
+        c->end_of_table = (num_rows == 0);
         return c;
     }
     std::shared_ptr<Cursor>
     LastCursor() {
         auto c = std::make_shared<Cursor>();
         c->table = shared_from_this();
-        c->row_num = c->table->num_rows;
+        c->row_num = num_rows;
         c->end_of_table = true;
         return c;
     }
