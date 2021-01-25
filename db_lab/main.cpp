@@ -2,6 +2,11 @@
 #include <string>
 #include <memory.h>
 #include <vector>
+#include <memory>
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 
 using namespace std;
 constexpr const char* PROMPT = "db > ";
@@ -20,6 +25,12 @@ enum StatusType {
     INVALID_CMD,
     INVALID_ST,
     ILLIGLE_ST,
+
+    PAGE_NUM_OVERFLOW,
+    PAGE_LOAD_ERR,
+
+    CURSOR_END_OF_FILE,
+
     OK,
     EMPTY,
     EXIT
@@ -43,6 +54,179 @@ struct Statement {
     StatementType type = StatementType::INVALID;
     string st;
 };
+
+struct UserSchema {
+    constexpr static const uint16_t NameSize = 32;
+    constexpr static const uint16_t EMailSize = 255;
+    uint32_t id;
+    char username[NameSize];
+    char email[EMailSize];
+
+    void
+    SetUserName(const char* un) {
+        memset(username, 0, NameSize);
+        if (!un) return;
+        strncpy(username, un, sizeof(username));
+    }
+    void
+    SetEmail(const char* e) {
+        memset(email, 0, EMailSize);
+        if (!e) return;
+        strncpy(email, e, sizeof(email));
+    }
+
+    void
+    SerializeTo(void* destination) const {
+        memcpy(destination, this, sizeof(UserSchema));
+    }
+    void
+    DeserializeFrom(void* source) {
+        memcpy((void*)this, source, sizeof(UserSchema));
+    }
+};
+
+struct Pager {
+    constexpr static const uint32_t PAGE_SIZE = 4 * 1024;
+    constexpr static const uint32_t MAX_PAGES = MAX_STORE_SIZE / PAGE_SIZE;
+    constexpr static const uint32_t ROWS_PER_PAGE = PAGE_SIZE / sizeof(UserSchema);
+
+    static shared_ptr<Pager>
+    Open(const string& db_path) {
+        auto fd = open(db_path.c_str(), O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
+        if (fd == -1) {
+            cerr << "Cannot open \"" << db_path << "\"" << endl;
+            return nullptr;
+        }
+        auto pager = make_shared<Pager>();
+        pager->file_descriptor = fd;
+        pager->file_length = lseek(pager->file_descriptor, 0, SEEK_END);
+        memset(pager->pages, 0, MAX_PAGES * sizeof(void*));
+        return pager;
+    }
+
+    Status
+    OnPageMissing(const uint32_t& num) {
+        Status status;
+        pages[num] = calloc(PAGE_SIZE, 1);
+        auto all_page_num = file_length / PAGE_SIZE;
+        if (num < all_page_num) {
+            lseek(file_descriptor, num * PAGE_SIZE, SEEK_SET);
+            auto read_size = read(file_descriptor, pages[num], PAGE_SIZE);
+            if (read_size == -1) {
+                status.type = StatusType::PAGE_LOAD_ERR;
+                status.err_msg = string("PAGE_LOAD_ERR: load page ") + to_string(num);
+                return status;
+            }
+        }
+
+        return status;
+    }
+
+    Status
+    GetPage(uint32_t num, void*& page) {
+        Status status;
+        if (num > MAX_PAGES) {
+            status.type = StatusType::PAGE_NUM_OVERFLOW;
+            status.err_msg = string("PAGE_NUM_OVERFLOW: ") + to_string(num);
+        }
+
+        if (pages[num] == nullptr) {
+            status = OnPageMissing(num);
+        }
+
+        if (!status.ok()) {
+            return status;
+        }
+
+        page = pages[num];
+
+        return status;
+    }
+
+    ~Pager() {
+        if (file_descriptor != -1) {
+            close(file_descriptor);
+        }
+        for (auto& page : pages) {
+            if (page != nullptr) {
+                free(page);
+                page = nullptr;
+            }
+        }
+    }
+
+    int file_descriptor = -1;
+    uint32_t file_length;
+    void* pages[MAX_PAGES];
+};
+
+struct Table : public enable_shared_from_this<Table> {
+    uint32_t num_rows;
+    shared_ptr<Pager> pager = nullptr;
+    static shared_ptr<Table>
+    Open(const string db_path) {
+        auto pager = Pager::Open(db_path);
+        /* if (!pager) { */
+        /*     return nullptr; */
+        /* } */
+        auto table = make_shared<Table>();
+        table->pager = pager;
+        table->num_rows = pager->file_length / sizeof(UserSchema);
+        return table;
+    }
+
+    struct Cursor {
+        void*
+        Value() {
+            uint32_t page_num = row_num / Pager::PAGE_SIZE;
+            void* page;
+            auto status = table->pager->GetPage(page_num, page);
+            if (!status.ok()) {
+                return nullptr;
+            }
+            uint32_t row_offset = row_num % Pager::ROWS_PER_PAGE;
+            uint32_t byte_offset = row_offset * sizeof(UserSchema);
+            return (char*)page + byte_offset;
+        }
+
+        Status
+        Advance() {
+            Status status;
+            if (end_of_table) {
+                status.type = StatusType::CURSOR_END_OF_FILE;
+                status.err_msg = "CURSOR_END_OF_FILE";
+                return status;
+            }
+            row_num += 1;
+            if (row_num == table->num_rows) {
+                end_of_table = true;
+            }
+            return status;
+        }
+
+        shared_ptr<Table> table;
+        uint32_t row_num;
+        bool end_of_table;
+    };
+
+    shared_ptr<Cursor>
+    StartCursor() {
+        auto c = make_shared<Cursor>();
+        c->table = shared_from_this();
+        c->row_num = 0;
+        c->end_of_table = (c->table->num_rows == 0);
+        return c;
+    }
+    shared_ptr<Cursor>
+    LastCursor() {
+        auto c = make_shared<Cursor>();
+        c->table = shared_from_this();
+        c->row_num = c->table->num_rows;
+        c->end_of_table = true;
+        return c;
+    }
+};
+
 
 class Tokener {
  public:
@@ -81,36 +265,6 @@ process_cmd(const string& cmd) {
     }
     return status;
 }
-
-struct UserSchema {
-    constexpr static const uint16_t NameSize = 32;
-    constexpr static const uint16_t EMailSize = 255;
-    uint32_t id;
-    char username[NameSize];
-    char email[EMailSize];
-
-    void
-    SetUserName(const char* un) {
-        memset(username, 0, NameSize);
-        if (!un) return;
-        strncpy(username, un, sizeof(username));
-    }
-    void
-    SetEmail(const char* e) {
-        memset(email, 0, EMailSize);
-        if (!e) return;
-        strncpy(email, e, sizeof(email));
-    }
-
-    void
-    SerializeTo(void* destination) const {
-        memcpy(destination, this, sizeof(UserSchema));
-    }
-    void
-    DeserializeFrom(void* source) {
-        memcpy((void*)this, source, sizeof(UserSchema));
-    }
-};
 
 Status
 store_row(const UserSchema& user) {
@@ -253,33 +407,52 @@ int main(int argc, char** argv) {
     /* string line = "select 1 2 3"; */
     /* Tokener::Parse(line); */
 
-    size_t pos = STORE_POS;
+    auto table = Table::Open("/tmp/xx");
+    void* page = nullptr;
+    cout << "addr page=" << page << endl;
+    auto status = table->pager->GetPage(1, page);
+    cout << status.type << endl;
+    cout << "addr page=" << page << endl;
 
-    while (true) {
-        cout << PROMPT;
-        string input;
-        getline(cin, input);
-        Statement st;
-        auto status = process_input(input, st);
-        if (!status.ok()) {
-            if (status.type == StatusType::EXIT) {
-                cout << PROMPT << status.err_msg << endl;
-                break;
-            } else {
-                cout << PROMPT << status.err_msg << endl;
-            }
-            continue;
-        }
-        status = execute_statement(st);
-        if (!status.ok()) {
-            cout << PROMPT << status.err_msg << endl;
-        }
-        if (pos != STORE_POS) {
-            UserSchema user;
-            user.DeserializeFrom(STORE + pos);
-            cout << "Detect new row: " << "id=" << user.id << " username=" << user.username << " email=" << user.email << endl;
-            pos = STORE_POS;
-        }
+    auto c =  table->StartCursor();
+    while (status.ok()) {
+        cout << "c->row_num=" << c->row_num << endl;
+        status = c->Advance();
     }
+    cout << "status " << status.err_msg << endl;
+
+
+    /* string hello = "hello"; */
+    /* auto written = write(table->pager->file_descriptor, hello.c_str(), hello.size()); */
+    /* cout << "written " << written << endl; */
+
+    /* size_t pos = STORE_POS; */
+
+    /* while (true) { */
+    /*     cout << PROMPT; */
+    /*     string input; */
+    /*     getline(cin, input); */
+    /*     Statement st; */
+    /*     auto status = process_input(input, st); */
+    /*     if (!status.ok()) { */
+    /*         if (status.type == StatusType::EXIT) { */
+    /*             cout << PROMPT << status.err_msg << endl; */
+    /*             break; */
+    /*         } else { */
+    /*             cout << PROMPT << status.err_msg << endl; */
+    /*         } */
+    /*         continue; */
+    /*     } */
+    /*     status = execute_statement(st); */
+    /*     if (!status.ok()) { */
+    /*         cout << PROMPT << status.err_msg << endl; */
+    /*     } */
+    /*     if (pos != STORE_POS) { */
+    /*         UserSchema user; */
+    /*         user.DeserializeFrom(STORE + pos); */
+    /*         cout << "Detect new row: " << "id=" << user.id << " username=" << user.username << " email=" << user.email << endl; */
+    /*         pos = STORE_POS; */
+    /*     } */
+    /* } */
     return 0;
 }
