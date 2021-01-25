@@ -192,6 +192,11 @@ struct Pager {
         return status;
     }
 
+    uint32_t
+    PageNums() const {
+        return file_length / PAGE_SIZE;
+    }
+
     ~Pager() {
         /* for (auto& page : pages) { */
         /*     if (page != nullptr) { */
@@ -221,7 +226,8 @@ struct Table : public enable_shared_from_this<Table> {
         /* } */
         auto table = make_shared<Table>();
         table->pager = pager;
-        table->num_rows = pager->file_length / sizeof(UserSchema);
+        /* table->num_rows = pager->file_length / sizeof(UserSchema); */
+        table->num_rows = pager->PageNums() * Pager::ROWS_PER_PAGE;
         return table;
     }
 
