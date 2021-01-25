@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sstream>
+#include <assert.h>
 
 
 using namespace std;
@@ -207,6 +208,7 @@ struct Pager {
         Close();
         if (file_descriptor != -1) {
             close(file_descriptor);
+            file_descriptor = -1;
         }
     }
 
@@ -435,64 +437,62 @@ process_input(const string& input, Statement& out) {
     return status;
 }
 
-int main(int argc, char** argv) {
-    /* cout << "size of UserSchema is: " << sizeof(UserSchema) << endl; */
-    /* char buff[1000]; */
-    /* memset(buff, 0, 1000); */
-
+void
+test_schema() {
+    char buff[1000];
+    memset(buff, 0, 1000);
     UserSchema user1;
     user1.id = 1;
     user1.SetUserName("XuPeng");
     user1.SetEmail("xupeng3112@163.com");
-    /* user1.SerializeTo(buff); */
+    user1.SerializeTo(buff);
 
     UserSchema user2;
     user2.id = 2;
     user2.SetUserName("Nana");
     user2.SetEmail("nana@163.com");
-    /* user2.SerializeTo(buff + sizeof(UserSchema)); */
+    user2.SerializeTo(buff + sizeof(UserSchema));
 
-    /* UserSchema other1, other2; */
-    /* other1.DeserializeFrom(buff); */
-    /* other2.DeserializeFrom(buff + sizeof(UserSchema)); */
-    /* cout << "user1.username=" << user1.username << endl; */
-    /* cout << "user1.email=" << user1.email << endl; */
-    /* cout << "user2.username=" << user2.username << endl; */
-    /* cout << "user2.email=" << user2.email << endl; */
+    UserSchema other1, other2;
+    other1.DeserializeFrom(buff);
+    other2.DeserializeFrom(buff + sizeof(UserSchema));
 
-    /* cout << "other1.username=" << other1.username << endl; */
-    /* cout << "other1.email=" << other1.email << endl; */
-    /* cout << "other2.username=" << other2.username << endl; */
-    /* cout << "other2.email=" << other2.email << endl; */
+    assert(other1.id == user1.id);
+    assert(other2.id == user2.id);
+}
+
+void
+test_table() {
+    auto table = Table::Open("/tmp/xx");
+    void* page = nullptr;
+    auto status = table->pager->GetPage(0, page);
+    assert(status.ok());
+    auto cursor = table->StartCursor();
+
+    UserSchema user1;
+    user1.id = 1;
+    user1.SetUserName("XuPeng");
+    user1.SetEmail("xupeng3112@163.com");
+
+    user1.SerializeTo(cursor->Value());
+
+    UserSchema user2;
+    user2.DeserializeFrom(cursor->Value());
+    assert(user1.id == user2.id);
+}
+
+int main(int argc, char** argv) {
+    test_schema();
+    test_table();
 
     /* string line = "select 1 2 3"; */
     /* Tokener::Parse(line); */
-
-    auto table = Table::Open("/tmp/xx");
-    void* page = nullptr;
-    cout << "addr page=" << page << endl;
-    auto status = table->pager->GetPage(0, page);
-    cout << status.type << endl;
-    cout << "addr page=" << page << endl;
-
-    /* auto c =  table->StartCursor(); */
-    /* user1.SerializeTo(c->Value()); */
-
-    /* UserSchema u3; */
-    /* u3.DeserializeFrom(c->Value()); */
-    /* cout << "u3.username=" << u3.username << endl; */
-    /* cout << "u3.email=" << u3.email << endl; */
 
     /* while (status.ok()) { */
     /*     cout << "c->row_num=" << c->row_num << endl; */
     /*     status = c->Advance(); */
     /* } */
     /* cout << "status " << status.err_msg << endl; */
-
-
-    /* string hello = "hello"; */
-    /* auto written = write(table->pager->file_descriptor, hello.c_str(), hello.size()); */
-    /* cout << "written " << written << endl; */
 
     /* size_t pos = STORE_POS; */
 
