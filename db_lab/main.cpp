@@ -84,13 +84,26 @@ prepare_statement(const string& st, Statement& out) {
 }
 
 Status
+execute_select(const Statement& st, shared_ptr<Table> table) {
+    Status status;
+    auto cursor = table->StartCursor();
+    while (!(cursor->end_of_table)) {
+        UserSchema row;
+        row.DeserializeFrom(cursor->Value());
+        cout << row.ToString() << endl;
+        cursor->Advance();
+    }
+
+    return status;
+}
+
+Status
 execute_statement(const Statement& st, shared_ptr<Table> table) {
     Status status;
     auto statements = Tokener::Parse(st.st);
     if (statements[0] == ST_SELECT) {
-
+        status = execute_select(st, table);
     } else if (statements[0] == ST_DELETE) {
-
     } else if (statements[0] == ST_INSERT) {
         if (statements.size() != 4) {
             status.type = StatusType::ILLIGLE_ST;

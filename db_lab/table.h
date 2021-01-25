@@ -30,7 +30,7 @@ struct Table : public std::enable_shared_from_this<Table> {
     struct Cursor {
         void*
         Value() {
-            uint32_t page_num = row_num / Pager::PAGE_SIZE;
+            uint32_t page_num = row_num / Pager::ROWS_PER_PAGE;
             void* page;
             auto status = table->pager->GetPage(page_num, page);
             if (!status.ok()) {
@@ -50,7 +50,7 @@ struct Table : public std::enable_shared_from_this<Table> {
                 return status;
             }
             row_num += 1;
-            if (row_num == table->num_rows) {
+            if (row_num >= table->num_rows) {
                 end_of_table = true;
             }
             return status;
