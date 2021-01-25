@@ -9,91 +9,16 @@
 #include <sstream>
 #include <assert.h>
 
+#include "consts.h"
+#include "status.h"
+#include "statement.h"
+#include "user_schema.h"
+
 
 using namespace std;
-constexpr const char* PROMPT = "db > ";
-constexpr const char* CMD_PREFIX = ".";
-constexpr const char* CMD_EXIT = ".exit";
-constexpr const char* ST_SELECT = "select";
-constexpr const char* ST_DELETE = "delete";
-constexpr const char* ST_INSERT = "insert";
-
-constexpr const size_t MAX_STORE_SIZE = 1024 * 1024 * 1024;
 
 static char STORE[MAX_STORE_SIZE];
 static size_t STORE_POS = 0;
-
-enum StatusType {
-    INVALID_CMD,
-    INVALID_ST,
-    ILLIGLE_ST,
-
-    PAGE_NUM_OVERFLOW,
-    PAGE_LOAD_ERR,
-    PAGE_FLUSH_ERR,
-
-    CURSOR_END_OF_FILE,
-
-    OK,
-    EMPTY,
-    EXIT
-};
-
-struct Status {
-    StatusType type = StatusType::OK;
-    string err_msg = "";
-    bool
-    ok() const { return type == StatusType::OK; }
-};
-
-enum StatementType {
-    INVALID,
-    SELECT,
-    DELETE,
-    INSERT
-};
-
-struct Statement {
-    StatementType type = StatementType::INVALID;
-    string st;
-};
-
-struct UserSchema {
-    constexpr static const uint16_t NameSize = 32;
-    constexpr static const uint16_t EMailSize = 255;
-    uint32_t id;
-    char username[NameSize];
-    char email[EMailSize];
-
-    void
-    SetUserName(const char* un) {
-        memset(username, 0, NameSize);
-        if (!un) return;
-        strncpy(username, un, sizeof(username));
-    }
-    void
-    SetEmail(const char* e) {
-        memset(email, 0, EMailSize);
-        if (!e) return;
-        strncpy(email, e, sizeof(email));
-    }
-
-    void
-    SerializeTo(void* destination) const {
-        memcpy(destination, this, sizeof(UserSchema));
-    }
-    void
-    DeserializeFrom(void* source) {
-        memcpy((void*)this, source, sizeof(UserSchema));
-    }
-
-    string
-    ToString() const {
-        stringstream ss;
-        ss << "(" << id << ", " << username << ", " << email << ")";
-        return ss.str();
-    }
-};
 
 struct Pager {
     constexpr static const uint32_t PAGE_SIZE = 4 * 1024;
