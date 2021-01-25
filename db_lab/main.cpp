@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sstream>
 
 
 using namespace std;
@@ -28,6 +29,7 @@ enum StatusType {
 
     PAGE_NUM_OVERFLOW,
     PAGE_LOAD_ERR,
+    PAGE_FLUSH_ERR,
 
     CURSOR_END_OF_FILE,
 
@@ -83,6 +85,13 @@ struct UserSchema {
     DeserializeFrom(void* source) {
         memcpy((void*)this, source, sizeof(UserSchema));
     }
+
+    string
+    ToString() const {
+        stringstream ss;
+        ss << "(" << id << ", " << username << ", " << email << ")";
+        return ss.str();
+    }
 };
 
 struct Pager {
@@ -104,6 +113,23 @@ struct Pager {
         return pager;
     }
 
+    void
+    Close() {
+        Status status;
+        for (auto num = 0; num < MAX_PAGES; ++num) {
+            if (pages[num] == nullptr) {
+                continue;
+            }
+            status = FlushPage(num);
+            if (!status.ok()) {
+                cerr << status.err_msg << endl;
+                continue;
+            }
+            free(pages[num]);
+            pages[num] = nullptr;
+        }
+    }
+
     Status
     OnPageMissing(const uint32_t& num) {
         Status status;
@@ -119,6 +145,29 @@ struct Pager {
             }
         }
 
+        return status;
+    }
+
+    Status
+    FlushPage(uint32_t num) {
+        Status status;
+        if (num > MAX_PAGES) {
+            status.type = PAGE_NUM_OVERFLOW;
+            status.err_msg = string("PAGE_NUM_OVERFLOW: ") + to_string(num);
+            return status;
+        }
+
+        if (pages[num] == nullptr) {
+            return status;
+        }
+
+        lseek(file_descriptor, num * PAGE_SIZE, SEEK_SET);
+        auto written = write(file_descriptor, pages[num], PAGE_SIZE);
+        if (written == -1) {
+            status.type = PAGE_FLUSH_ERR;
+            status.err_msg = string("PAGE_FLUSH_ERR: ") + to_string(num);
+            return status;
+        }
         return status;
     }
 
@@ -144,14 +193,15 @@ struct Pager {
     }
 
     ~Pager() {
+        /* for (auto& page : pages) { */
+        /*     if (page != nullptr) { */
+        /*         free(page); */
+        /*         page = nullptr; */
+        /*     } */
+        /* } */
+        Close();
         if (file_descriptor != -1) {
             close(file_descriptor);
-        }
-        for (auto& page : pages) {
-            if (page != nullptr) {
-                free(page);
-                page = nullptr;
-            }
         }
     }
 
@@ -173,6 +223,11 @@ struct Table : public enable_shared_from_this<Table> {
         table->pager = pager;
         table->num_rows = pager->file_length / sizeof(UserSchema);
         return table;
+    }
+
+    void
+    Close() {
+        pager->Close();
     }
 
     struct Cursor {
@@ -379,16 +434,16 @@ int main(int argc, char** argv) {
     /* char buff[1000]; */
     /* memset(buff, 0, 1000); */
 
-    /* UserSchema user1; */
-    /* user1.id = 1; */
-    /* user1.SetUserName("XuPeng"); */
-    /* user1.SetEmail("xupeng3112@163.com"); */
+    UserSchema user1;
+    user1.id = 1;
+    user1.SetUserName("XuPeng");
+    user1.SetEmail("xupeng3112@163.com");
     /* user1.SerializeTo(buff); */
 
-    /* UserSchema user2; */
-    /* user2.id = 2; */
-    /* user2.SetUserName("Nana"); */
-    /* user2.SetEmail("nana@163.com"); */
+    UserSchema user2;
+    user2.id = 2;
+    user2.SetUserName("Nana");
+    user2.SetEmail("nana@163.com");
     /* user2.SerializeTo(buff + sizeof(UserSchema)); */
 
     /* UserSchema other1, other2; */
@@ -410,16 +465,23 @@ int main(int argc, char** argv) {
     auto table = Table::Open("/tmp/xx");
     void* page = nullptr;
     cout << "addr page=" << page << endl;
-    auto status = table->pager->GetPage(1, page);
+    auto status = table->pager->GetPage(0, page);
     cout << status.type << endl;
     cout << "addr page=" << page << endl;
 
-    auto c =  table->StartCursor();
-    while (status.ok()) {
-        cout << "c->row_num=" << c->row_num << endl;
-        status = c->Advance();
-    }
-    cout << "status " << status.err_msg << endl;
+    /* auto c =  table->StartCursor(); */
+    /* user1.SerializeTo(c->Value()); */
+
+    /* UserSchema u3; */
+    /* u3.DeserializeFrom(c->Value()); */
+    /* cout << "u3.username=" << u3.username << endl; */
+    /* cout << "u3.email=" << u3.email << endl; */
+
+    /* while (status.ok()) { */
+    /*     cout << "c->row_num=" << c->row_num << endl; */
+    /*     status = c->Advance(); */
+    /* } */
+    /* cout << "status " << status.err_msg << endl; */
 
 
     /* string hello = "hello"; */
