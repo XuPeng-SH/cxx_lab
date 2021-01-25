@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
         if (num_rows != table->num_rows) {
             UserSchema user;
             auto c = table->LastCursor();
-            user.DeserializeFrom(c->Value() - sizeof(UserSchema));
+            user.DeserializeFrom((char*)c->Value() - sizeof(UserSchema));
             cout << "Detect new row: " << "id=" << user.id << " username=" << user.username << " email=" << user.email << endl;
             num_rows = table->num_rows;
         }
