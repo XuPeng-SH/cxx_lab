@@ -29,6 +29,7 @@ struct Pager {
         auto pager = std::make_shared<Pager>();
         pager->file_descriptor = fd;
         pager->file_length = lseek(pager->file_descriptor, 0, SEEK_END);
+        pager->num_pages = pager->file_length / PAGE_SIZE;
         memset(pager->pages, 0, MAX_PAGES * sizeof(void*));
         return pager;
     }
@@ -54,8 +55,8 @@ struct Pager {
     OnPageMissing(const uint32_t& num) {
         Status status;
         pages[num] = calloc(PAGE_SIZE, 1);
-        auto all_page_num = file_length / PAGE_SIZE;
-        if (num < all_page_num) {
+        /* auto all_page_num = file_length / PAGE_SIZE; */
+        if (num < num_pages) {
             lseek(file_descriptor, num * PAGE_SIZE, SEEK_SET);
             auto read_size = read(file_descriptor, pages[num], PAGE_SIZE);
             if (read_size == -1) {
@@ -63,6 +64,9 @@ struct Pager {
                 status.err_msg = std::string("PAGE_LOAD_ERR: load page ") + std::to_string(num);
                 return status;
             }
+        }
+        if (num >= num_pages) {
+            num_pages = num + 1;
         }
 
         return status;
@@ -126,6 +130,7 @@ struct Pager {
     }
 
     int file_descriptor = -1;
-    uint32_t file_length;
+    uint32_t file_length = 0;
+    uint32_t num_pages = 0;
     void* pages[MAX_PAGES];
 };
