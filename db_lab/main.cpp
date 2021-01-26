@@ -12,6 +12,7 @@
 #include "pager.h"
 #include "table.h"
 #include "test.h"
+#include "node.h"
 
 
 using namespace std;
@@ -164,6 +165,17 @@ DEFINE_string(db_file, "/tmp/xyz", "db file");
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
+    cout << "size of LeafNode " << sizeof(LeafNode<Pager::PAGE_SIZE>) << endl;
+    cout << "size of node " << sizeof(Node) << endl;
+    cout << "size of nodeheader " << sizeof(Node::NodeHeader) << endl;
+    cout << "size of Node::Type " << sizeof(Node::Type) << endl;
+    cout << "size of vod*" << sizeof(void*) << endl;
+
+    LeafNode<4096> ln(nullptr, sizeof(uint32_t), sizeof(UserSchema), 0);
+    auto cell_p = ln.CellPtr(10);
+    cout << "cell_p " << cell_p << endl;
+    return 0;
+
     test_schema();
     test_table();
 
@@ -176,6 +188,7 @@ int main(int argc, char** argv) {
     /* cout << "status " << status.err_msg << endl; */
 
     size_t num_rows = table->num_rows;
+    cout << table->ToString() << endl;
 
     while (true) {
         cout << PROMPT;
@@ -202,6 +215,7 @@ int main(int argc, char** argv) {
             user.DeserializeFrom((char*)c->Value() - sizeof(UserSchema));
             cout << "Detect new row: " << "id=" << user.id << " username=" << user.username << " email=" << user.email << endl;
             num_rows = table->num_rows;
+            cout << table->ToString() << endl;
         }
     }
     return 0;

@@ -2,12 +2,13 @@
 
 #include <memory>
 #include <string>
+#include <sstream>
 
 #include "status.h"
 #include "pager.h"
 
 struct Table : public std::enable_shared_from_this<Table> {
-    uint32_t num_rows;
+    uint32_t num_rows = 0;
     std::shared_ptr<Pager> pager = nullptr;
     static std::shared_ptr<Table>
     Open(const std::string& db_path) {
@@ -20,6 +21,13 @@ struct Table : public std::enable_shared_from_this<Table> {
         /* table->num_rows = pager->file_length / sizeof(UserSchema); */
         table->num_rows = pager->PageNums() * Pager::ROWS_PER_PAGE;
         return table;
+    }
+
+    std::string
+    ToString() {
+        std::stringstream ss;
+        ss << "<Table: Rows=" << num_rows << ">";
+        return ss.str();
     }
 
     void

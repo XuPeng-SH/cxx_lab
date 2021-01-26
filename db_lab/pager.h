@@ -10,6 +10,10 @@
 #include "status.h"
 #include "user_schema.h"
 
+struct Page {
+
+};
+
 struct Pager {
     constexpr static const uint32_t PAGE_SIZE = 4 * 1024;
     constexpr static const uint32_t MAX_PAGES = MAX_STORE_SIZE / PAGE_SIZE;
