@@ -118,12 +118,6 @@ struct Pager {
     }
 
     ~Pager() {
-        /* for (auto& page : pages) { */
-        /*     if (page != nullptr) { */
-        /*         free(page); */
-        /*         page = nullptr; */
-        /*     } */
-        /* } */
         Close();
         if (file_descriptor != -1) {
             close(file_descriptor);

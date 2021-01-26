@@ -85,6 +85,60 @@ struct LeafNode : public Node {
         return nullptr;
     }
 
+    void*
+    CellKeyPtr(uint32_t cell_num) {
+        return CellPtr(cell_num);
+    }
+
+    void*
+    CellValPtr(uint32_t cell_num) {
+        void* ret = CellPtr(cell_num);
+        if (!ret) {
+            return ret;
+        }
+        return (char*)ret + leaf_header.key_size;
+    }
+
+    Status
+    PutKey(const uint32_t& cell_num, const uint32_t& key) {
+        Status status;
+        auto cell_loc = CellKeyPtr(cell_num);
+        if (!cell_loc) {
+            status.type = StatusType::CELL_OVERFLOW;
+            status.err_msg = std::string("CELL_OVERFLOW: ") + std::to_string(cell_num);
+            return status;
+        }
+        memcpy(cell_loc, &key, sizeof(key));
+        return status;
+    }
+
+    Status
+    PutVal(const uint32_t& cell_num, const UserSchema& val) {
+        Status status;
+        auto cell_loc = CellValPtr(cell_num);
+        if (!cell_loc) {
+            status.type = StatusType::CELL_OVERFLOW;
+            status.err_msg = std::string("CELL_OVERFLOW: ") + std::to_string(cell_num);
+            return status;
+        }
+        val.SerializeTo(cell_loc);
+        return status;
+    }
+
+    Status
+    GetCellKeyVal(const uint32_t& cell_num, uint32_t& key, UserSchema& val) {
+        Status status;
+        auto cell_loc = CellPtr(cell_num);
+        if (!cell_loc) {
+            status.type = StatusType::CELL_OVERFLOW;
+            status.err_msg = std::string("CELL_OVERFLOW: ") + std::to_string(cell_num);
+            return status;
+        }
+        memcpy(&key, cell_loc, sizeof(key));
+        val.DeserializeFrom((char*)cell_loc + sizeof(key));
+        return status;
+    }
+
     LeafHeader leaf_header;
     LeafBody leaf_body;
 };

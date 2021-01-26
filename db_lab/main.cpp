@@ -170,10 +170,24 @@ int main(int argc, char** argv) {
     cout << "size of nodeheader " << sizeof(Node::NodeHeader) << endl;
     cout << "size of Node::Type " << sizeof(Node::Type) << endl;
     cout << "size of vod*" << sizeof(void*) << endl;
+    cout << "size of pager " << sizeof(Pager) << endl;
 
     LeafNode<4096> ln(nullptr, sizeof(uint32_t), sizeof(UserSchema), 0);
-    auto cell_p = ln.CellPtr(10);
-    cout << "cell_p " << cell_p << endl;
+    auto cell_k_p = ln.CellKeyPtr(10);
+    auto cell_v_p = ln.CellValPtr(10);
+    cout << "cell_k_p " << cell_k_p << endl;
+    cout << "cell_v_p " << cell_v_p << endl;
+    UserSchema u1;
+    u1.id = 101;
+    u1.SetUserName("one zero one");
+    u1.SetEmail("101@163.com");
+
+    ln.PutKey(2, u1.id);
+    ln.PutVal(2, u1);
+    UserSchema u2;
+    uint32_t k;
+    ln.GetCellKeyVal(2, k, u2);
+    cout << "k=" << k << " u2=" << u2.ToString() << endl;
     return 0;
 
     test_schema();

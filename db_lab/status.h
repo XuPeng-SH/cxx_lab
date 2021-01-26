@@ -13,6 +13,8 @@ enum StatusType {
 
     CURSOR_END_OF_FILE,
 
+    CELL_OVERFLOW,
+
     OK,
     EMPTY,
     EXIT
