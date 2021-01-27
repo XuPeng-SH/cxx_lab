@@ -188,7 +188,19 @@ int main(int argc, char** argv) {
     uint32_t k;
     ln.GetCellKeyVal(2, k, u2);
     cout << "k=" << k << " u2=" << u2.ToString() << endl;
-    /* return 0; */
+
+    InternalNode<4096> in(nullptr, 0, 0);
+    cout << "num of keys is " << in.NumOfKeys() << endl;
+    in.SetNumOfKeys(12);
+    in.SetType(Node::Type::ROOT);
+    cout << "num of keys is " << in.NumOfKeys() << endl;
+    cout << "IsRoot is " << in.IsRoot() << endl;
+
+    auto in1 = in;
+    cout << "num of keys is " << in1.NumOfKeys() << endl;
+    cout << "IsRoot is " << in1.IsRoot() << endl;
+
+    return 0;
 
     test_schema();
     test_table();

@@ -17,6 +17,16 @@ struct Node {
 
     Node(void* p, Type t = Type::NONE) : header(p, t) {}
 
+    bool
+    IsRoot() const {
+        return header.type == Type::ROOT;
+    }
+
+    void
+    SetType(Type type) {
+        header.type = type;
+    }
+
     struct NodeHeader {
         NodeHeader(void* p, Type t) : parent(p), type(t) {}
         void* parent = nullptr;
@@ -45,6 +55,10 @@ struct InternalNode : public Node {
     InternalNode(void* parent, uint32_t num_keys, uint32_t right_child) :
         Node(parent, Type::INTERNAL), internal_header(num_keys, right_child) {
             Init();
+    }
+
+    InternalNode(InternalNode& o) : Node(o),
+        internal_header(o.internal_header) {
     }
 
     InternalNode() = delete;
@@ -96,6 +110,21 @@ struct InternalNode : public Node {
             return ptr;
         }
         return (uint8_t*)ptr + ChildSize;
+    }
+
+    uint32_t
+    NumOfKeys() const  {
+        return internal_header.num_keys;
+    }
+
+    void
+    SetNumOfKeys(uint32_t num) {
+        internal_header.num_keys = num;
+    }
+
+    void
+    SetRightChild(uint32_t rc) {
+        internal_header.right_child = rc;
     }
 
     InternalHeader internal_header;
