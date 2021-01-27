@@ -11,6 +11,10 @@ struct Node {
         LEAF
     };
 
+    struct Body {
+        char* buff = nullptr;
+    };
+
     Node(void* p, Type t = Type::NONE) : header(p, t) {}
 
     struct NodeHeader {
@@ -20,6 +24,82 @@ struct Node {
     };
 
     NodeHeader header;
+};
+
+template <int PageSize>
+struct InternalNode : public Node {
+    struct InternalHeader {
+        InternalHeader(uint32_t nk, uint32_t rc) : num_keys(nk), right_child(rc) {}
+
+        InternalHeader() = delete;
+
+        uint32_t num_keys = 0;
+        uint32_t right_child = 0;
+    };
+
+    constexpr static const uint32_t BodySize = PageSize - sizeof(Node) - sizeof(InternalHeader);
+    constexpr static const uint32_t KeySize = sizeof(uint32_t);
+    constexpr static const uint32_t ChildSize = sizeof(uint32_t);
+    constexpr static const uint32_t CellSize = KeySize + ChildSize;
+
+    InternalNode(void* parent, uint32_t num_keys, uint32_t right_child) :
+        Node(parent, Type::INTERNAL), internal_header(num_keys, right_child) {
+            Init();
+    }
+
+    InternalNode() = delete;
+
+    ~InternalNode() {
+        if (body.buff) {
+            free(body.buff);
+            body.buff = nullptr;
+        }
+    }
+
+    void
+    Init() {
+        if (body.buff) {
+            return;
+        }
+        body.buff = (char*)calloc(BodySize, 1);
+    }
+
+    void*
+    CellPtr(uint32_t cell_num) {
+        if (!body.buff) {
+            return nullptr;
+        }
+        auto pos = cell_num * CellSize;
+        if (pos + CellSize <= BodySize) {
+            return body.buff[pos];
+        }
+        return nullptr;
+    }
+
+    uint32_t*
+    ChildPtr(uint32_t child_num) {
+        auto& num_keys = internal_header.num_keys;
+        if (child_num > num_keys) {
+            return nullptr;
+        }
+        if (child_num == num_keys) {
+            return &internal_header.right_child;
+        }
+        auto ptr = CellPtr(child_num);
+        return ptr;
+    }
+
+    uint32_t*
+    KeyPtr(uint32_t key_num) {
+        auto& ptr = CellPtr(key_num);
+        if (!ptr) {
+            return ptr;
+        }
+        return (uint8_t*)ptr + ChildSize;
+    }
+
+    InternalHeader internal_header;
+    Body body;
 };
 
 template <int PageSize>
@@ -36,10 +116,6 @@ struct LeafNode : public Node {
     };
 
     constexpr static const uint32_t BodySize = PageSize - sizeof(Node) - sizeof(LeafHeader);
-
-    struct LeafBody {
-        char* buff = nullptr;
-    };
 
     LeafNode(void* parent, uint32_t key_size, uint32_t value_size, uint32_t num_cells = 0) :
         Node(parent, Type::LEAF), leaf_header(key_size, value_size, num_cells) {
@@ -140,6 +216,6 @@ struct LeafNode : public Node {
     }
 
     LeafHeader leaf_header;
-    LeafBody leaf_body;
+    Body leaf_body;
 };
 #pragma pack(pop)
