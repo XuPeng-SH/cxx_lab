@@ -10,10 +10,6 @@
 #include "status.h"
 #include "user_schema.h"
 
-struct Page {
-
-};
-
 struct Pager {
     constexpr static const uint32_t PAGE_SIZE = 4 * 1024;
     constexpr static const uint32_t MAX_PAGES = MAX_STORE_SIZE / PAGE_SIZE;
@@ -55,6 +51,7 @@ struct Pager {
     OnPageMissing(const uint32_t& num) {
         Status status;
         pages[num] = calloc(PAGE_SIZE, 1);
+        std::cout << "malloc new page " << num << std::endl;
         /* auto all_page_num = file_length / PAGE_SIZE; */
         if (num < num_pages) {
             lseek(file_descriptor, num * PAGE_SIZE, SEEK_SET);
@@ -92,6 +89,7 @@ struct Pager {
             status.err_msg = std::string("PAGE_FLUSH_ERR: ") + std::to_string(num);
             return status;
         }
+        std::cout << "page " << num << " flushed" << std::endl;
         return status;
     }
 

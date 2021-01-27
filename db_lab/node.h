@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pager.h"
+
 #pragma pack(push)
 #pragma pack(4)
 
@@ -11,11 +13,10 @@ struct Node {
         LEAF
     };
 
+    template <uint32_t BodySize>
     struct Body {
-        char* buff = nullptr;
+        char buff[BodySize];
     };
-
-    Node(void* p, Type t = Type::NONE) : header(p, t) {}
 
     bool
     IsRoot() const {
@@ -28,9 +29,8 @@ struct Node {
     }
 
     struct NodeHeader {
-        NodeHeader(void* p, Type t) : parent(p), type(t) {}
-        void* parent = nullptr;
-        Type type = Type::NONE;
+        void* parent;
+        Type type;
     };
 
     NodeHeader header;
@@ -39,12 +39,8 @@ struct Node {
 template <int PageSize>
 struct InternalNode : public Node {
     struct InternalHeader {
-        InternalHeader(uint32_t nk, uint32_t rc) : num_keys(nk), right_child(rc) {}
-
-        InternalHeader() = delete;
-
-        uint32_t num_keys = 0;
-        uint32_t right_child = 0;
+        uint32_t num_keys;
+        uint32_t right_child;
     };
 
     constexpr static const uint32_t BodySize = PageSize - sizeof(Node) - sizeof(InternalHeader);
@@ -52,31 +48,14 @@ struct InternalNode : public Node {
     constexpr static const uint32_t ChildSize = sizeof(uint32_t);
     constexpr static const uint32_t CellSize = KeySize + ChildSize;
 
-    InternalNode(void* parent, uint32_t num_keys, uint32_t right_child) :
-        Node(parent, Type::INTERNAL), internal_header(num_keys, right_child) {
-            Init();
+    /* InternalNode(InternalNode& o) : Node(o), */
+    /*     internal_header(o.internal_header), body(o.body) { */
+    /* } */
+    InternalNode() {
     }
 
-    InternalNode(InternalNode& o) : Node(o),
-        internal_header(o.internal_header) {
-    }
-
-    InternalNode() = delete;
-
-    ~InternalNode() {
-        if (body.buff) {
-            free(body.buff);
-            body.buff = nullptr;
-        }
-    }
-
-    void
-    Init() {
-        if (body.buff) {
-            return;
-        }
-        body.buff = (char*)calloc(BodySize, 1);
-    }
+    /* ~InternalNode() { */
+    /* } */
 
     void*
     CellPtr(uint32_t cell_num) {
@@ -128,44 +107,27 @@ struct InternalNode : public Node {
     }
 
     InternalHeader internal_header;
-    Body body;
+    Body<BodySize> body;
 };
 
 template <int PageSize>
 struct LeafNode : public Node {
     struct LeafHeader {
-        LeafHeader(uint32_t ksize, uint32_t vsize, uint32_t ncells) :
-            key_size(ksize), value_size(vsize), num_cells(ncells) {}
-
-        LeafHeader() = delete;
-
-        uint32_t key_size = 1;
-        uint32_t value_size = 1;
-        uint32_t num_cells = 0;
+        uint32_t key_size;
+        uint32_t value_size;
+        uint32_t num_cells;
     };
 
     constexpr static const uint32_t BodySize = PageSize - sizeof(Node) - sizeof(LeafHeader);
 
-    LeafNode(void* parent, uint32_t key_size, uint32_t value_size, uint32_t num_cells = 0) :
-        Node(parent, Type::LEAF), leaf_header(key_size, value_size, num_cells) {
-            Init();
-    }
-
-    LeafNode() = delete;
-
-    ~LeafNode() {
-        if (leaf_body.buff) {
-            free(leaf_body.buff);
-            leaf_body.buff = nullptr;
-        }
+    void
+    SetKeySize(uint32_t key_size) {
+        leaf_header.key_size = key_size;
     }
 
     void
-    Init() {
-        if (leaf_body.buff) {
-            return;
-        }
-        leaf_body.buff = (char*)calloc(BodySize, 1);
+    SetValSize(uint32_t val_size) {
+        leaf_header.value_size = val_size;
     }
 
     uint32_t
@@ -180,12 +142,12 @@ struct LeafNode : public Node {
 
     void*
     CellPtr(uint32_t cell_num) {
-        if (!leaf_body.buff) {
+        if (!body.buff) {
             return nullptr;
         }
         auto pos = cell_num * CellSize();
         if (pos + CellSize() <= BodySize) {
-            return &leaf_body.buff[pos];
+            return &body.buff[pos];
         }
         return nullptr;
     }
@@ -245,6 +207,10 @@ struct LeafNode : public Node {
     }
 
     LeafHeader leaf_header;
-    Body leaf_body;
+    Body<BodySize> body;
 };
+
+using InternalPage = InternalNode<Pager::PAGE_SIZE>;
+using LeafPage = LeafNode<Pager::PAGE_SIZE>;
+
 #pragma pack(pop)
