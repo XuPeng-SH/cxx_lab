@@ -50,7 +50,30 @@ test_table() {
         std::experimental::filesystem::remove_all(path);
         auto table = Table::Open(path);
         assert(table->NumOfPages() == 1);
+
+        auto c = table->StartCursor();
+        assert(c->end_of_table);
+
+        UserSchema user1;
+        user1.id = 1;
+        user1.SetUserName("XuPeng");
+        user1.SetEmail("xupeng3112@163.com");
+
+        LeafPage* leaf;
+        Status status = c->GetLeafPage(leaf);
+        assert(status.ok());
+        assert(leaf->NumOfCells() == 0);
+        c->Insert(user1.id, user1);
+        assert(leaf->NumOfCells() == 1);
+
+        UserSchema user2;
+        user2.id = 2;
+        user2.SetUserName("Nana");
+        user2.SetEmail("nana@163.com");
+        c->Insert(user2.id, user2);
+        assert(leaf->NumOfCells() == 2);
     }
+    return;
 
     uint32_t num_keys = (uint32_t)RandomInt(100, 2000);
     {
@@ -84,11 +107,6 @@ test_table() {
     }
 
     /* auto cursor = table->StartCursor(); */
-
-    /* UserSchema user1; */
-    /* user1.id = 1; */
-    /* user1.SetUserName("XuPeng"); */
-    /* user1.SetEmail("xupeng3112@163.com"); */
 
     /* user1.SerializeTo(cursor->Value()); */
 

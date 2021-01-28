@@ -8,9 +8,10 @@
 #include "status.h"
 #include "pager.h"
 #include "node.h"
+#include "user_schema.h"
 
 struct Table : public std::enable_shared_from_this<Table> {
-    uint32_t num_rows = 0; // TODO: Remove
+    /* uint32_t num_rows = 0; // TODO: Remove */
     uint32_t root_page_num;
     std::shared_ptr<Pager> pager = nullptr;
     static std::shared_ptr<Table>
@@ -18,13 +19,16 @@ struct Table : public std::enable_shared_from_this<Table> {
         auto pager = Pager::Open(db_path);
         auto table = std::make_shared<Table>();
         table->pager = pager;
-        table->num_rows = pager->PageNums() * Pager::ROWS_PER_PAGE; // TODO: Remove
+        /* table->num_rows = pager->PageNums() * Pager::ROWS_PER_PAGE; // TODO: Remove */
         table->root_page_num = 0;
         if (pager->num_pages == 0) {
             void* page;
             auto status = pager->GetPage(0, page);
             assert(status.ok());
             LeafPage* leaf = new (page) LeafPage();
+            leaf->Reset();
+            leaf->SetKeySize(sizeof(uint32_t));
+            leaf->SetValSize(sizeof(UserSchema));
             leaf->SetRoot(true);
         }
         return table;
@@ -61,6 +65,46 @@ struct Table : public std::enable_shared_from_this<Table> {
             /* uint32_t row_offset = row_num % Pager::ROWS_PER_PAGE; */
             /* uint32_t byte_offset = row_offset * sizeof(UserSchema); */
             /* return (char*)page + byte_offset; */
+        }
+
+        Status
+        GetLeafPage(LeafPage*& leaf) {
+            void* page;
+            auto status = table->pager->GetPage(page_num, page);
+            if (!status.ok()) {
+                return status;
+            }
+            leaf = new (page) LeafPage();
+            return status;
+        }
+
+        Status
+        Insert(uint32_t key, UserSchema& row) {
+            Status status;
+            LeafPage* leaf = nullptr;
+            status = GetLeafPage(leaf);
+            if (!status.ok()) {
+                return status;
+            }
+            if (leaf->NumOfCells() >= leaf->CellsCapacity()) {
+                // TODO: InsertAndSplit
+                return status;
+            }
+
+            if (cell_num < leaf->NumOfCells()) {
+                for (uint32_t i = leaf->NumOfCells(); i > cell_num; --i) {
+                    memcpy(leaf->CellPtr(i), leaf->CellPtr(i-1), leaf->CellSize());
+                }
+            }
+
+            leaf->IncNumOfCells();
+            status = leaf->PutKey(cell_num, key);
+            if (!status.ok()) {
+                return status;
+            }
+            status = leaf->PutVal(cell_num, row);
+
+            return status;
         }
 
         Status

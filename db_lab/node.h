@@ -152,6 +152,8 @@ struct LeafNode : public Node {
 
     constexpr static const uint32_t BodySize = PageSize - sizeof(Node) - sizeof(LeafHeader);
 
+    LeafNode() {}
+
     void
     Reset() {
         SetType(Type::LEAF);
@@ -186,10 +188,19 @@ struct LeafNode : public Node {
     NumOfCells() const {
         return leaf_header.num_cells;
     }
+    void
+    IncNumOfCells() {
+        leaf_header.num_cells += 1;
+    }
 
     uint32_t
     CellSize() const {
         return leaf_header.key_size + leaf_header.value_size;
+    }
+
+    uint32_t
+    CellsCapacity() const {
+        return BodySize / CellSize();
     }
 
     void*

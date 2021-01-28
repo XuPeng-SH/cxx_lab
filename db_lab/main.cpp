@@ -179,7 +179,7 @@ int main(int argc, char** argv) {
     /* } */
     /* cout << "status " << status.err_msg << endl; */
 
-    size_t num_rows = table->num_rows;
+    /* size_t num_rows = table->num_rows; */
     cout << table->ToString() << endl;
 
     while (true) {
