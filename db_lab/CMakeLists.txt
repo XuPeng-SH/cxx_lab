@@ -21,6 +21,7 @@ add_executable(db_lab ${src})
 set(lab_libs
     gflags
     pthread
+    stdc++fs
     )
 
 target_link_libraries(db_lab ${lab_libs})

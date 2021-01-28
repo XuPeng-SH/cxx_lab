@@ -124,7 +124,7 @@ execute_statement(const Statement& st, shared_ptr<Table> table) {
                     /* auto cursor = table->LastCursor(); */
                     /* user.SerializeTo(cursor->Value()); */
                     /* table->Advance(); */
-                    table->Append(user);
+                    /* table->Append(user); */ // PXU TODO
                 }
             } catch (std::exception& exp) {
                 status.type = StatusType::ILLIGLE_ST;
@@ -201,14 +201,14 @@ int main(int argc, char** argv) {
         if (!status.ok()) {
             cout << PROMPT << status.err_msg << endl;
         }
-        if (num_rows != table->num_rows) {
-            UserSchema user;
-            auto c = table->LastCursor();
-            user.DeserializeFrom((char*)c->Value() - sizeof(UserSchema));
-            cout << "Detect new row: " << "id=" << user.id << " username=" << user.username << " email=" << user.email << endl;
-            num_rows = table->num_rows;
-            cout << table->ToString() << endl;
-        }
+        /* if (num_rows != table->num_rows) { */
+        /*     UserSchema user; */
+        /*     auto c = table->LastCursor(); */
+        /*     user.DeserializeFrom((char*)c->Value() - sizeof(UserSchema)); */
+        /*     cout << "Detect new row: " << "id=" << user.id << " username=" << user.username << " email=" << user.email << endl; */
+        /*     num_rows = table->num_rows; */
+        /*     cout << table->ToString() << endl; */
+        /* } */
     }
     return 0;
 }

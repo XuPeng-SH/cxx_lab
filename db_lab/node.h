@@ -147,15 +147,30 @@ struct LeafNode : public Node {
         uint32_t key_size;
         uint32_t value_size;
         uint32_t num_cells;
+        uint32_t next_leaf;
     };
 
     constexpr static const uint32_t BodySize = PageSize - sizeof(Node) - sizeof(LeafHeader);
 
-    /* void */
-    /* Reset() { */
-    /*     SetType(Type::LEAF); */
-    /*     leaf_header.num_cells = 0; */
-    /* } */
+    void
+    Reset() {
+        SetType(Type::LEAF);
+        leaf_header.num_cells = 0;
+        leaf_header.next_leaf = 0;
+    }
+
+    uint32_t
+    GetNextLeaf() const {
+        return leaf_header.next_leaf;
+    }
+    void
+    SetNextLeaf(uint32_t leaf) {
+        leaf_header.next_leaf = leaf;
+    }
+    bool
+    HasNextLeaf() const {
+        return leaf_header.next_leaf != 0;
+    }
 
     void
     SetKeySize(uint32_t key_size) {

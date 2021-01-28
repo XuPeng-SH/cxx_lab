@@ -7,6 +7,7 @@
 #include <memory.h>
 #include <assert.h>
 #include <random>
+#include <experimental/filesystem>
 
 using namespace std;
 
@@ -44,9 +45,16 @@ test_schema() {
 
 void
 test_table() {
+    std::string path = "/tmp/xx";
+    {
+        std::experimental::filesystem::remove_all(path);
+        auto table = Table::Open(path);
+        assert(table->NumOfPages() == 1);
+    }
+
     uint32_t num_keys = (uint32_t)RandomInt(100, 2000);
     {
-        auto table = Table::Open("/tmp/xx");
+        auto table = Table::Open(path);
         void* page = nullptr;
         auto status = table->pager->GetPage(0, page);
         assert(status.ok());
@@ -61,7 +69,7 @@ test_table() {
         /* } */
     }
     {
-        auto table = Table::Open("/tmp/xx");
+        auto table = Table::Open(path);
         void* page = nullptr;
         auto status = table->pager->GetPage(0, page);
         assert(status.ok());
@@ -74,6 +82,7 @@ test_table() {
         assert(ipage->IsRoot());
         assert(ipage->NumOfKeys() == num_keys);
     }
+
     /* auto cursor = table->StartCursor(); */
 
     /* UserSchema user1; */
