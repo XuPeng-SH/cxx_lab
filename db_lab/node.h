@@ -8,7 +8,6 @@
 struct Node {
     enum Type {
         NONE,
-        ROOT,
         INTERNAL,
         LEAF
     };
@@ -20,17 +19,27 @@ struct Node {
 
     bool
     IsRoot() const {
-        return header.type == Type::ROOT;
+        return header.is_root;
+    }
+
+    void
+    SetRoot(bool is_root) {
+        header.is_root = is_root;
     }
 
     void
     SetType(Type type) {
         header.type = type;
     }
+    Type
+    GetType() const {
+        return header.type;
+    }
 
     struct NodeHeader {
         void* parent;
         Type type;
+        bool is_root;
     };
 
     NodeHeader header;
@@ -51,11 +60,14 @@ struct InternalNode : public Node {
     /* InternalNode(InternalNode& o) : Node(o), */
     /*     internal_header(o.internal_header), body(o.body) { */
     /* } */
-    InternalNode() {
-    }
 
-    /* ~InternalNode() { */
-    /* } */
+    InternalNode() {};
+
+    void
+    Reset() {
+        SetType(Type::INTERNAL);
+        internal_header.num_keys = 0;
+    }
 
     void*
     CellPtr(uint32_t cell_num) {
@@ -67,6 +79,11 @@ struct InternalNode : public Node {
             return body.buff[pos];
         }
         return nullptr;
+    }
+
+    uint32_t*
+    RightChildPtr() {
+        return &internal_header.right_child;
     }
 
     uint32_t*
@@ -106,6 +123,20 @@ struct InternalNode : public Node {
         internal_header.right_child = rc;
     }
 
+    Status
+    GetMaxKey(uint32_t& key) const {
+        Status status;
+        if (internal_header.num_keys <= 0) {
+            status.type = StatusType::EMPTY_KEY;
+            status.err_msg = "EMPTY_KEY";
+            return status;
+        }
+        auto key_num = internal_header.num_keys - 1;
+        auto ptr = KeyPtr(key_num);
+        key = *ptr;
+        return status;
+    }
+
     InternalHeader internal_header;
     Body<BodySize> body;
 };
@@ -119,6 +150,12 @@ struct LeafNode : public Node {
     };
 
     constexpr static const uint32_t BodySize = PageSize - sizeof(Node) - sizeof(LeafHeader);
+
+    /* void */
+    /* Reset() { */
+    /*     SetType(Type::LEAF); */
+    /*     leaf_header.num_cells = 0; */
+    /* } */
 
     void
     SetKeySize(uint32_t key_size) {
@@ -203,6 +240,20 @@ struct LeafNode : public Node {
         }
         memcpy(&key, cell_loc, sizeof(key));
         val.DeserializeFrom((char*)cell_loc + sizeof(key));
+        return status;
+    }
+
+    Status
+    GetMaxKey(uint32_t& key) {
+        Status status;
+        if (leaf_header.num_cells == 0) {
+            status.type = EMPTY_KEY;
+            status.err_msg = "EMPTY_KEY";
+            return status;
+        }
+
+        auto ptr = CellKeyPtr(leaf_header.num_cells - 1);
+        key = *ptr;
         return status;
     }
 

@@ -15,6 +15,8 @@ enum StatusType {
 
     CELL_OVERFLOW,
 
+    EMPTY_KEY,
+
     OK,
     EMPTY,
     EXIT

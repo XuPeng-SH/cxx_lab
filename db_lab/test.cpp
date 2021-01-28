@@ -52,7 +52,7 @@ test_table() {
         assert(status.ok());
         InternalPage* ipage = new (page) InternalPage();
         ipage->SetNumOfKeys(num_keys);
-        ipage->SetType(Node::Type::ROOT);
+        ipage->SetRoot(true);
         assert(ipage->IsRoot());
         /* auto p = page; */
         /* for (auto i = 0; i < 20; ++i) { */
@@ -66,13 +66,13 @@ test_table() {
         auto status = table->pager->GetPage(0, page);
         assert(status.ok());
         InternalPage* ipage = new (page) InternalPage();
-        assert(ipage->NumOfKeys() == num_keys);
-        assert(ipage->IsRoot());
         /* auto p = page; */
         /* for (auto i = 0; i < 20; ++i) { */
         /*     p = (char*)p + i * sizeof(uint32_t); */
         /*     cout << *(uint32_t*)(p) << endl; */
         /* } */
+        assert(ipage->IsRoot());
+        assert(ipage->NumOfKeys() == num_keys);
     }
     /* auto cursor = table->StartCursor(); */
 
@@ -120,7 +120,7 @@ test_node() {
 
     InternalNode<4096> in;
     in.SetNumOfKeys(12);
-    in.SetType(Node::Type::ROOT);
+    in.SetRoot(true);
     assert(in.NumOfKeys() == 12);
     assert(in.IsRoot());
 
