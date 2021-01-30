@@ -54,17 +54,12 @@ struct Table : public std::enable_shared_from_this<Table> {
     struct Cursor {
         void*
         Value() {
-            /* uint32_t page_num = row_num / Pager::ROWS_PER_PAGE; */
-            void* page;
-            auto status = table->pager->GetPage(page_num, page);
+            LeafPage* leaf;
+            auto status = GetLeafPage(leaf);
             if (!status.ok()) {
                 return nullptr;
             }
-            LeafPage* leaf = new (page) LeafPage();
             return leaf->CellValPtr(cell_num);
-            /* uint32_t row_offset = row_num % Pager::ROWS_PER_PAGE; */
-            /* uint32_t byte_offset = row_offset * sizeof(UserSchema); */
-            /* return (char*)page + byte_offset; */
         }
 
         Status
@@ -115,14 +110,13 @@ struct Table : public std::enable_shared_from_this<Table> {
                 status.err_msg = "CURSOR_END_OF_FILE";
                 return status;
             }
-            void* page;
-            status = table->pager->GetPage(page_num, page);
+            LeafPage* leaf;
+            status = GetLeafPage(leaf);
             if (!status.ok()) {
                 return status;
             }
 
             cell_num += 1;
-            LeafPage* leaf = new (page) LeafPage();
 
             if (cell_num >= leaf->NumOfCells()) {
                 auto next_page_num = leaf->GetNextLeaf();
@@ -155,12 +149,13 @@ struct Table : public std::enable_shared_from_this<Table> {
         auto c = std::make_shared<Cursor>();
         c->table = shared_from_this();
         c->page_num = 0;
-        void* page;
-        auto status = pager->GetPage(0, page);
+
+        LeafPage* leaf;
+        auto status = c->GetLeafPage(leaf);
         if (!status.ok()) {
             return nullptr;
         }
-        LeafPage* leaf = new (page) LeafPage();
+
         c->end_of_table = (leaf->NumOfCells() == 0);
         return c;
     }
