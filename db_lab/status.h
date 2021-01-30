@@ -15,7 +15,10 @@ enum StatusType {
 
     CELL_OVERFLOW,
 
+    CHILD_OVERFLOW,
+
     EMPTY_KEY,
+    KEY_OVERFLOW,
 
     OK,
     EMPTY,
@@ -29,10 +32,18 @@ struct Status {
     ok() const { return type == StatusType::OK; }
 };
 
-#define STATUS_CHECK(func) \
-    do {                   \
-        Status s = func;   \
-        if (!s.ok()) {     \
-            return s;      \
-        }                  \
+#define STATUS_CHECK(func)   \
+    do {                     \
+        status = func;       \
+        if (!status.ok()) {  \
+            return  status;  \
+        }                    \
     } while (false)
+
+/* #define STATUS_CHECK(func) \ */
+/*     do {                   \ */
+/*         Status s = func;   \ */
+/*         if (!s.ok()) {     \ */
+/*             return s;      \ */
+/*         }                  \ */
+/*     } while (false) */

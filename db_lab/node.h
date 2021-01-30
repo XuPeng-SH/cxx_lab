@@ -85,7 +85,7 @@ struct InternalNode : public Node {
         }
         auto pos = cell_num * CellSize;
         if (pos + CellSize <= BodySize) {
-            return body.buff[pos];
+            return &body.buff[pos];
         }
         return nullptr;
     }
@@ -105,16 +105,43 @@ struct InternalNode : public Node {
             return &internal_header.right_child;
         }
         auto ptr = CellPtr(child_num);
-        return ptr;
+        return (uint32_t*)ptr;
+    }
+
+    Status
+    SetChild(uint32_t child_num, uint32_t child_page_num) {
+        Status status;
+        uint32_t* child = ChildPtr(child_num);
+        if (!child) {
+            status.type = StatusType::CHILD_OVERFLOW;
+            status.err_msg = "CHILD_OVERFLOW";
+            return status;
+        }
+        *child = child_page_num;
+        return status;
     }
 
     uint32_t*
     KeyPtr(uint32_t key_num) {
-        auto& ptr = CellPtr(key_num);
+        auto ptr = CellPtr(key_num);
         if (!ptr) {
-            return ptr;
+            return (uint32_t*)ptr;
         }
-        return (uint8_t*)ptr + ChildSize;
+        return (uint32_t*)((uint8_t*)ptr + ChildSize);
+    }
+
+    Status
+    SetKey(uint32_t key_num, uint32_t key) {
+        Status status;
+        uint32_t* ptr = KeyPtr(key_num);
+        if (!ptr) {
+            status.type = StatusType::KEY_OVERFLOW;
+            status.err_msg = "KEY_OVERFLOW";
+            return status;
+        }
+        *ptr = key;
+
+        return status;
     }
 
     uint32_t
@@ -290,7 +317,7 @@ struct LeafNode : public Node {
             return status;
         }
 
-        auto ptr = CellKeyPtr(leaf_header.num_cells - 1);
+        uint32_t* ptr = (uint32_t*)CellKeyPtr(leaf_header.num_cells - 1);
         key = *ptr;
         return status;
     }

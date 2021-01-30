@@ -42,6 +42,39 @@ struct Table : public std::enable_shared_from_this<Table> {
         return ss.str();
     }
 
+    Status
+    SplitRoot(uint32_t right_child_page_num) {
+        Status status;
+        auto left_child_page_num = pager->PageNums();
+        void* root;
+        void* left_child;
+        void* right_child;
+        STATUS_CHECK(pager->GetPage(root_page_num, root));
+        STATUS_CHECK(pager->GetPage(left_child_page_num, left_child));
+        STATUS_CHECK(pager->GetPage(right_child_page_num, right_child));
+
+        InternalPage* internal_root = (InternalPage*)root;
+        LeafPage* left_leaf = (LeafPage*)left_child;
+        LeafPage* right_leaf = (LeafPage*)right_child;
+
+        memcpy(left_child, root, Pager::PAGE_SIZE);
+        left_leaf->SetRoot(false);
+
+        internal_root->Reset();
+        internal_root->SetRoot(true);
+        internal_root->SetNumOfKeys(1);
+        internal_root->SetChild(0, left_child_page_num);
+        uint32_t left_max_key;
+        STATUS_CHECK(left_leaf->GetMaxKey(left_max_key));
+        STATUS_CHECK(internal_root->SetKey(0, left_max_key));
+        internal_root->SetRightChild(right_child_page_num);
+
+        left_leaf->SetParentPage(root_page_num);
+        right_leaf->SetParentPage(root_page_num);
+
+        return status;
+    }
+
     void
     Close() {
         pager->Close();
