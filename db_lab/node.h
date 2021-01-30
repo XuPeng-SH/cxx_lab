@@ -36,12 +36,17 @@ struct Node {
         return header.type;
     }
     void
-    SetParent(void* node) {
-        header.parent = node;
+    SetParentPage(uint32_t page_num) {
+        *header.parent = page_num;
+    }
+
+    uint32_t
+    GetParentPage() const {
+        return *header.parent;
     }
 
     struct NodeHeader {
-        void* parent;
+        uint32_t* parent;
         Type type;
         bool is_root;
     };
@@ -157,6 +162,8 @@ struct LeafNode : public Node {
     constexpr static const uint32_t BodySize = PageSize - sizeof(Node) - sizeof(LeafHeader);
     constexpr static const uint32_t CellSize = KeySize + ValueSize;
     constexpr static const uint32_t CellsCapacity = BodySize / CellSize;
+    constexpr static const uint32_t RightSplitCount = (CellsCapacity + 1) / 2;
+    constexpr static const uint32_t LeftSplitCount = CellsCapacity + 1 - RightSplitCount;
 
     static std::string
     MetaInfoString() {
@@ -166,6 +173,8 @@ struct LeafNode : public Node {
         ss << "  BodySize: " << BodySize << "\n";
         ss << "  CellSize: " << CellSize << "\n";
         ss << "  CellsCapacity: " << CellsCapacity << "\n";
+        ss << "  LeftSplitCount: " << LeftSplitCount << "\n";
+        ss << "  RightSplitCount: " << RightSplitCount << "\n";
         ss << ">";
         return std::move(ss.str());
     }
@@ -199,6 +208,11 @@ struct LeafNode : public Node {
     void
     IncNumOfCells() {
         leaf_header.num_cells += 1;
+    }
+
+    void
+    SetNumOfCells(uint32_t num) {
+        leaf_header.num_cells = num;
     }
 
     void*

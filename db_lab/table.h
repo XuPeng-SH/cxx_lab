@@ -76,7 +76,7 @@ struct Table : public std::enable_shared_from_this<Table> {
 
         // TODO
         Status
-        DoInsertAndSplit(LeafPage* curr_page) {
+        DoInsertAndSplit(uint32_t curr_page_num, LeafPage* curr_page, const uint32_t& key, UserSchema& row) {
             // Stage 1
             auto next_page_num = table->pager->PageNums();
             LeafPage* next_page;
@@ -84,13 +84,48 @@ struct Table : public std::enable_shared_from_this<Table> {
             if (!status.ok()) {
                 return status;
             }
-            next_page->SetParent(curr_page);
+            next_page->SetParentPage(curr_page->GetParentPage());
             next_page->SetNextLeaf(curr_page->GetNextLeaf());
             curr_page->SetNextLeaf(next_page_num);
 
             // Stage 2
             for (auto i = LeafPage::CellsCapacity; i >= 0; --i) {
+                LeafPage* des_page;
+                if (i >= LeafPage::LeftSplitCount) {
+                    des_page = next_page;
+                } else {
+                    des_page = curr_page;
+                }
 
+                auto curr_cell_num = i % LeafPage::LeftSplitCount;
+                auto curr_cell = des_page->CellPtr(curr_cell_num);
+                if (!curr_cell) {
+                    status.type = StatusType::CELL_OVERFLOW;
+                    status.err_msg = "CELL_OVERFLOW";
+                    return status;
+                }
+                if (i > this->cell_num) {
+                    memcpy(curr_cell, curr_page->CellPtr(i-1), LeafPage::CellSize);
+                } else if (i < this->cell_num) {
+                    /* memcpy(curr_cell, curr_page->CellPtr(i)) */
+                } else {
+                    STATUS_CHECK(des_page->PutKey(i, key));
+                    STATUS_CHECK(des_page->PutVal(i, row));
+                }
+            }
+
+            curr_page->SetNumOfCells(LeafPage::LeftSplitCount);
+            next_page->SetNumOfCells(LeafPage::RightSplitCount);
+
+            if (curr_page->IsRoot()) {
+
+            } else {
+                void* page;
+                STATUS_CHECK(table->pager->GetPage(curr_page->GetParentPage(), page));
+                InternalPage* parent = (InternalPage*)(page);
+                // TODO:
+                //parent->UpdateKey();
+                /* parent->Insert(); */
             }
 
             return status;
@@ -105,7 +140,7 @@ struct Table : public std::enable_shared_from_this<Table> {
                 return status;
             }
             if (leaf->NumOfCells() >= LeafPage::CellsCapacity) {
-                status = DoInsertAndSplit(leaf);
+                status = DoInsertAndSplit(page_num, leaf, key, row);
                 if (!status.ok()) {
                     return status;
                 }

@@ -28,3 +28,11 @@ struct Status {
     bool
     ok() const { return type == StatusType::OK; }
 };
+
+#define STATUS_CHECK(func) \
+    do {                   \
+        Status s = func;   \
+        if (!s.ok()) {     \
+            return s;      \
+        }                  \
+    } while (false)
