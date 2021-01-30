@@ -11,7 +11,6 @@
 #include "user_schema.h"
 
 struct Table : public std::enable_shared_from_this<Table> {
-    /* uint32_t num_rows = 0; // TODO: Remove */
     uint32_t root_page_num;
     std::shared_ptr<Pager> pager = nullptr;
     static std::shared_ptr<Table>
@@ -19,7 +18,6 @@ struct Table : public std::enable_shared_from_this<Table> {
         auto pager = Pager::Open(db_path);
         auto table = std::make_shared<Table>();
         table->pager = pager;
-        /* table->num_rows = pager->PageNums() * Pager::ROWS_PER_PAGE; // TODO: Remove */
         table->root_page_num = 0;
         if (pager->num_pages == 0) {
             void* page;
@@ -27,8 +25,6 @@ struct Table : public std::enable_shared_from_this<Table> {
             assert(status.ok());
             LeafPage* leaf = new (page) LeafPage();
             leaf->Reset();
-            leaf->SetKeySize(sizeof(uint32_t));
-            leaf->SetValSize(sizeof(UserSchema));
             leaf->SetRoot(true);
         }
         return table;
@@ -63,13 +59,40 @@ struct Table : public std::enable_shared_from_this<Table> {
         }
 
         Status
-        GetLeafPage(LeafPage*& leaf) {
+        GetLeafPage(LeafPage*& leaf, uint32_t num) {
             void* page;
-            auto status = table->pager->GetPage(page_num, page);
+            auto status = table->pager->GetPage(num, page);
             if (!status.ok()) {
                 return status;
             }
             leaf = new (page) LeafPage();
+            return status;
+        }
+
+        Status
+        GetLeafPage(LeafPage*& leaf) {
+            return GetLeafPage(leaf, page_num);
+        }
+
+        // TODO
+        Status
+        DoInsertAndSplit(LeafPage* curr_page) {
+            // Stage 1
+            auto next_page_num = table->pager->PageNums();
+            LeafPage* next_page;
+            Status status = GetLeafPage(next_page, next_page_num);
+            if (!status.ok()) {
+                return status;
+            }
+            next_page->SetParent(curr_page);
+            next_page->SetNextLeaf(curr_page->GetNextLeaf());
+            curr_page->SetNextLeaf(next_page_num);
+
+            // Stage 2
+            for (auto i = LeafPage::CellsCapacity; i >= 0; --i) {
+
+            }
+
             return status;
         }
 
@@ -81,14 +104,17 @@ struct Table : public std::enable_shared_from_this<Table> {
             if (!status.ok()) {
                 return status;
             }
-            if (leaf->NumOfCells() >= leaf->CellsCapacity()) {
-                // TODO: InsertAndSplit
+            if (leaf->NumOfCells() >= LeafPage::CellsCapacity) {
+                status = DoInsertAndSplit(leaf);
+                if (!status.ok()) {
+                    return status;
+                }
                 return status;
             }
 
             if (cell_num < leaf->NumOfCells()) {
                 for (uint32_t i = leaf->NumOfCells(); i > cell_num; --i) {
-                    memcpy(leaf->CellPtr(i), leaf->CellPtr(i-1), leaf->CellSize());
+                    memcpy(leaf->CellPtr(i), leaf->CellPtr(i-1), LeafPage::CellSize);
                 }
             }
 

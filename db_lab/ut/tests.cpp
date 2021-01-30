@@ -125,9 +125,7 @@ TEST_F(MyUT, node) {
     /* cout << "size of Node::Type " << sizeof(Node::Type) << endl; */
     /* cout << "size of vod*" << sizeof(void*) << endl; */
     /* cout << "size of pager " << sizeof(Pager) << endl; */
-    LeafNode<4096> ln;
-    ln.SetKeySize(sizeof(UserSchema::id));
-    ln.SetValSize(sizeof(UserSchema));
+    LeafPage ln;
     auto cell_k_p = ln.CellKeyPtr(10);
     auto cell_v_p = ln.CellValPtr(10);
     /* cout << "cell_k_p " << cell_k_p << endl; */

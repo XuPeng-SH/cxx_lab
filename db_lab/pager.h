@@ -116,7 +116,8 @@ struct Pager {
 
     uint32_t
     PageNums() const {
-        return file_length / PAGE_SIZE;
+        /* return file_length / PAGE_SIZE; */
+        return num_pages;
     }
 
     ~Pager() {

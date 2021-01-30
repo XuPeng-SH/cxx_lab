@@ -35,6 +35,10 @@ struct Node {
     GetType() const {
         return header.type;
     }
+    void
+    SetParent(void* node) {
+        header.parent = node;
+    }
 
     struct NodeHeader {
         void* parent;
@@ -141,16 +145,18 @@ struct InternalNode : public Node {
     Body<BodySize> body;
 };
 
-template <int PageSize>
+template <uint32_t PageSize, uint32_t KeySize, uint32_t ValueSize>
 struct LeafNode : public Node {
     struct LeafHeader {
-        uint32_t key_size;
-        uint32_t value_size;
+        /* uint32_t key_size; */
+        /* uint32_t value_size; */
         uint32_t num_cells;
         uint32_t next_leaf;
     };
 
     constexpr static const uint32_t BodySize = PageSize - sizeof(Node) - sizeof(LeafHeader);
+    constexpr static const uint32_t CellSize = KeySize + ValueSize;
+    constexpr static const uint32_t CellsCapacity = BodySize / CellSize;
 
     LeafNode() {}
 
@@ -174,16 +180,6 @@ struct LeafNode : public Node {
         return leaf_header.next_leaf != 0;
     }
 
-    void
-    SetKeySize(uint32_t key_size) {
-        leaf_header.key_size = key_size;
-    }
-
-    void
-    SetValSize(uint32_t val_size) {
-        leaf_header.value_size = val_size;
-    }
-
     uint32_t
     NumOfCells() const {
         return leaf_header.num_cells;
@@ -193,23 +189,13 @@ struct LeafNode : public Node {
         leaf_header.num_cells += 1;
     }
 
-    uint32_t
-    CellSize() const {
-        return leaf_header.key_size + leaf_header.value_size;
-    }
-
-    uint32_t
-    CellsCapacity() const {
-        return BodySize / CellSize();
-    }
-
     void*
     CellPtr(uint32_t cell_num) {
         if (!body.buff) {
             return nullptr;
         }
-        auto pos = cell_num * CellSize();
-        if (pos + CellSize() <= BodySize) {
+        auto pos = cell_num * CellSize;
+        if (pos + CellSize <= BodySize) {
             return &body.buff[pos];
         }
         return nullptr;
@@ -226,7 +212,7 @@ struct LeafNode : public Node {
         if (!ret) {
             return ret;
         }
-        return (char*)ret + leaf_header.key_size;
+        return (char*)ret + KeySize;
     }
 
     Status
@@ -288,6 +274,6 @@ struct LeafNode : public Node {
 };
 
 using InternalPage = InternalNode<Pager::PAGE_SIZE>;
-using LeafPage = LeafNode<Pager::PAGE_SIZE>;
+using LeafPage = LeafNode<Pager::PAGE_SIZE, sizeof(UserSchema::id), sizeof(UserSchema)>;
 
 #pragma pack(pop)
