@@ -158,6 +158,18 @@ struct LeafNode : public Node {
     constexpr static const uint32_t CellSize = KeySize + ValueSize;
     constexpr static const uint32_t CellsCapacity = BodySize / CellSize;
 
+    static std::string
+    MetaInfoString() {
+        std::stringstream ss;
+        ss << "< LeafNode Meta\n";
+        ss << "  PageSize: " << PageSize << "\n";
+        ss << "  BodySize: " << BodySize << "\n";
+        ss << "  CellSize: " << CellSize << "\n";
+        ss << "  CellsCapacity: " << CellsCapacity << "\n";
+        ss << ">";
+        return std::move(ss.str());
+    }
+
     LeafNode() {}
 
     void

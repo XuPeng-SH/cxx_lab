@@ -48,6 +48,7 @@ TEST_F(MyUT, schema) {
 };
 
 TEST_F(MyUT, table) {
+    std::cout << LeafPage::MetaInfoString() << std::endl;
     std::string path = "/tmp/xx";
     {
         std::experimental::filesystem::remove_all(path);
