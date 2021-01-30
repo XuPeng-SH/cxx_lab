@@ -25,3 +25,8 @@ set(lab_libs
     )
 
 target_link_libraries(db_lab ${lab_libs})
+
+enable_testing()
+add_subdirectory(ut)
+add_test(NAME test
+         COMMAND ut/myut)

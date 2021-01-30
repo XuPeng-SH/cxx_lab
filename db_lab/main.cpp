@@ -11,7 +11,6 @@
 #include "tokener.h"
 #include "pager.h"
 #include "table.h"
-#include "test.h"
 #include "node.h"
 
 
@@ -164,12 +163,6 @@ DEFINE_string(db_file, "/tmp/xyz", "db file");
 
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    /* test_schema(); */
-    test_table();
-    test_node();
-
-    return 0;
-
 
     auto table = Table::Open(FLAGS_db_file);
 
