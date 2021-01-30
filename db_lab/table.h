@@ -122,7 +122,7 @@ struct Table : public std::enable_shared_from_this<Table> {
             curr_page->SetNextLeaf(next_page_num);
 
             // Stage 2
-            for (auto i = LeafPage::CellsCapacity; i >= 0; --i) {
+            for (int32_t i = LeafPage::CellsCapacity; i >= 0; --i) {
                 LeafPage* des_page;
                 if (i >= LeafPage::LeftSplitCount) {
                     des_page = next_page;
@@ -151,7 +151,7 @@ struct Table : public std::enable_shared_from_this<Table> {
             next_page->SetNumOfCells(LeafPage::RightSplitCount);
 
             if (curr_page->IsRoot()) {
-
+                return table->SplitRoot(next_page_num);
             } else {
                 void* page;
                 STATUS_CHECK(table->pager->GetPage(curr_page->GetParentPage(), page));

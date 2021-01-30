@@ -47,7 +47,40 @@ TEST_F(MyUT, schema) {
     ASSERT_EQ(other2.id, user2.id);
 };
 
-TEST_F(MyUT, table) {
+TEST_F(MyUT, table_insert) {
+    Status status;
+    std::string path = "/tmp/xx";
+    std::experimental::filesystem::remove_all(path);
+
+    auto table = Table::Open(path);
+    ASSERT_EQ(table->NumOfPages(), 1);
+
+    UserSchema user;
+    auto c = table->StartCursor();
+    auto i = 0;
+    for (; i < LeafPage::CellsCapacity; ++i) {
+        user.id = i;
+        user.SetUserName((std::string("user") + std::to_string(i)).c_str());
+        user.SetEmail((std::string("user") + std::to_string(i) + "@163.com").c_str());
+        status = c->Insert(user.id, user);
+        ASSERT_TRUE(status.ok());
+        LeafPage* leaf;
+        status = c->GetLeafPage(leaf);
+        ASSERT_TRUE(status.ok());
+        ASSERT_EQ(leaf->NumOfCells(), i+1);
+        /* std::cout << "NumOfCells is: " << leaf->NumOfCells() << std::endl; */
+    }
+    ASSERT_EQ(table->NumOfPages(), 1);
+
+    user.id = i;
+    user.SetUserName((std::string("user") + std::to_string(i)).c_str());
+    user.SetEmail((std::string("user") + std::to_string(i) + "@163.com").c_str());
+    status = c->Insert(user.id, user);
+    ASSERT_TRUE(status.ok());
+    ASSERT_EQ(table->NumOfPages(), 3);
+}
+
+TEST_F(MyUT, table_basic) {
     std::cout << LeafPage::MetaInfoString() << std::endl;
     std::string path = "/tmp/xx";
     {

@@ -37,16 +37,16 @@ struct Node {
     }
     void
     SetParentPage(uint32_t page_num) {
-        *header.parent = page_num;
+        header.parent = page_num;
     }
 
     uint32_t
     GetParentPage() const {
-        return *header.parent;
+        return header.parent;
     }
 
     struct NodeHeader {
-        uint32_t* parent;
+        uint32_t parent;
         Type type;
         bool is_root;
     };
@@ -249,7 +249,7 @@ struct LeafNode : public Node {
         }
         auto pos = cell_num * CellSize;
         if (pos + CellSize <= BodySize) {
-            return &body.buff[pos];
+            return (char*)body.buff + pos;
         }
         return nullptr;
     }
