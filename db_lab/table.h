@@ -73,7 +73,7 @@ struct Table : public std::enable_shared_from_this<Table> {
         LeafPage* right_leaf = (LeafPage*)right_child;
 
         assert(internal_root->IsRoot());
-        assert(internal_root->GetType() == Node::Type::LEAF);
+        /* assert(internal_root->GetType() == Node::Type::LEAF); */
 
         memcpy(left_child, root, Pager::PAGE_SIZE);
         left_leaf->SetRoot(false);
@@ -117,6 +117,9 @@ struct Table : public std::enable_shared_from_this<Table> {
                 return status;
             }
             leaf = new (page) LeafPage();
+            if (!leaf->IsDirty()) {
+                leaf->Reset();
+            }
             return status;
         }
 
@@ -125,9 +128,42 @@ struct Table : public std::enable_shared_from_this<Table> {
             return GetLeafPage(leaf, page_num);
         }
 
-        // TODO
+        Status
+        InsertInternal(InternalPage* parent, void* child, uint32_t child_page_num) {
+            Status status;
+            uint32_t max_key;
+            STATUS_CHECK(PageHelper::GetMaxKey(child, max_key));
+            auto num_keys = parent->NumOfKeys();
+            parent->SetNumOfKeys(num_keys + 1);
+            uint32_t index = parent->FindCell(num_keys);
+            if (num_keys >= InternalPage::MaxCells) {
+                // TODO
+                assert(false);
+            }
+
+            auto right_child_page = parent->RightChildPage();
+            void* right_child;
+            STATUS_CHECK(table->pager->GetPage(right_child_page, right_child));
+            uint32_t right_child_max_key;
+            STATUS_CHECK(PageHelper::GetMaxKey(right_child, right_child_max_key));
+            if (max_key > right_child_max_key) {
+                parent->SetKey(num_keys, right_child_max_key);
+                parent->SetChild(num_keys, right_child_page);
+                parent->SetRightChild(child_page_num);
+            } else {
+                for (uint32_t i = num_keys; i > index; --i) {
+                    memcpy(parent->CellPtr(i), parent->CellPtr(i-1), InternalPage::CellSize);
+                }
+                STATUS_CHECK(parent->SetKey(index, max_key));
+                STATUS_CHECK(parent->SetChild(index, child_page_num));
+            }
+
+            return status;
+        }
+
         Status
         DoInsertAndSplit(uint32_t curr_page_num, LeafPage* curr_page, const uint32_t& key, UserSchema& row) {
+            /* std::cout << __func__ << ": curr_page_num=" << curr_page_num << " key=" << key << std::endl; */
             // Stage 1
             auto next_page_num = table->pager->PageNums();
             LeafPage* next_page;
@@ -135,6 +171,9 @@ struct Table : public std::enable_shared_from_this<Table> {
             if (!status.ok()) {
                 return status;
             }
+
+            uint32_t old_max;
+            STATUS_CHECK(curr_page->GetMaxKey(old_max));
             next_page->SetParentPage(curr_page->GetParentPage());
             next_page->SetNextLeaf(curr_page->GetNextLeaf());
             curr_page->SetNextLeaf(next_page_num);
@@ -158,10 +197,11 @@ struct Table : public std::enable_shared_from_this<Table> {
                 if (i > this->cell_num) {
                     memcpy(curr_cell, curr_page->CellPtr(i-1), LeafPage::CellSize);
                 } else if (i < this->cell_num) {
-                    /* memcpy(curr_cell, curr_page->CellPtr(i)) */
+                    memcpy(curr_cell, curr_page->CellPtr(i), LeafPage::CellSize);
                 } else {
-                    STATUS_CHECK(des_page->PutKey(i, key));
-                    STATUS_CHECK(des_page->PutVal(i, row));
+                    /* std::cout << "**** " << curr_cell_num << ", " << key << ", " << "curr_page_num=" << curr_page_num << std::endl; */
+                    STATUS_CHECK(des_page->PutKey(curr_cell_num, key));
+                    STATUS_CHECK(des_page->PutVal(curr_cell_num, row));
                 }
             }
 
@@ -173,28 +213,27 @@ struct Table : public std::enable_shared_from_this<Table> {
             } else {
                 void* page;
                 STATUS_CHECK(table->pager->GetPage(curr_page->GetParentPage(), page));
-                InternalPage* parent = (InternalPage*)(page);
-                // TODO:
-                //parent->UpdateKey();
-                /* parent->Insert(); */
+                uint32_t new_max;
+                STATUS_CHECK(PageHelper::GetMaxKey(page, new_max));
+                InternalPage* parent = PageHelper::AsInternal(page);
+                assert(parent);
+                auto old_max_cell = parent->FindCell(old_max);
+                STATUS_CHECK(parent->SetKey(old_max_cell, new_max));
+                STATUS_CHECK(InsertInternal(parent, next_page, next_page_num));
             }
 
             return status;
         }
 
         Status
-        Insert(uint32_t key, UserSchema& row) {
+        ExecuteInsert(uint32_t key, UserSchema& row) {
+            /* std::cout << __func__ << ": page_num=" << page_num << " key=" << key << std::endl; */
             Status status;
-            LeafPage* leaf = nullptr;
-            status = GetLeafPage(leaf);
-            if (!status.ok()) {
-                return status;
-            }
+
+            LeafPage* leaf;
+            STATUS_CHECK(GetLeafPage(leaf));
             if (leaf->NumOfCells() >= LeafPage::CellsCapacity) {
                 status = DoInsertAndSplit(page_num, leaf, key, row);
-                if (!status.ok()) {
-                    return status;
-                }
                 return status;
             }
 
@@ -205,7 +244,7 @@ struct Table : public std::enable_shared_from_this<Table> {
             }
 
             leaf->IncNumOfCells();
-            status = leaf->PutKey(cell_num, key);
+            STATUS_CHECK(leaf->PutKey(cell_num, key));
             if (!status.ok()) {
                 return status;
             }
@@ -248,6 +287,83 @@ struct Table : public std::enable_shared_from_this<Table> {
         uint32_t cell_num;
         bool end_of_table;
     };
+
+    Status
+    LeafPageFind(LeafPage* page, uint32_t key, std::shared_ptr<Cursor> cursor) {
+        Status status;
+        auto cell = page->FindCell(key);
+        cursor->cell_num = cell;
+        /* std::cout << __func__ << ": key=" << key << " cell_num=" << cell << std::endl; */
+        return status;
+    }
+
+    Status
+    InternalPageFind(InternalPage* page, uint32_t key, std::shared_ptr<Cursor> cursor) {
+        auto cell_num = page->FindCell(key);
+        uint32_t page_num;
+        /* std::cout << __func__ << ": key=" << key << " cell_num=" << cell_num << std::endl; */
+        Status status;
+        STATUS_CHECK(page->GetChildPageNum(cell_num, page_num));
+        void* sub_page;
+        STATUS_CHECK(pager->GetPage(page_num, sub_page));
+        LeafPage* lpage = PageHelper::AsLeaf(sub_page);
+        if (lpage) {
+            cursor->page_num = page_num;
+            return LeafPageFind(lpage, key, cursor);
+        }
+        InternalPage* ipage = PageHelper::AsInternal(sub_page);
+        if (!ipage) {
+            status.type = StatusType::PAGE_INVALID;
+            return status;
+        }
+        return InternalPageFind(ipage, key, cursor);
+    }
+
+    std::shared_ptr<Cursor>
+    Find(uint32_t key) {
+        void* page;
+        auto status = pager->GetPage(root_page_num, page);
+        if (!status.ok()) {
+            return nullptr;
+        }
+        auto cursor = std::make_shared<Cursor>();
+        cursor->table = shared_from_this();
+        cursor->page_num = root_page_num;
+        cursor->end_of_table = false;
+        InternalPage* ipage = PageHelper::AsInternal(page);
+        if (ipage) {
+            status = InternalPageFind(ipage, key, cursor);
+            if (!status.ok()) {
+                return nullptr;
+            }
+            return cursor;
+        }
+
+        LeafPage* lpage = PageHelper::AsLeaf(page);
+        if (!lpage) {
+            return nullptr;
+        }
+
+        status = LeafPageFind(lpage, key, cursor);
+        if (!status.ok()) {
+            return nullptr;
+        }
+        return cursor;
+    }
+
+    Status
+    Insert(uint32_t key, UserSchema& row) {
+        Status status;
+        auto cursor = Find(key);
+        /* std::cout << __func__ << ":" << __LINE__ << " cursor->page_num=" << cursor->page_num << std::endl; */
+        if (!cursor) {
+            status.type = StatusType::KEY_OVERFLOW;
+            return status;
+        }
+
+        status = cursor->ExecuteInsert(key, row);
+        return status;
+    }
 
     /* void */
     /* Append(UserSchema& row) { */

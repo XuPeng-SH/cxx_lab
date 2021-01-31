@@ -7,6 +7,7 @@ enum StatusType {
     INVALID_ST,
     ILLIGLE_ST,
 
+    PAGE_INVALID,
     PAGE_NUM_OVERFLOW,
     PAGE_LOAD_ERR,
     PAGE_FLUSH_ERR,

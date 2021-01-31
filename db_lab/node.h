@@ -22,6 +22,11 @@ struct Node {
         return header.is_root;
     }
 
+    bool
+    IsDirty() const {
+        return header.type != Type::NONE;
+    }
+
     void
     SetRoot(bool is_root) {
         header.is_root = is_root;
@@ -75,6 +80,7 @@ struct InternalNode : public Node {
     constexpr static const uint32_t KeySize = sizeof(uint32_t);
     constexpr static const uint32_t ChildSize = sizeof(uint32_t);
     constexpr static const uint32_t CellSize = KeySize + ChildSize;
+    constexpr static const uint32_t MaxCells = (BodySize / CellSize) - 1;
 
     /* InternalNode(InternalNode& o) : Node(o), */
     /*     internal_header(o.internal_header), body(o.body) { */
@@ -86,6 +92,7 @@ struct InternalNode : public Node {
     Reset() {
         SetType(Type::INTERNAL);
         internal_header.num_keys = 0;
+        memset(body.buff, 0, BodySize);
     }
 
     void*
@@ -100,9 +107,9 @@ struct InternalNode : public Node {
         return nullptr;
     }
 
-    uint32_t*
-    RightChildPtr() {
-        return &internal_header.right_child;
+    uint32_t
+    RightChildPage() {
+        return internal_header.right_child;
     }
 
     uint32_t*
@@ -112,10 +119,25 @@ struct InternalNode : public Node {
             return nullptr;
         }
         if (child_num == num_keys) {
+            /* std::cout << __func__ << ": " << "child_num=" << child_num << " page_num=" << internal_header.right_child << std::endl; */
             return &internal_header.right_child;
         }
         auto ptr = CellPtr(child_num);
+        /* std::cout << __func__ << ":" << __LINE__ << ": child_num=" << child_num << " page_num=" << *((uint32_t*)ptr) << std::endl; */
         return (uint32_t*)ptr;
+    }
+
+    Status
+    GetChildPageNum(uint32_t child_num, uint32_t& page_num) {
+        Status status;
+        uint32_t* ptr = ChildPtr(child_num);
+        if (!ptr) {
+            status.type = StatusType::CHILD_OVERFLOW;
+            return status;
+        }
+        page_num = *ptr;
+        /* std::cout << __func__ << ": " << "child_num=" << child_num << " page_num=" << page_num << std::endl; */
+        return status;
     }
 
     Status
@@ -141,6 +163,18 @@ struct InternalNode : public Node {
     }
 
     Status
+    GetKey(uint32_t key_num, uint32_t& key) {
+        Status status;
+        auto ptr = KeyPtr(key_num);
+        if (!ptr) {
+            status.type = KEY_OVERFLOW;
+            return status;
+        }
+        key = *ptr;
+        return status;
+    }
+
+    Status
     SetKey(uint32_t key_num, uint32_t key) {
         Status status;
         uint32_t* ptr = KeyPtr(key_num);
@@ -152,6 +186,25 @@ struct InternalNode : public Node {
         *ptr = key;
 
         return status;
+    }
+
+    uint32_t
+    FindCell(uint32_t key) {
+        uint32_t min_cell = 0;
+        uint32_t max_cell = NumOfKeys();
+        /* Status status; */
+
+        while (min_cell != max_cell) {
+            uint32_t cell = (min_cell + max_cell) / 2;
+            uint32_t it_key;
+            GetKey(cell, it_key);
+            if (it_key >= key) {
+                max_cell = cell;
+            } else {
+                min_cell = cell + 1;
+            }
+        }
+        return min_cell;
     }
 
     uint32_t
@@ -170,7 +223,7 @@ struct InternalNode : public Node {
     }
 
     Status
-    GetMaxKey(uint32_t& key) const {
+    GetMaxKey(uint32_t& key) {
         Status status;
         if (internal_header.num_keys <= 0) {
             status.type = StatusType::EMPTY_KEY;
@@ -278,6 +331,31 @@ struct LeafNode : public Node {
         return (char*)ret + KeySize;
     }
 
+    uint32_t
+    FindCell(uint32_t key) {
+        uint32_t min_cell = 0;
+        uint32_t max_cell = NumOfCells();
+        Status status;
+        UserSchema val;
+
+        while (min_cell != max_cell) {
+            uint32_t cell = (min_cell + max_cell) / 2;
+            uint32_t it_key;
+            GetCellKeyVal(cell, it_key, val);
+            /* std::cout << "min_cell: " << min_cell << " " << "max_cell:" << max_cell; */
+            /* std::cout << " cell: " << cell << " " << "it_key:" << it_key << " key:" << key << std::endl; */
+            if (key == it_key) {
+                return cell;
+            } else if (key < it_key) {
+                max_cell = cell;
+            } else {
+                min_cell = cell + 1;
+            }
+        }
+
+        return min_cell;
+    }
+
     Status
     PutKey(const uint32_t& cell_num, const uint32_t& key) {
         Status status;
@@ -288,6 +366,7 @@ struct LeafNode : public Node {
             return status;
         }
         memcpy(cell_loc, &key, sizeof(key));
+        /* std::cout << "Put cell:" << cell_num << " key:" << key << std::endl; */
         return status;
     }
 
@@ -338,5 +417,45 @@ struct LeafNode : public Node {
 
 using InternalPage = InternalNode<Pager::PAGE_SIZE>;
 using LeafPage = LeafNode<Pager::PAGE_SIZE, sizeof(UserSchema::id), sizeof(UserSchema)>;
+
+struct PageHelper {
+    static InternalPage*
+    AsInternal(void* page) {
+        if (!page) {
+            return nullptr;
+        }
+        if (((Node*)page)->IsInternal()) {
+            return (InternalPage*)page;
+        }
+        return nullptr;
+    }
+
+    static LeafPage*
+    AsLeaf(void* page) {
+        if (!page) {
+            return nullptr;
+        }
+        if (((Node*)page)->IsLeaf()) {
+            return (LeafPage*)page;
+        }
+        return nullptr;
+    }
+
+    static Status
+    GetMaxKey(void* page, uint32_t& key) {
+        Status status;
+        InternalPage* ipage = AsInternal(page);
+        if (!ipage) {
+            LeafPage* lpage = AsLeaf(page);
+            if (!lpage) {
+                status.type = StatusType::PAGE_INVALID;
+                return status;
+            }
+            return lpage->GetMaxKey(key);
+        }
+
+        return ipage->GetMaxKey(key);
+    }
+};
 
 #pragma pack(pop)

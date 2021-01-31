@@ -57,105 +57,95 @@ TEST_F(MyUT, table_insert) {
     ASSERT_TRUE(table->GetRootPage()->IsLeaf());
 
     UserSchema user;
-    auto c = table->StartCursor();
     auto i = 0;
     for (; i < LeafPage::CellsCapacity; ++i) {
         user.id = i;
         user.SetUserName((std::string("user") + std::to_string(i)).c_str());
         user.SetEmail((std::string("user") + std::to_string(i) + "@163.com").c_str());
-        status = c->Insert(user.id, user);
+        status = table->Insert(user.id, user);
         ASSERT_TRUE(status.ok());
-        LeafPage* leaf;
-        status = c->GetLeafPage(leaf);
-        ASSERT_TRUE(status.ok());
-        ASSERT_EQ(leaf->NumOfCells(), i+1);
-        /* std::cout << "NumOfCells is: " << leaf->NumOfCells() << std::endl; */
     }
     ASSERT_EQ(table->NumOfPages(), 1);
 
     user.id = i;
     user.SetUserName((std::string("user") + std::to_string(i)).c_str());
     user.SetEmail((std::string("user") + std::to_string(i) + "@163.com").c_str());
-    status = c->Insert(user.id, user);
+    status = table->Insert(user.id, user);
     ASSERT_TRUE(status.ok());
     ASSERT_EQ(table->NumOfPages(), 3);
 
     ASSERT_EQ(table->GetRootPageNum(), 0);
-    auto root_page = table->GetRootPage();
-    ASSERT_TRUE(root_page->IsInternal());
+    ASSERT_TRUE(table->GetRootPage()->IsInternal());
+    auto root_page = PageHelper::AsInternal(table->GetRootPage());
+    ASSERT_TRUE(root_page);
+    ASSERT_EQ(root_page->NumOfKeys(), 1);
+    uint32_t first_child_page_num;
+    status = root_page->GetChildPageNum(0, first_child_page_num);
+    ASSERT_TRUE(status.ok());
+    ASSERT_EQ(first_child_page_num, 2);
+    void* first_child;
+    status = table->pager->GetPage(first_child_page_num, first_child);
+    ASSERT_TRUE(status.ok());
+    LeafPage* first_leaf = PageHelper::AsLeaf(first_child);
+    ASSERT_TRUE(first_leaf);
+    uint32_t first_key;
+    status = root_page->GetKey(0, first_key);
+    ASSERT_TRUE(status.ok());
+    uint32_t first_leaf_max_key;
+    status = first_leaf->GetMaxKey(first_leaf_max_key);
+    ASSERT_TRUE(status.ok());
+    ASSERT_EQ(first_leaf_max_key, first_key);
 
-}
+    uint32_t right_child_page_num;
+    status = root_page->GetChildPageNum(1, right_child_page_num);
+    ASSERT_TRUE(status.ok());
+    ASSERT_EQ(right_child_page_num, 1);
 
-TEST_F(MyUT, table_basic) {
-    std::cout << LeafPage::MetaInfoString() << std::endl;
-    std::string path = "/tmp/xx";
-    {
-        std::experimental::filesystem::remove_all(path);
-        auto table = Table::Open(path);
-        ASSERT_EQ(table->NumOfPages(), 1);
+    void* right_child;
+    status = table->pager->GetPage(right_child_page_num, right_child);
+    ASSERT_TRUE(status.ok());
 
-        auto c = table->StartCursor();
-        assert(c->end_of_table);
+    LeafPage* right_leaf = PageHelper::AsLeaf(right_child);
+    ASSERT_TRUE(right_leaf);
 
-        UserSchema user1;
-        user1.id = 1;
-        user1.SetUserName("XuPeng");
-        user1.SetEmail("xupeng3112@163.com");
+    ASSERT_EQ(first_leaf->NumOfCells(), 7);
+    ASSERT_EQ(right_leaf->NumOfCells(), 7);
 
-        LeafPage* leaf;
-        Status status = c->GetLeafPage(leaf);
+    for (auto i = 0; i < root_page->NumOfKeys(); ++i) {
+        uint32_t key;
+        status = root_page->GetKey(i, key);
         ASSERT_TRUE(status.ok());
-        ASSERT_EQ(leaf->NumOfCells(), 0);
-        c->Insert(user1.id, user1);
-        ASSERT_EQ(leaf->NumOfCells(), 1);
-
-        UserSchema user2;
-        user2.id = 2;
-        user2.SetUserName("Nana");
-        user2.SetEmail("nana@163.com");
-        c->Insert(user2.id, user2);
-        ASSERT_EQ(leaf->NumOfCells(), 2);
-    }
-    return;
-
-    uint32_t num_keys = (uint32_t)RandomInt(100, 2000);
-    {
-        auto table = Table::Open(path);
-        void* page = nullptr;
-        auto status = table->pager->GetPage(0, page);
-        ASSERT_TRUE(status.ok());
-        InternalPage* ipage = new (page) InternalPage();
-        ipage->SetNumOfKeys(num_keys);
-        ipage->SetRoot(true);
-        ASSERT_TRUE(ipage->IsRoot());
-        /* auto p = page; */
-        /* for (auto i = 0; i < 20; ++i) { */
-        /*     p = (char*)p + i * sizeof(uint32_t); */
-        /*     cout << *(uint32_t*)(p) << endl; */
-        /* } */
-    }
-    {
-        auto table = Table::Open(path);
-        void* page = nullptr;
-        auto status = table->pager->GetPage(0, page);
-        ASSERT_TRUE(status.ok());
-        InternalPage* ipage = new (page) InternalPage();
-        /* auto p = page; */
-        /* for (auto i = 0; i < 20; ++i) { */
-        /*     p = (char*)p + i * sizeof(uint32_t); */
-        /*     cout << *(uint32_t*)(p) << endl; */
-        /* } */
-        ASSERT_TRUE(ipage->IsRoot());
-        ASSERT_EQ(ipage->NumOfKeys(), num_keys);
+        std::cout << "key[" << i << "] = " << key << std::endl;
     }
 
-    /* auto cursor = table->StartCursor(); */
+    ASSERT_EQ(root_page->FindCell(6), 0);
+    ASSERT_EQ(root_page->FindCell(7), 1);
+    /* for (auto i=0; i<14; ++i) { */
+    /*     std::cout << i << " left  find_cell: " << first_leaf->FindCell(i) << std::endl; */
+    /* } */
+    /* for (auto i=0; i<14; ++i) { */
+    /*     std::cout << i << " right find_cell: " << right_leaf->FindCell(i) << std::endl; */
+    /* } */
+    for (i = 0; i < LeafPage::CellsCapacity*100; ++i) {
+        user.id = i + 14;
+        user.SetUserName((std::string("user") + std::to_string(i)).c_str());
+        user.SetEmail((std::string("user") + std::to_string(i) + "@163.com").c_str());
+        status = table->Insert(user.id, user);
+        ASSERT_TRUE(status.ok());
+    }
 
-    /* user1.SerializeTo(cursor->Value()); */
+    ASSERT_EQ(table->NumOfPages(), 188);
 
-    /* UserSchema user2; */
-    /* user2.DeserializeFrom(cursor->Value()); */
-    /* assert(user1.id == user2.id); */
+    uint32_t prev_page_num = std::numeric_limits<uint32_t>::max();
+    for (i = 0; i < 1000; ++i) {
+        auto c = table->Find(i);
+        if (c->page_num != prev_page_num) {
+            prev_page_num = c->page_num;
+        } else {
+            ASSERT_EQ(c->page_num, prev_page_num);
+        }
+        /* std::cout << "KEY=" << i << " PAGE_NUM=" << c->page_num << std::endl; */
+    }
 }
 
 TEST_F(MyUT, node) {
