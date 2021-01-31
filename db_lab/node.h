@@ -27,6 +27,16 @@ struct Node {
         header.is_root = is_root;
     }
 
+    bool
+    IsLeaf() const {
+        return header.type == Type::LEAF;
+    }
+
+    bool
+    IsInternal() const {
+        return header.type == Type::INTERNAL;
+    }
+
     void
     SetType(Type type) {
         header.type = type;

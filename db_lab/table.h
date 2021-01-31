@@ -35,6 +35,21 @@ struct Table : public std::enable_shared_from_this<Table> {
         return pager->num_pages;
     }
 
+    uint32_t
+    GetRootPageNum() const {
+        return root_page_num;
+    }
+
+    Node*
+    GetRootPage() const {
+        void* root;
+        auto status = pager->GetPage(root_page_num, root);
+        if (!status.ok()) {
+            return nullptr;
+        }
+        return (Node*)root;
+    }
+
     std::string
     ToString() {
         std::stringstream ss;
@@ -56,6 +71,9 @@ struct Table : public std::enable_shared_from_this<Table> {
         InternalPage* internal_root = (InternalPage*)root;
         LeafPage* left_leaf = (LeafPage*)left_child;
         LeafPage* right_leaf = (LeafPage*)right_child;
+
+        assert(internal_root->IsRoot());
+        assert(internal_root->GetType() == Node::Type::LEAF);
 
         memcpy(left_child, root, Pager::PAGE_SIZE);
         left_leaf->SetRoot(false);

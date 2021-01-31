@@ -54,6 +54,7 @@ TEST_F(MyUT, table_insert) {
 
     auto table = Table::Open(path);
     ASSERT_EQ(table->NumOfPages(), 1);
+    ASSERT_TRUE(table->GetRootPage()->IsLeaf());
 
     UserSchema user;
     auto c = table->StartCursor();
@@ -78,6 +79,11 @@ TEST_F(MyUT, table_insert) {
     status = c->Insert(user.id, user);
     ASSERT_TRUE(status.ok());
     ASSERT_EQ(table->NumOfPages(), 3);
+
+    ASSERT_EQ(table->GetRootPageNum(), 0);
+    auto root_page = table->GetRootPage();
+    ASSERT_TRUE(root_page->IsInternal());
+
 }
 
 TEST_F(MyUT, table_basic) {
