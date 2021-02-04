@@ -11,6 +11,7 @@
 #include <atomic>
 #include <future>
 #include <csignal>
+#include <deque>
 
 namespace aio = boost::asio;
 using error_code = boost::system::error_code;
@@ -181,6 +182,60 @@ class Server {
      /* std::vector<TimerHandlerPtr> handlers_; */
 };
 
+class Connection {
+ public:
+     Connection(aio::io_service& io_service)
+         : io_service_(io_service),
+           strand_(io_service),
+           socket_(io_service) {
+     }
+
+     void
+     Write(const std::string& message) {
+         strand_.post(std::bind(&Connection::WriteImpl, this, message));
+     }
+
+ private:
+     void
+     WriteImpl(const std::string& message) {
+         outbox_.push_back(message);
+         if (outbox_.size() > 1) {
+             return;
+         }
+         this->DoWrite();
+     }
+
+     void
+     DoWrite() {
+         const std::string& message = outbox_[0];
+         std::cout << __func__ << ": " << message << std::endl;
+         aio::async_write(
+                 socket_,
+                 aio::buffer(message.c_str(), message.size()),
+                 strand_.wrap(std::bind(&Connection::WriteHandler, this,
+                        std::placeholders::_1, std::placeholders::_2))
+                 );
+     }
+
+     void
+     WriteHandler(const boost::system::error_code& error, const size_t bytes_transferred) {
+        outbox_.pop_front();
+        if (error) {
+            std::cerr << "could not write: " << boost::system::system_error(error).what() << std::endl;
+            return;
+        }
+        if (!outbox_.empty()) {
+            this->DoWrite();
+        }
+     }
+
+     using OutBoxT = std::deque<std::string>;
+     aio::io_service& io_service_;
+     aio::io_service::strand strand_;
+     aio::ip::tcp::socket socket_;
+     OutBoxT outbox_;
+};
+
 Handler signal_func = nullptr;
 
 void
@@ -197,45 +252,35 @@ HandleSignal(int signum) {
 
 int main() {
     signal(SIGINT, HandleSignal);
-    /* auto pool = Pool(2); */
-    /* auto fut1 = pool.Enqueue([](int sec){ */
-    /*     std::this_thread::sleep_for(std::chrono::seconds(sec)); */
-    /*     std::cout << "Sleep " << sec << std::endl; */
-    /* }, 1); */
-    /* auto fut2 = pool.Enqueue([](int sec){ */
-    /*     std::this_thread::sleep_for(std::chrono::seconds(sec)); */
-    /*     std::cout << "Sleep " << sec << std::endl; */
-    /* }, 1); */
-    /* auto fut3 = pool.Enqueue([](int sec){ */
-    /*     std::this_thread::sleep_for(std::chrono::seconds(sec)); */
-    /*     std::cout << "Sleep " << sec << std::endl; */
-    /* }, 1); */
-
-    /* fut1.get(); */
-    /* fut2.get(); */
-    /* fut3.get(); */
-    /* return 0; */
-    auto pool = std::make_shared<Pool>(4);
-    aio::io_service io_service;
-    Server server(&io_service, pool);
-    signal_func = [&server]() {
-        server.ShutDown();
-    };
-    server.RegisterTimerHandler(100, [](const boost::system::error_code&) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        std::cout << "T1 EXE " << std::this_thread::get_id() << std::endl;
-    });
-    server.RegisterTimerHandler(100, [](const boost::system::error_code&) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        std::cout << "T2 EXE " << std::this_thread::get_id() << std::endl;
-    });
-    server.Start();
-    boost::system::error_code ec;
-
-    io_service.run(ec);
-    if (ec) {
-        std::cout << "IO service run failed: " << ec << std::endl;
+    {
+        aio::io_service io_service;
+        Connection foo( io_service );
+        io_service.run();
     }
-    server.ShutDown();
+    /* return 0; */
+    {
+        auto pool = std::make_shared<Pool>(4);
+        aio::io_service io_service;
+        Server server(&io_service, pool);
+        signal_func = [&server]() {
+            server.ShutDown();
+        };
+        server.RegisterTimerHandler(100, [](const boost::system::error_code&) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            std::cout << "T1 EXE " << std::this_thread::get_id() << std::endl;
+        });
+        server.RegisterTimerHandler(100, [](const boost::system::error_code&) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            std::cout << "T2 EXE " << std::this_thread::get_id() << std::endl;
+        });
+        server.Start();
+        boost::system::error_code ec;
+
+        io_service.run(ec);
+        if (ec) {
+            std::cout << "IO service run failed: " << ec << std::endl;
+        }
+        server.ShutDown();
+    }
     return 0;
 }
