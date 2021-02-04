@@ -119,6 +119,7 @@ execute_statement(const Statement& st, shared_ptr<Table> table) {
                 } else {
                     user.SetUserName(statements[2].c_str());
                     user.SetEmail(statements[3].c_str());
+                    status = table->Insert(user.id, user);
                     /* status = store_row(user); */
                     /* auto cursor = table->LastCursor(); */
                     /* user.SerializeTo(cursor->Value()); */
@@ -173,7 +174,7 @@ int main(int argc, char** argv) {
     /* cout << "status " << status.err_msg << endl; */
 
     /* size_t num_rows = table->num_rows; */
-    cout << table->ToString() << endl;
+    table->DumpTree();
 
     while (true) {
         cout << PROMPT;

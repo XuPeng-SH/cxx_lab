@@ -57,6 +57,17 @@ struct Table : public std::enable_shared_from_this<Table> {
         return ss.str();
     }
 
+    void
+    DumpTree() {
+        auto cursor = StartCursor();
+        while(!cursor->end_of_table) {
+            UserSchema row;
+            row.DeserializeFrom(cursor->Value());
+            std::cout << "[Page=" << cursor->page_num << ",CellNum=" << cursor->cell_num << "]: "  << row.ToString() << std::endl;
+            cursor->Advance();
+        }
+    }
+
     Status
     SplitRoot(uint32_t right_child_page_num) {
         Status status;
@@ -365,18 +376,9 @@ struct Table : public std::enable_shared_from_this<Table> {
         return status;
     }
 
-    /* void */
-    /* Append(UserSchema& row) { */
-    /*     auto c = LastCursor(); */
-    /*     row.SerializeTo(c->Value()); */
-    /*     num_rows += 1; // TODO: Remove */
-    /* } */
-
     std::shared_ptr<Cursor>
     StartCursor() {
-        auto c = std::make_shared<Cursor>();
-        c->table = shared_from_this();
-        c->page_num = 0;
+        auto c = Find(0);
 
         LeafPage* leaf;
         auto status = c->GetLeafPage(leaf);
@@ -387,12 +389,4 @@ struct Table : public std::enable_shared_from_this<Table> {
         c->end_of_table = (leaf->NumOfCells() == 0);
         return c;
     }
-    /* std::shared_ptr<Cursor> */
-    /* LastCursor() { */
-    /*     auto c = std::make_shared<Cursor>(); */
-    /*     c->table = shared_from_this(); */
-    /*     c->row_num = num_rows; // TODO: Remove */
-    /*     c->end_of_table = true; */
-    /*     return c; */
-    /* } */
 };
