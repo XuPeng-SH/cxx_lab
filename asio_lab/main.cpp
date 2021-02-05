@@ -12,6 +12,7 @@
 #include <future>
 #include <csignal>
 #include <deque>
+#include "asio_util.h"
 
 namespace aio = boost::asio;
 using error_code = boost::system::error_code;
@@ -253,11 +254,20 @@ HandleSignal(int signum) {
 int main() {
     signal(SIGINT, HandleSignal);
     {
+        std::cout << "Start DoAfter " << std::endl;
+        aio::io_service io_service;
+        auto fn = []() {
+            std::cout << "This should be printed 200 ms later" << std::endl;
+        };
+        DoAfter(io_service, fn, 200);
+        io_service.run();
+    }
+    return 0;
+    {
         aio::io_service io_service;
         Connection foo( io_service );
         io_service.run();
     }
-    /* return 0; */
     {
         auto pool = std::make_shared<Pool>(4);
         aio::io_service io_service;
