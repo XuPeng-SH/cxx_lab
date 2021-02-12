@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include <atomic>
+#include <random>
 
 #include "IProcessor.h"
 #include "Graph.h"
@@ -9,6 +10,14 @@
 
 using namespace std;
 using namespace MyDB;
+
+int
+RandomInt(int start, int end) {
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist(start, end);
+    return dist(rng);
+}
 
 class MyUT : public ::testing::Test {
 };
@@ -55,4 +64,41 @@ TEST_F(MyUT, Port_State) {
         ASSERT_EQ(uuint, State::HAS_DATA | State::IS_NEEDED);
         ASSERT_EQ(State::GetUint(adata.load()) & State::FLAGS_MASK, State::IS_FINISHED);
     }
+}
+
+OutputPorts
+CreateOutputPorts(int n = 0) {
+    if (n <= 0) {
+        n = RandomInt(2, 5);
+    }
+    OutputPorts ports;
+    for (int i = 0; i < n; ++i) {
+        ports.emplace_back();
+    }
+    return std::move(ports);
+}
+
+InputPorts
+CreateInputPorts(int n = 0) {
+    if (n <= 0) {
+        n = RandomInt(2, 5);
+    }
+    InputPorts ports;
+    for (int i = 0; i < n; ++i) {
+        ports.emplace_back();
+    }
+    return std::move(ports);
+}
+
+TEST_F(MyUT, Port) {
+    int num_outputs = RandomInt(2, 5);
+    int num_inputs = RandomInt(2, 5);
+    auto outputs = CreateOutputPorts(num_outputs);
+    auto inputs = CreateInputPorts(num_inputs);
+    ASSERT_EQ(num_outputs, outputs.size());
+    ASSERT_EQ(num_inputs, inputs.size());
+}
+
+TEST_F(MyUT, Processor) {
+
 }
