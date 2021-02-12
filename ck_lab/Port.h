@@ -125,6 +125,7 @@ struct Port {
 
     IProcessor* processor_ = nullptr;
 
+    Port() {};
     explicit Port(IProcessor* processor) : processor_(processor) {}
 
     bool
