@@ -4,8 +4,10 @@
 #include <memory>
 
 #include "Port.h"
+#include "Graph.h"
 
 using namespace std;
+using namespace MyDB;
 
 
 int main(int argc, char** argv) {
@@ -14,10 +16,10 @@ int main(int argc, char** argv) {
     Data data;
     data.val = 999;
 
-    auto uint = State::getUint(&data);
+    auto uint = State::GetUint(&data);
     cout << "uint = " << std::hex << uint << endl;
     cout << "addr = " << (void*)(&data) << endl;
-    auto ptr = State::getPtr(uint);
+    auto ptr = State::GetPtr(uint);
     cout << "ptr.val = " << std::dec << ptr->val << endl;
 
     {
@@ -28,29 +30,29 @@ int main(int argc, char** argv) {
     /* std::vector<std::shared_ptr<State::DataPtr>> vec; */
     /* for (auto i = 0; i < 10; ++i ) { */
     /*     auto dptr = std::make_shared<State::DataPtr>(); */
-    /*     cout << "uint of dptr->data_ = " << std::hex << State::getUint(dptr->data_) << endl; */
+    /*     cout << "uint of dptr->data_ = " << std::hex << State::GetUint(dptr->data_) << endl; */
     /* } */
 
     {
         auto d1 = State::DataPtr();
         d1.data_->val = 11;
-        cout << "uint of d1.data_ = " << std::hex << "0x" << State::getUint(d1.data_) << endl;
+        cout << "uint of d1.data_ = " << std::hex << "0x" << State::GetUint(d1.data_) << endl;
         std::atomic<Data*> adata(new Data());
         adata.load()->val = 22;
-        cout << "uint of adata->val = " << std::hex << "0x" << State::getUint(adata.load()) << endl;
+        cout << "uint of adata->val = " << std::hex << "0x" << State::GetUint(adata.load()) << endl;
 
         auto uuint = d1.Swap(adata, State::HAS_DATA, State::HAS_DATA);
         cout << "uuint 0x" << uuint << endl;
 
-        cout << "xxx uint of d1.data_ = " << std::hex << "0x" << State::getUint(d1.data_) << endl;
-        cout << "xxx uint of adata->val = " << std::hex << "0x" << State::getUint(adata.load()) << endl;
+        cout << "xxx uint of d1.data_ = " << std::hex << "0x" << State::GetUint(d1.data_) << endl;
+        cout << "xxx uint of adata->val = " << std::hex << "0x" << State::GetUint(adata.load()) << endl;
 
         /* delete adata.load(); */
     }
 
     {
         auto s1 = State();
-        cout << "s1.data_ " << State::getUint(s1.data_) << endl;
+        cout << "s1.data_ " << State::GetUint(s1.data_) << endl;
         auto pre = s1.SetFlags(State::HAS_DATA, State::HAS_DATA);
         cout << "pre is " << pre << endl;
 
@@ -67,6 +69,13 @@ int main(int argc, char** argv) {
         cout << "aval = " << aval << endl;
         cout << "expected = " << expected << endl;
         cout << "desired = " << desired << endl;
+    }
+
+    {
+        Graph::State state;
+        auto func = [](){ std::cout << "call func" << std::endl; };
+        state.job_ = func;
+        state.job_();
     }
 
     return ret;

@@ -5,7 +5,6 @@ set(CMAKE_CXX_STANDARD 17)
 aux_source_directory(./ source_files)
 
 include_directories(/usr/include)
-# include_directories(/usr/include/x86_64-linux-gnu/bits)
 include_directories(/usr/local/include)
 
 link_directories(/usr/lib/gcc/x86_64-linux-gnu/5/
@@ -26,3 +25,8 @@ set(lab_libs
     )
 
 target_link_libraries(ck_lab ${lab_libs})
+
+enable_testing()
+add_subdirectory(ut)
+add_test(NAME test
+         COMMAND ut/myut)
