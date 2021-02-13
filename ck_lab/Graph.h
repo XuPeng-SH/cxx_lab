@@ -63,9 +63,14 @@ struct Graph {
 
     explicit Graph(const Processors& processors);
 
+    std::string
+    ToString() const;
+
     bool
     AddEdges(ProcessorId processor_id);
 
     Edge&
     AddEdge(Edges& edges, Edge edge, const IProcessor* from, const IProcessor* to);
 };
+
+using GraphPtr = std::shared_ptr<Graph>;

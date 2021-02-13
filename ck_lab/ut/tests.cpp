@@ -67,8 +67,8 @@ TEST_F(MyUT, Port_State) {
 }
 
 OutputPorts
-CreateOutputPorts(int n = 0) {
-    if (n <= 0) {
+CreateOutputPorts(int n = -1) {
+    if (n < 0) {
         n = RandomInt(2, 5);
     }
     OutputPorts ports;
@@ -79,8 +79,8 @@ CreateOutputPorts(int n = 0) {
 }
 
 InputPorts
-CreateInputPorts(int n = 0) {
-    if (n <= 0) {
+CreateInputPorts(int n = -1) {
+    if (n < 0) {
         n = RandomInt(2, 5);
     }
     InputPorts ports;
@@ -99,6 +99,54 @@ TEST_F(MyUT, Port) {
     ASSERT_EQ(num_inputs, inputs.size());
 }
 
-TEST_F(MyUT, Processor) {
+IProcessor*
+CreateProcessor(size_t input_size, size_t output_size) {
+    auto inputs = CreateInputPorts(input_size);
+    auto outputs = CreateOutputPorts(output_size);
+    IProcessor* processor = new IProcessor(inputs, outputs);
+    return processor;
+}
 
+GraphPtr
+CreateGraph(Processors& processors) {
+    if (processors.empty()) {
+        return nullptr;
+    }
+
+    IProcessor* pre = processors[0];
+    for (auto i = 1; i < processors.size(); ++i) {
+        auto ret = pre->AsFromConnect(processors[i]);
+        if (!ret) return nullptr;
+        pre = processors[i];
+    }
+
+    return std::make_shared<Graph>(processors);
+}
+
+TEST_F(MyUT, Graph1) {
+    int chain_size = RandomInt(0, 4);
+
+    vector<size_t> degrees = {0};
+    for (auto i = 0; i < chain_size; ++i) {
+        degrees.emplace_back(RandomInt(1, 4));
+    }
+    degrees.emplace_back(0);
+
+    Processors processors;
+    size_t input_size = degrees[0];
+    size_t output_size = 0;
+
+    for (auto i = 1; i < degrees.size(); ++i) {
+        output_size = degrees[i];
+        processors.push_back(CreateProcessor(input_size, output_size));
+        input_size = output_size;
+    }
+
+    auto graph = CreateGraph(processors);
+    ASSERT_TRUE(graph);
+
+    for (auto& processor : processors) {
+        cout << processor->ToString() << endl;
+        delete processor;
+    }
 }

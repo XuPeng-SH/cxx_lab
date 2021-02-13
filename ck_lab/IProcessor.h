@@ -3,6 +3,9 @@
 #include <limits>
 #include <memory>
 #include <vector>
+#include <string>
+#include <sstream>
+#include <iostream>
 
 #include "Port.h"
 
@@ -24,9 +27,11 @@ struct IProcessor {
     IProcessor(const MyDB::InputPorts& inputs, const MyDB::OutputPorts& outputs) :
         inputs_(inputs), outputs_(outputs) {
         for (auto& port : inputs_) {
+            /* std::cout << "assign processor 0x" << (void*)(this) << " to input port 0x" << (void*)(&port)  << std::endl; */
             port.processor_ = this;
         }
         for (auto& port : outputs_) {
+            /* std::cout << "assign processor 0x" << (void*)(this) << " to output port 0x" << (void*)(&port)  << std::endl; */
             port.processor_ = this;
         }
     }
@@ -54,10 +59,29 @@ struct IProcessor {
         assert(false);
     }
 
+    bool
+    AsFromConnect(IProcessor* to);
+
     auto&
     GetInputs() { return inputs_; }
     auto&
     GetOutputs() { return outputs_; }
+
+    size_t
+    InputPortSize() const {
+        return inputs_.size();
+    }
+    size_t
+    OutputPortSize() const {
+        return outputs_.size();
+    }
+
+    std::string
+    ToString() const {
+        std::stringstream ss;
+        ss << "<Processor (" << inputs_.size() << "," << outputs_.size() << ")>";
+        return ss.str();
+    }
 
     MyDB::InputPorts inputs_;
     MyDB::OutputPorts outputs_;
