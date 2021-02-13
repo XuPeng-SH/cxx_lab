@@ -138,7 +138,7 @@ struct Port {
         return state_->GetFlags() & State::HAS_DATA;
     }
 
-    IProcessor&
+    const IProcessor&
     IMutableProcessor() const { return *processor_; }
     IProcessor&
     MutableProcessor() { return *processor_; }
@@ -235,7 +235,7 @@ struct OutputPort : public Port {
         return *input_port_;
     }
     const InputPort&
-    ImmutableInputPort() {
+    ImmutableInputPort() const {
         return *input_port_;
     }
 };
