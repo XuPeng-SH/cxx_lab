@@ -3,6 +3,22 @@
 #include <iostream>
 #include <sstream>
 
+std::string
+Graph::Node::ToString() const {
+    std::stringstream ss;
+    std::string type = "Node";
+    if (IsSource() && IsSink()) {
+        type = "Only_Node";
+    } else if (IsSource()) {
+        type = "Src_Node";
+    } else if (IsSink()) {
+        type = "Snk_Node";
+    }
+    ss << "[" << type << "(" << processor_->InputPortSize();
+    ss << "," << processor_->OutputPortSize() << ")]";
+    return ss.str();
+}
+
 Graph::Graph(const Processors& processors) {
     nodes_.reserve(processors.size());
     for (auto node = 0; node < processors.size(); ++node) {
@@ -66,7 +82,13 @@ Graph::AddEdge(Edges& edges, Edge edge, const IProcessor* from, const IProcessor
 std::string
 Graph::ToString() const {
     std::stringstream ss;
+    bool first = true;
     for (auto i = 0; i < nodes_.size(); ++i) {
-
+        if (!first) {
+            ss << "-->";
+        }
+        ss << nodes_[i]->ToString();
+        first = false;
     }
+    return ss.str();
 }

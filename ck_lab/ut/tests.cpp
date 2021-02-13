@@ -144,9 +144,9 @@ TEST_F(MyUT, Graph1) {
 
     auto graph = CreateGraph(processors);
     ASSERT_TRUE(graph);
+    std::cout << graph->ToString() << std::endl;
 
     for (auto& processor : processors) {
-        cout << processor->ToString() << endl;
         delete processor;
     }
 }
