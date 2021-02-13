@@ -28,6 +28,14 @@ class Pipe {
     OutputPortSize() const {
         return output_ports_.size();
     }
+    size_t
+    MaxParallelStreams() const {
+        return max_parallel_streams_;
+    }
+    size_t
+    NumOfProcessors() const {
+        return processors_.size();
+    }
 
  private:
     Processors processors_;
