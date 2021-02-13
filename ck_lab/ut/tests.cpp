@@ -7,6 +7,7 @@
 #include "IProcessor.h"
 #include "Graph.h"
 #include "Port.h"
+#include "Pipe.h"
 
 using namespace std;
 using namespace MyDB;
@@ -148,4 +149,9 @@ TEST_F(MyUT, Graph1) {
     /* for (auto& processor : processors) { */
     /*     delete processor; */
     /* } */
+}
+
+TEST_F(MyUT, Pipe) {
+    Pipe pipe;
+    ASSERT_EQ(pipe.OutputPortSize(), 0);
 }
