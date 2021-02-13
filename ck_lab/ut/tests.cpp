@@ -99,12 +99,11 @@ TEST_F(MyUT, Port) {
     ASSERT_EQ(num_inputs, inputs.size());
 }
 
-IProcessor*
+IProcessorPtr
 CreateProcessor(size_t input_size, size_t output_size) {
     auto inputs = CreateInputPorts(input_size);
     auto outputs = CreateOutputPorts(output_size);
-    IProcessor* processor = new IProcessor(inputs, outputs);
-    return processor;
+    return std::make_shared<IProcessor>(inputs, outputs);
 }
 
 GraphPtr
@@ -113,11 +112,11 @@ CreateGraph(Processors& processors) {
         return nullptr;
     }
 
-    IProcessor* pre = processors[0];
+    IProcessor* pre = processors[0].get();
     for (auto i = 1; i < processors.size(); ++i) {
-        auto ret = pre->AsFromConnect(processors[i]);
+        auto ret = pre->AsFromConnect(processors[i].get());
         if (!ret) return nullptr;
-        pre = processors[i];
+        pre = processors[i].get();
     }
 
     return std::make_shared<Graph>(processors);
@@ -146,7 +145,7 @@ TEST_F(MyUT, Graph1) {
     ASSERT_TRUE(graph);
     std::cout << graph->ToString() << std::endl;
 
-    for (auto& processor : processors) {
-        delete processor;
-    }
+    /* for (auto& processor : processors) { */
+    /*     delete processor; */
+    /* } */
 }

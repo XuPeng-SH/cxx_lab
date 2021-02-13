@@ -22,8 +22,8 @@ Graph::Node::ToString() const {
 Graph::Graph(const Processors& processors) {
     nodes_.reserve(processors.size());
     for (auto node = 0; node < processors.size(); ++node) {
-        processor_map_[processors[node]] = node;
-        nodes_.emplace_back(std::make_unique<Node>(processors[node], node));
+        processor_map_[processors[node].get()] = node;
+        nodes_.emplace_back(std::make_unique<Node>(processors[node].get(), node));
     }
 
     for (auto node = 0; node < processors.size(); ++ node) {

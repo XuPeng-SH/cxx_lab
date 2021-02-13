@@ -88,4 +88,4 @@ struct IProcessor {
 };
 
 using IProcessorPtr = std::shared_ptr<IProcessor>;
-using Processors = std::vector<IProcessor*>;
+using Processors = std::vector<IProcessorPtr>;
