@@ -50,6 +50,24 @@ struct Graph {
         JobT job_;
         std::exception_ptr exception_;
 
+        bool
+        IsSource() const {
+            if (processor_ && (processor_->InputPortSize() == 0)) {
+                return true;
+            }
+            return false;
+        }
+        bool
+        IsSink() const {
+            if (processor_ && (processor_->OutputPortSize() == 0)) {
+                return true;
+            }
+            return false;
+        }
+
+        std::string
+        ToString() const;
+
         /* PortIds inputs */
         Node(IProcessor* processor, ProcessorId processor_id) :
             processor_(processor), processor_id_(processor_id) {}
