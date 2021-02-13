@@ -43,6 +43,9 @@ struct State {
             delete GetPtr(GetUint(data_) & PTR_MASK);
         }
 
+        DataPtr(DataPtr const &) : data_(new Data()) {}
+        DataPtr& operator=(DataPtr const &) = delete;
+
         Data* operator->() const { return data_; }
         Data& operator*() const { return *data_; }
         Data* get() const { return data_; }
@@ -241,6 +244,6 @@ using InputPorts = std::list<InputPort>;
 using OutputPorts = std::list<OutputPort>;
 
 void
-Connect(OutputPort& output, InputPort input);
+Connect(OutputPort& output, InputPort& input);
 
 } // namespace MyDB

@@ -4,7 +4,10 @@ project(myut)
 set(THREADS_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-add_executable(${PROJECT_NAME} tests.cpp)
+add_executable(${PROJECT_NAME} tests.cpp
+        ../Port.cpp
+        ../IProcessor.cpp
+        ../Graph.cpp)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
 enable_testing()
