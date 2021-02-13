@@ -66,4 +66,7 @@ Pipe::AddTransform(IProcessorPtr transform) {
 
         output_ports_.push_back(&port);
     }
+
+    processors_.emplace_back(std::move(transform));
+    max_parallel_streams_ = std::max(max_parallel_streams_, output_ports_.size());
 }

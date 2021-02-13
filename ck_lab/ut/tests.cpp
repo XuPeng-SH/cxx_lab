@@ -154,4 +154,31 @@ TEST_F(MyUT, Graph1) {
 TEST_F(MyUT, Pipe) {
     Pipe pipe;
     ASSERT_EQ(pipe.OutputPortSize(), 0);
+    ASSERT_TRUE(pipe.Empty());
+
+    auto source = CreateProcessor(0, 1);
+    auto t1_output = RandomInt(1,4);
+    auto t2_output = RandomInt(1,4);
+    auto t1 = CreateProcessor(1, t1_output);
+    auto t2 = CreateProcessor(t1_output, t2_output);
+    auto sink = CreateProcessor(t2_output, 0);
+
+    pipe.AddSource(source);
+    size_t max_st = 1;
+    ASSERT_EQ(pipe.NumOfProcessors(), 1);
+    ASSERT_EQ(pipe.OutputPortSize(), source->OutputPortSize());
+    ASSERT_EQ(pipe.MaxParallelStreams(), source->OutputPortSize());
+
+    pipe.AddTransform(t1);
+    max_st = std::max(max_st, t1->OutputPortSize());
+    ASSERT_EQ(pipe.NumOfProcessors(), 2);
+    ASSERT_EQ(pipe.OutputPortSize(), t1->OutputPortSize());
+    ASSERT_EQ(pipe.MaxParallelStreams(), max_st);
+
+    pipe.AddTransform(t2);
+    max_st = std::max(max_st, t2->OutputPortSize());
+    ASSERT_EQ(pipe.NumOfProcessors(), 3);
+    ASSERT_EQ(pipe.OutputPortSize(), t2->OutputPortSize());
+    ASSERT_EQ(pipe.MaxParallelStreams(), max_st);
+    /* pipe.AddTransform(sink); */
 }

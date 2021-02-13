@@ -7,6 +7,7 @@ find_package(Threads REQUIRED)
 add_executable(${PROJECT_NAME} tests.cpp
         ../Port.cpp
         ../IProcessor.cpp
+        ../Pipe.cpp
         ../Graph.cpp)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
