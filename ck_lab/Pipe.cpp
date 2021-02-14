@@ -2,6 +2,9 @@
 
 #include <assert.h>
 #include <unordered_set>
+#include <sstream>
+#include <set>
+#include <string>
 
 void
 CheckSource(const IProcessor& processor) {
@@ -69,4 +72,64 @@ Pipe::AddTransform(IProcessorPtr transform) {
 
     processors_.emplace_back(std::move(transform));
     max_parallel_streams_ = std::max(max_parallel_streams_, output_ports_.size());
+}
+
+std::string
+Pipe::ToString() const {
+    std::vector<IProcessor*> sources;
+    for (auto& processor : processors_) {
+        if (processor->InputPortSize() == 0) {
+            sources.emplace_back(processor.get());
+        }
+    }
+
+    std::set<IProcessor*> printed;
+    std::vector<std::vector<std::string>> lines;
+    for (auto& source : sources) {
+        std::vector<std::string> line;
+        IProcessor* current = source;
+        while (current) {
+            if (printed.find(current) == printed.end()) {
+                line.push_back(current->ToString(true));
+                printed.insert(current);
+                /* std::cout << current->ToString(true) << std::endl; */
+            }
+            if (current->OutputPortSize() == 0 || !current->GetOutputs().front().IsConnected()) {
+                current = nullptr;
+            } else {
+                /* std::cout << "0x" << (void*)(current) << std::endl; */
+                auto& input_port = current->GetOutputs().front().MutableInputPort();
+                if (!input_port.IsConnected()) {
+                    current = nullptr;
+                } else {
+                    current = &input_port.MutableProcessor();
+                }
+            }
+        }
+        lines.emplace_back(std::move(line));
+    }
+
+    std::stringstream ss;
+    bool first_line = true;
+
+    auto i = 1;
+
+    for (auto& line : lines) {
+        if (!first_line) {
+            ss << "\n";
+        }
+
+        ss << i++ << ") ";
+        bool first = true;
+        for (auto& node : line) {
+            if (!first) {
+                ss << "-->";
+            }
+            ss << node;
+            first = false;
+        }
+        first_line = false;
+    }
+
+    return ss.str();
 }

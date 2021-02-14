@@ -77,9 +77,14 @@ struct IProcessor {
     }
 
     std::string
-    ToString() const {
+    ToString(bool alias = false) const {
         std::stringstream ss;
-        ss << "<Processor (" << inputs_.size() << "," << outputs_.size() << ")>";
+        if (alias) {
+            ss << "[" << inputs_.size() << "," << outputs_.size() << "]";
+
+        } else {
+            ss << "<Processor (" << inputs_.size() << "," << outputs_.size() << ")>";
+        }
         return ss.str();
     }
 
