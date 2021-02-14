@@ -2,7 +2,10 @@
 
 #include "IProcessor.h"
 #include "Port.h"
+
 #include <vector>
+#include <string>
+#include <functional>
 
 void
 CheckSource(const IProcessor& processor);
@@ -10,6 +13,8 @@ CheckSource(const IProcessor& processor);
 class Pipe {
  public:
     using OutputPortPtrs = std::vector<MyDB::OutputPort*>;
+    using TransformerClosure = std::function<IProcessorPtr()>;
+
     Pipe() = default;
 
     Pipe(Processors processors);
@@ -36,6 +41,9 @@ class Pipe {
     NumOfProcessors() const {
         return processors_.size();
     }
+
+    std::string
+    ToString() const;
 
  private:
     Processors processors_;
