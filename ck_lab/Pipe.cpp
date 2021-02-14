@@ -133,3 +133,33 @@ Pipe::ToString() const {
 
     return ss.str();
 }
+
+void
+RemoveEmptyPipes(Pipes& pipes) {
+    for (auto it = pipes.begin(); it != pipes.end(); ++it) {
+        if ((*it)->Empty()) {
+            it = pipes.erase(it);
+        }
+    }
+}
+
+PipePtr
+Pipe::MergePipes(Pipes& pipes) {
+    RemoveEmptyPipes(pipes);
+    if (pipes.size() == 0) {
+        return nullptr;
+    }
+    if (pipes.size() == 1) {
+        return std::make_shared<Pipe>(std::move(*pipes.front()));
+    }
+
+    auto pipe = std::make_shared<Pipe>();
+
+    for (auto& p : pipes) {
+        pipe->max_parallel_streams_ += p->max_parallel_streams_;
+        pipe->output_ports_.insert(pipe->output_ports_.end(), p->output_ports_.begin(), p->output_ports_.end());
+        pipe->processors_.insert(pipe->processors_.end(), p->processors_.begin(), p->processors_.end());
+    }
+
+    return pipe;
+}

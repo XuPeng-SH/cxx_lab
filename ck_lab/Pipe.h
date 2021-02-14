@@ -6,9 +6,13 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <memory>
 
 void
 CheckSource(const IProcessor& processor);
+class Pipe;
+using PipePtr = std::shared_ptr<Pipe>;
+using Pipes = std::vector<PipePtr>;
 
 class Pipe {
  public:
@@ -18,6 +22,10 @@ class Pipe {
     Pipe() = default;
 
     Pipe(Processors processors);
+    Pipe(const Pipe& other) = delete;
+    Pipe& operator=(const Pipe& other) = delete;
+    Pipe(Pipe&& other) = default;
+    Pipe& operator=(Pipe&& other) = default;
 
     void
     AddSource(IProcessorPtr source);
@@ -44,6 +52,9 @@ class Pipe {
 
     std::string
     ToString() const;
+
+    static PipePtr
+    MergePipes(Pipes& pipes);
 
  private:
     Processors processors_;
