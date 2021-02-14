@@ -213,6 +213,17 @@ TEST_F(MyUT, Pipe2) {
     ASSERT_EQ(pipe.OutputPortSize(), t2->OutputPortSize());
     ASSERT_EQ(pipe.MaxParallelStreams(), max_st);
 
+    auto source2 = CreateProcessor(0, 1);
+    pipe.AddSource(source2);
+    ASSERT_EQ(pipe.NumOfProcessors(), 4);
+    ASSERT_EQ(pipe.OutputPortSize(), t2->OutputPortSize() + source2->OutputPortSize());
+
     std::cout << pipe.ToString() << std::endl;
+
+    auto t3_output = RandomInt(1,4);
+    auto t3 = CreateProcessor(t2->OutputPortSize() + source2->OutputPortSize(), t3_output);
+    pipe.AddTransform(t3);
+    ASSERT_EQ(pipe.NumOfProcessors(), 5);
+    ASSERT_EQ(pipe.OutputPortSize(), t3->OutputPortSize());
     /* pipe.AddTransform(sink); */
 }
