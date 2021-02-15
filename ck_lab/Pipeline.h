@@ -5,6 +5,10 @@
 #include "Pipe.h"
 #include "Status.h"
 
+class Pipeline;
+using PipelinePtr = std::unique_ptr<Pipeline>;
+using Pipelines = std::vector<Pipeline>;
+
 class Pipeline {
  public:
     Pipeline() = default;
@@ -48,6 +52,9 @@ class Pipeline {
     size_t
     NumThreads() const;
 
+    Status
+    MergePipelineBefore(PipelinePtr&);
+
     PipePtr
     DetachPipe();
 
@@ -58,6 +65,3 @@ class Pipeline {
     PipePtr pipe_;
     size_t max_threads_ = 0;
 };
-
-using PipelinePtr = std::shared_ptr<Pipeline>;
-using Pipelines = std::vector<Pipeline>;
