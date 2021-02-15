@@ -2,13 +2,14 @@
 
 #include "IProcessor.h"
 #include "Port.h"
+#include "Status.h"
 
 #include <vector>
 #include <string>
 #include <functional>
 #include <memory>
 
-void
+Status
 CheckSource(const IProcessor& processor);
 class Pipe;
 using PipePtr = std::shared_ptr<Pipe>;
@@ -27,9 +28,9 @@ class Pipe {
     Pipe(Pipe&& other) = default;
     Pipe& operator=(Pipe&& other) = default;
 
-    void
+    Status
     AddSource(IProcessorPtr source);
-    void
+    Status
     AddTransform(IProcessorPtr transform);
 
     bool
