@@ -5,9 +5,11 @@ set(THREADS_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 add_executable(${PROJECT_NAME} tests.cpp
+        ../Status.cpp
         ../Port.cpp
         ../IProcessor.cpp
         ../Pipe.cpp
+        ../Pipeline.cpp
         ../Graph.cpp)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 

@@ -50,6 +50,11 @@ class Pipe {
         return processors_.size();
     }
 
+    bool
+    IsCompleted() const {
+        return !Empty() && OutputPortSize() == 0;
+    }
+
     std::string
     ToString() const;
 
