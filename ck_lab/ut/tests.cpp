@@ -300,7 +300,7 @@ TEST_F(MyUT, MergePipes) {
 TEST_F(MyUT, Pipeline_basic) {
     auto pipe = CreatePipe();
     cout << pipe->ToString() << endl;
-    PipelinePtr pipeline = std::make_shared<Pipeline>();
+    PipelinePtr pipeline = std::make_unique<Pipeline>();
     ASSERT_FALSE(pipeline->IsInitialized());
     ASSERT_FALSE(pipeline->IsCompleted());
     auto empty_pipe = std::make_unique<Pipe>();

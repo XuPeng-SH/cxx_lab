@@ -51,6 +51,26 @@ Pipeline::NumThreads() const {
     return std::max<size_t>(1, num_threads);
 }
 
+Status
+Pipeline::MergePipelineBefore(PipelinePtr& pipeline) {
+    Status status;
+    STATUS_CHECK(MakeSureInitilizedAndNotCompleted());
+
+    auto new_pipeline = std::make_unique<Pipeline>();
+
+    Pipes pipes;
+    pipes.emplace_back(std::move(pipe_));
+    pipes.emplace_back(std::move(pipeline->DetachPipe()));
+
+    auto new_pipe = Pipe::MergePipes(pipes);
+    if (!new_pipe) {
+        return Status(PIPELINE_MERGE_ERROR, "MergeError");
+    }
+    pipe_ = std::move(new_pipe);
+
+    return status;
+}
+
 PipePtr
 Pipeline::DetachPipe() {
     return std::move(pipe_);

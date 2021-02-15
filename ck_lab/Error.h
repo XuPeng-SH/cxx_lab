@@ -31,3 +31,4 @@ constexpr ErrorCode PIPE_TRANSFORMER_NO_OUTPUT = ToPipeErrorCode(6);
 constexpr ErrorCode PIPELINE_INITIALIZED = ToPipelineErrorCode(1);
 constexpr ErrorCode PIPELINE_NOT_INITIALIZED = ToPipelineErrorCode(2);
 constexpr ErrorCode PIPELINE_COMPLETED = ToPipelineErrorCode(3);
+constexpr ErrorCode PIPELINE_MERGE_ERROR = ToPipelineErrorCode(4);
