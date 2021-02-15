@@ -68,6 +68,8 @@ Pipeline::MergePipelineBefore(PipelinePtr& pipeline) {
     }
     pipe_ = std::move(new_pipe);
 
+    // TODO: How to ensure the specified pipe is executed before current pipe
+
     return status;
 }
 
