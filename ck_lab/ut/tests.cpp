@@ -8,6 +8,8 @@
 #include "Graph.h"
 #include "Port.h"
 #include "Pipe.h"
+#include "Pipeline.h"
+#include "Status.h"
 
 using namespace std;
 using namespace MyDB;
@@ -293,4 +295,27 @@ TEST_F(MyUT, MergePipes) {
     ASSERT_EQ(pipe->NumOfProcessors(), pre_num_processors + 1);
     ASSERT_EQ(pipe->OutputPortSize(), t1->OutputPortSize());
     cout << pipe->ToString() << endl;
+}
+
+TEST_F(MyUT, Pipeline_basic) {
+    auto pipe = CreatePipe();
+    cout << pipe->ToString() << endl;
+    PipelinePtr pipeline = std::make_shared<Pipeline>();
+    ASSERT_FALSE(pipeline->IsInitialized());
+    ASSERT_FALSE(pipeline->IsCompleted());
+    auto empty_pipe = std::make_shared<Pipe>();
+    auto status = pipeline->Initialize(empty_pipe);
+    ASSERT_EQ(status.code(), PIPE_EMPTY);
+    ASSERT_FALSE(pipeline->IsInitialized());
+
+    status = pipeline->Initialize(pipe);
+    ASSERT_TRUE(status.ok());
+    ASSERT_TRUE(pipeline->IsInitialized());
+
+    auto input_size = pipeline->NumStreams();
+    auto output_size = RandomInt(1, 4);
+    auto t1 = CreateProcessor(input_size, output_size);
+    status = pipeline->AddTransform(t1);
+    ASSERT_TRUE(status.ok());
+    ASSERT_EQ(output_size, pipeline->NumStreams());
 }

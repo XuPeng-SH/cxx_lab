@@ -41,3 +41,20 @@ Pipeline::AddTransform(IProcessorPtr transformer) {
     pipe_->AddTransform(transformer);
     return status;
 }
+
+size_t
+Pipeline::NumThreads() const {
+    auto num_threads = pipe_->MaxParallelStreams();
+
+    if (max_threads_) {
+        num_threads = std::min(max_threads_, num_threads);
+    }
+    return std::max<size_t>(1, num_threads);
+}
+
+PipePtr
+Pipeline::DetachPipe() {
+    PipePtr pipe;
+    pipe.swap(pipe_);
+    return pipe;
+}
