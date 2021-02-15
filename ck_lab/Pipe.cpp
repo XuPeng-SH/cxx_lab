@@ -6,10 +6,16 @@
 #include <set>
 #include <string>
 
-void
+Status
 CheckSource(const IProcessor& processor) {
-    assert(processor.InputPortSize() == 0);
-    assert(processor.OutputPortSize() == 1);
+    if (processor.InputPortSize() != 0) {
+        return Status(PIPE_INVALID_SOURCE, "InputPortSize not 0");
+    }
+    if (processor.OutputPortSize() != 1) {
+        return Status(PIPE_INVALID_SOURCE, "OutputPortSize not 1");
+    }
+
+    return Status::OK();
 }
 
 Pipe::Pipe(Processors processors) : processors_(processors) {
@@ -39,20 +45,31 @@ Pipe::Pipe(Processors processors) : processors_(processors) {
     max_parallel_streams_ = output_ports_.size();
 }
 
-void
+Status
 Pipe::AddSource(IProcessorPtr processor) {
-    CheckSource(*processor);
-    assert(!processor->GetOutputs().front().IsConnected());
+    Status status;
+    STATUS_CHECK(CheckSource(*processor));
+    if (processor->GetOutputs().front().IsConnected()) {
+        return Status(PIPE_CONNECTED_SOURCE, "Source connected");
+    }
     output_ports_.push_back(&processor->GetOutputs().front());
     processors_.emplace_back(std::move(processor));
     max_parallel_streams_ = std::max(max_parallel_streams_, output_ports_.size());
+    return status;
 }
 
-void
+Status
 Pipe::AddTransform(IProcessorPtr transform) {
-    assert(output_ports_.size() > 0);
-    assert(transform->InputPortSize() == OutputPortSize());
-    assert(transform->OutputPortSize() > 0);
+    Status status;
+    if (output_ports_.size() == 0) {
+        return Status(PIPE_NO_OUTPUT, "No Output");
+    }
+    if (transform->InputPortSize() != OutputPortSize()) {
+        return Status(PIPE_INPUTS_OUTPUTS_NOT_MATCH, "NotMatch");
+    }
+    if (transform->OutputPortSize() == 0) {
+        return Status(PIPE_TRANSFORMER_NO_OUTPUT, "No Output");
+    }
 
     auto it_output = output_ports_.begin();
     auto it_input = transform->GetInputs().begin();
@@ -72,6 +89,7 @@ Pipe::AddTransform(IProcessorPtr transform) {
 
     processors_.emplace_back(std::move(transform));
     max_parallel_streams_ = std::max(max_parallel_streams_, output_ports_.size());
+    return status;
 }
 
 std::string
