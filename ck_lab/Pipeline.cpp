@@ -6,17 +6,16 @@ Pipeline::Reset() {
 }
 
 Status
-Pipeline::Initialize(PipePtr pipe) {
+Pipeline::Initialize(PipePtr& pipe) {
     if (IsInitialized()) {
         return Status(PIPELINE_INITIALIZED, "Initialized");
     }
 
-    if (pipe->Empty()) {
+    if (!pipe || pipe->Empty()) {
         return Status(PIPE_EMPTY, "Empty");
     }
 
-    pipe_ = nullptr;
-    pipe_.swap(pipe);
+    pipe_ = std::move(pipe);
 
     return Status::OK();
 }
@@ -54,7 +53,5 @@ Pipeline::NumThreads() const {
 
 PipePtr
 Pipeline::DetachPipe() {
-    PipePtr pipe;
-    pipe.swap(pipe_);
-    return pipe;
+    return std::move(pipe_);
 }

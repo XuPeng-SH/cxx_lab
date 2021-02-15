@@ -168,10 +168,10 @@ Pipe::MergePipes(Pipes& pipes) {
         return nullptr;
     }
     if (pipes.size() == 1) {
-        return std::make_shared<Pipe>(std::move(*pipes.front()));
+        return std::make_unique<Pipe>(std::move(*pipes.front()));
     }
 
-    auto pipe = std::make_shared<Pipe>();
+    auto pipe = std::make_unique<Pipe>();
 
     for (auto& p : pipes) {
         pipe->max_parallel_streams_ += p->max_parallel_streams_;

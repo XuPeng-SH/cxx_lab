@@ -16,7 +16,7 @@ class Pipeline {
     void
     Reset();
     Status
-    Initialize(PipePtr pipe);
+    Initialize(PipePtr& pipe);
 
     bool
     IsInitialized() const {
