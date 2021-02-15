@@ -12,7 +12,7 @@
 Status
 CheckSource(const IProcessor& processor);
 class Pipe;
-using PipePtr = std::shared_ptr<Pipe>;
+using PipePtr = std::unique_ptr<Pipe>;
 using Pipes = std::vector<PipePtr>;
 
 class Pipe {

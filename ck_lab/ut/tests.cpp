@@ -249,7 +249,7 @@ CreatePipe() {
         input_size = output_size;
     }
 
-    auto pipe = std::make_shared<Pipe>();
+    auto pipe = std::make_unique<Pipe>();
     auto first = true;
     for (auto processor : processors) {
         if (first) {
@@ -267,7 +267,7 @@ CreatePipes(size_t n) {
     Pipes pipes;
     for (auto i = 0; i < n; ++i) {
         auto pipe = CreatePipe();
-        pipes.push_back(pipe);
+        pipes.push_back(std::move(pipe));
         /* std::cout << pipe->ToString() << std::endl; */
     }
     return std::move(pipes);
@@ -303,7 +303,7 @@ TEST_F(MyUT, Pipeline_basic) {
     PipelinePtr pipeline = std::make_shared<Pipeline>();
     ASSERT_FALSE(pipeline->IsInitialized());
     ASSERT_FALSE(pipeline->IsCompleted());
-    auto empty_pipe = std::make_shared<Pipe>();
+    auto empty_pipe = std::make_unique<Pipe>();
     auto status = pipeline->Initialize(empty_pipe);
     ASSERT_EQ(status.code(), PIPE_EMPTY);
     ASSERT_FALSE(pipeline->IsInitialized());
@@ -311,6 +311,7 @@ TEST_F(MyUT, Pipeline_basic) {
     status = pipeline->Initialize(pipe);
     ASSERT_TRUE(status.ok());
     ASSERT_TRUE(pipeline->IsInitialized());
+    ASSERT_FALSE(pipe);
 
     auto input_size = pipeline->NumStreams();
     auto output_size = RandomInt(1, 4);
@@ -318,4 +319,9 @@ TEST_F(MyUT, Pipeline_basic) {
     status = pipeline->AddTransform(t1);
     ASSERT_TRUE(status.ok());
     ASSERT_EQ(output_size, pipeline->NumStreams());
+
+    auto detached_pipe = pipeline->DetachPipe();
+    ASSERT_FALSE(pipeline->IsInitialized());
+    ASSERT_EQ(pipeline->NumStreams(), 0);
+    ASSERT_EQ(output_size, detached_pipe->OutputPortSize());
 }
