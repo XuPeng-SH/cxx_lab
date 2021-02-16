@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include "Port.h"
+#include "Status.h"
 
 using ProcessorId = uint64_t;
 using PortId = uint64_t;
@@ -16,12 +17,15 @@ using PortIds = std::vector<PortId>;
 constexpr ProcessorId InvalidProcessorId = std::numeric_limits<ProcessorId>::max();
 
 struct IProcessor {
-    enum class Status {
+    enum class State {
         NeedData,
         PortFull,
         Finished,
         Ready
     };
+
+    using PortNumber = uint64_t;
+    using PortNumbers = std::vector<PortNumber>;
 
     IProcessor() = default;
     IProcessor(const MyDB::InputPorts& inputs, const MyDB::OutputPorts& outputs) :
@@ -75,6 +79,14 @@ struct IProcessor {
     OutputPortSize() const {
         return outputs_.size();
     }
+
+    /// TODO: make these function as pure virtual functions
+    virtual Status
+    Prepare(State&) { return Status::OK(); };
+    virtual Status
+    Work() { return Status::OK(); };
+    virtual Status
+    Schedule() { return Status::OK(); };
 
     std::string
     ToString(bool alias = false) const {
