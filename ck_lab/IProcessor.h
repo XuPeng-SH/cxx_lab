@@ -41,6 +41,11 @@ struct IProcessor {
         }
     }
 
+    virtual std::string
+    GetName() const {
+        return "IProcessor";
+    }
+
     PortId
     GetOutputPortId(const MyDB::OutputPort* output_port) const {
         PortId id = 0;
@@ -96,7 +101,7 @@ struct IProcessor {
             ss << "[" << inputs_.size() << "," << outputs_.size() << "]";
 
         } else {
-            ss << "<Processor (" << inputs_.size() << "," << outputs_.size() << ")>";
+            ss << "<" << GetName() << " (" << inputs_.size() << "," << outputs_.size() << ")>";
         }
         return ss.str();
     }
