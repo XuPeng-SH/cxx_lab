@@ -1,6 +1,6 @@
 #include "ISink.h"
 
-ISink::ISink() : input_(inputs_.front()) {
+ISink::ISink() : IProcessor({MyDB::InputPort()}, {}), input_(inputs_.front()) {
 }
 
 Status

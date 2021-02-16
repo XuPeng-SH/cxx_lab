@@ -69,8 +69,7 @@ Pipe::AddSink(const ProcessorGetter& sink_getter) {
         Status status;
         auto sink = sink_getter();
         if (!sink) {
-            // TODO
-            return status;
+            sink = std::make_shared<NullSink>();
         }
         if (sink->InputPortSize() != 1) {
             return Status(PIPE_INVALID_SINK, "Sink inputport size should be 1");
