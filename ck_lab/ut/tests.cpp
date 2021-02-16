@@ -10,6 +10,7 @@
 #include "Pipe.h"
 #include "Pipeline.h"
 #include "Status.h"
+#include "NullSink.h"
 
 using namespace std;
 using namespace MyDB;

@@ -1,26 +1,27 @@
 #include "ISink.h"
 
+ISink::ISink() : input_(inputs_.front()) {
+}
+
 Status
 ISink::Prepare(State& state) {
     if (state_ == State::Ready) {
         return Status::OK();
     }
 
-    auto& input = inputs_.front();
-
-    if (input.IsFinished() && state_ != State::Finished) {
+    if (input_.IsFinished() && state_ != State::Finished) {
         state_ = State::Finished;
         OnFinish();
         return Status::OK();
     }
 
-    input.SetNeeded();
-    if (!input.HasData()) {
+    input_.SetNeeded();
+    if (!input_.HasData()) {
         state_ = State::NeedData;
         return Status::OK();
     }
 
-    chunk_ = input.Pull(true);
+    chunk_ = input_.Pull(true);
     state_ = State::Ready;
 
     return Status::OK();
