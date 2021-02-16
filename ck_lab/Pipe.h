@@ -18,7 +18,7 @@ using Pipes = std::vector<PipePtr>;
 class Pipe {
  public:
     using OutputPortPtrs = std::vector<MyDB::OutputPort*>;
-    using TransformerClosure = std::function<IProcessorPtr()>;
+    using ProcessorGetter = std::function<IProcessorPtr()>;
 
     Pipe() = default;
 
@@ -32,6 +32,8 @@ class Pipe {
     AddSource(IProcessorPtr source);
     Status
     AddTransform(IProcessorPtr transform);
+    Status
+    AddSink(const ProcessorGetter&);
 
     bool
     Empty() const {

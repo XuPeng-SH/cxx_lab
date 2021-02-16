@@ -59,6 +59,41 @@ Pipe::AddSource(IProcessorPtr processor) {
 }
 
 Status
+Pipe::AddSink(const ProcessorGetter& sink_getter) {
+    if (OutputPortSize() == 0) {
+        return Status(PIPE_INPUTS_OUTPUTS_NOT_MATCH, "OutputPortSize should not be 0 before AddSink");
+    }
+
+    Status status;
+    auto do_add = [&](MyDB::OutputPort*& port) -> Status {
+        Status status;
+        auto sink = sink_getter();
+        if (!sink) {
+            // TODO
+            return status;
+        }
+        if (sink->InputPortSize() != 1) {
+            return Status(PIPE_INVALID_SINK, "Sink inputport size should be 1");
+        }
+        if (sink->OutputPortSize() != 0) {
+            return Status(PIPE_INVALID_SINK, "Sink outport size should be 0");
+        }
+
+        Connect(*port, sink->GetInputs().front());
+        processors_.emplace_back(std::move(sink));
+        return Status::OK();
+    };
+
+    for (auto& port : output_ports_) {
+        STATUS_CHECK(do_add(port));
+    }
+
+    output_ports_.clear();
+
+    return status;
+}
+
+Status
 Pipe::AddTransform(IProcessorPtr transform) {
     Status status;
     if (output_ports_.size() == 0) {
