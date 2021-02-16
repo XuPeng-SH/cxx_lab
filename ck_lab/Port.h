@@ -7,11 +7,13 @@
 #include <iostream>
 #include <list>
 
+#include "Chunk.h"
+
 struct IProcessor;
 namespace MyDB {
 
 struct Data {
-    int val;
+    Chunk chunk_;
 };
 
 /* using DataPtr = std::shared_ptr<Data>; */
@@ -160,6 +162,12 @@ struct InputPort : public Port {
         return std::move(*data_);
     }
 
+    Chunk
+    Pull(bool set_not_needed = false) {
+        auto data = PullData(set_not_needed);
+        return std::move(data.chunk_);
+    }
+
     bool
     IsFinished() const {
         if (is_finished_) return true;
@@ -171,7 +179,7 @@ struct InputPort : public Port {
 
     void
     SetNeeded() {
-        // TODO
+        state_->SetFlags(State::IS_NEEDED, State::IS_NEEDED);
     }
 
     void

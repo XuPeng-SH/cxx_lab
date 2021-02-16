@@ -41,17 +41,17 @@ TEST_F(MyUT, Atomic) {
 TEST_F(MyUT, Port_State) {
     {
         Data data;
-        data.val = 999;
+        /* data.val = 999; */
         auto uint = State::GetUint(&data);
         auto ptr = State::GetPtr(uint);
-        ASSERT_EQ(ptr->val, data.val);
+        /* ASSERT_EQ(ptr->val, data.val); */
 
     }
     {
         auto d1 = State::DataPtr();
-        d1.data_->val = 11;
+        /* d1.data_->val = 11; */
         std::atomic<Data*> adata(new Data());
-        adata.load()->val = 22;
+        /* adata.load()->val = 22; */
         auto uuint = d1.Swap(adata, State::HAS_DATA, State::HAS_DATA);
         ASSERT_EQ(uuint, 0x0);
         ASSERT_EQ(State::GetUint(d1.data_) & State::FLAGS_MASK, 0);
