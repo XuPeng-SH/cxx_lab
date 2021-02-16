@@ -224,10 +224,16 @@ struct OutputPort : public Port {
     IsFinished() const {
         return state_->GetFlags() & State::IS_FINISHED;
     }
+
+    /// Output port can pull data from InputPort
+    /// Before pulling data, the output port should be checked wether the port can accept data
+    /// Output port can accept new data only when:
+    /// 1. It is needed
+    /// 2. It has no data
     bool
     CanPush() const {
         auto flags = state_->GetFlags();
-        return (flags & State::IS_NEEDED) && (flags & State::HAS_DATA);
+        return (flags & State::IS_NEEDED) && ((flags & State::HAS_DATA) == 0);
     }
 
     InputPort&
