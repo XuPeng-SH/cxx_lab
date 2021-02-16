@@ -42,7 +42,7 @@ struct Graph {
     struct Node {
         IProcessor* processor_ = nullptr;
         ProcessorId processor_id_ = 0;
-        IProcessor::Status last_processor_status_ = IProcessor::Status::NeedData;
+        IProcessor::State last_processor_status_ = IProcessor::State::NeedData;
 
         Edges direct_edges_;
         Edges back_edges_;
