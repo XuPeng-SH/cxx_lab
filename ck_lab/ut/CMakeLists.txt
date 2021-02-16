@@ -8,6 +8,7 @@ add_executable(${PROJECT_NAME} tests.cpp
         ../Status.cpp
         ../Port.cpp
         ../IProcessor.cpp
+        ../ISink.cpp
         ../Pipe.cpp
         ../Pipeline.cpp
         ../Graph.cpp)

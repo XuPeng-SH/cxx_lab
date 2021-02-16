@@ -18,6 +18,7 @@ constexpr ProcessorId InvalidProcessorId = std::numeric_limits<ProcessorId>::max
 
 struct IProcessor {
     enum class State {
+        Initialized,
         NeedData,
         PortFull,
         Finished,
@@ -102,6 +103,7 @@ struct IProcessor {
 
     MyDB::InputPorts inputs_;
     MyDB::OutputPorts outputs_;
+    State state_ = State::Initialized;
 };
 
 using IProcessorPtr = std::shared_ptr<IProcessor>;
