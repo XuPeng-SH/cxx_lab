@@ -23,10 +23,11 @@ ToPipelineErrorCode(const ErrorCode code) {
 
 constexpr ErrorCode PIPE_EMPTY = ToPipeErrorCode(1);
 constexpr ErrorCode PIPE_INVALID_SOURCE = ToPipeErrorCode(2);
-constexpr ErrorCode PIPE_CONNECTED_SOURCE = ToPipeErrorCode(3);
-constexpr ErrorCode PIPE_NO_OUTPUT = ToPipeErrorCode(4);
-constexpr ErrorCode PIPE_INPUTS_OUTPUTS_NOT_MATCH = ToPipeErrorCode(5);
-constexpr ErrorCode PIPE_TRANSFORMER_NO_OUTPUT = ToPipeErrorCode(6);
+constexpr ErrorCode PIPE_INVALID_SINK = ToPipeErrorCode(3);
+constexpr ErrorCode PIPE_CONNECTED_SOURCE = ToPipeErrorCode(4);
+constexpr ErrorCode PIPE_NO_OUTPUT = ToPipeErrorCode(5);
+constexpr ErrorCode PIPE_INPUTS_OUTPUTS_NOT_MATCH = ToPipeErrorCode(6);
+constexpr ErrorCode PIPE_TRANSFORMER_NO_OUTPUT = ToPipeErrorCode(7);
 
 constexpr ErrorCode PIPELINE_INITIALIZED = ToPipelineErrorCode(1);
 constexpr ErrorCode PIPELINE_NOT_INITIALIZED = ToPipelineErrorCode(2);
