@@ -22,7 +22,7 @@ class ISink : public IProcessor {
     OnFinish();
 
     Chunk chunk_;
-    MyDB::InputPort& input_;
+    MyDB::InputPort input_;
 };
 
 using ISinkPtr = std::shared_ptr<ISink>;

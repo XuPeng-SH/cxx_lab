@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IProcessor.h"
+#include "NullSink.h"
 #include "Port.h"
 #include "Status.h"
 
