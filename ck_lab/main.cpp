@@ -16,12 +16,12 @@ int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
     std::mutex m;
-    std::unique_lock<std::mutex> guards_lock(m);
+    std::unique_lock<std::mutex> guard_lock(m);
     DatabaseGuard::HighMutexPtr high_mutex;
     DatabaseGuard::RelationPtr rel = std::make_shared<DatabaseGuard::Relation>();
 
-    DatabaseGuard guard(high_mutex, "", rel, "", std::move(guards_lock));
-    /* DatabaseGuard guard(high_mutex, "", rel, "", std::move(guards_lock)); */
+    DatabaseGuard guard(high_mutex, "", rel, "", std::move(guard_lock));
+    /* DatabaseGuard guard(high_mutex, "", rel, "", std::move(guard_lock)); */
     cout << guard.GetEntryCount("") << endl;
 
     /* shared_ptr<int> a = nullptr; */
