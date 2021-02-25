@@ -22,7 +22,7 @@ class BaseGuard {
 
     BaseGuard(HighMutexPtr high_mutex, const HighIDType& high_id, RelationPtr rel,
             const LowIDType& low_id,
-            std::unique_lock<std::mutex> guards_lock);
+            std::unique_lock<std::mutex> guard_lock);
 
     BaseGuard() = delete;
     BaseGuard(const BaseGuard&) = delete;
@@ -32,7 +32,7 @@ class BaseGuard {
     void
     CleanEntries();
 
-    /// In context of active guards_lock_
+    /// In context of active guard_lock_
     void
     OnNoWaiters();
 
@@ -52,7 +52,7 @@ class BaseGuard {
     HighMutexPtr high_mutex_;
     RelationPtr rel_;
     RelationCursorT rel_cursor_;
-    std::unique_lock<std::mutex> guards_lock_;
+    std::unique_lock<std::mutex> guard_lock_;
     std::unique_lock<std::mutex> entry_lock_;
 };
 
@@ -63,19 +63,19 @@ template <typename HighIDType, typename LowIDType>
 BaseGuard<HighIDType, LowIDType>::BaseGuard(typename BaseGuard<HighIDType, LowIDType>::HighMutexPtr high_mutex,
         const HighIDType& high_id, typename BaseGuard<HighIDType, LowIDType>::RelationPtr rel,
         const LowIDType& low_id,
-        std::unique_lock<std::mutex> guards_lock)
-    :  high_mutex_(high_mutex), rel_(rel), guards_lock_(std::move(guards_lock)) {
+        std::unique_lock<std::mutex> guard_lock)
+    :  high_mutex_(high_mutex), rel_(rel), guard_lock_(std::move(guard_lock)) {
     assert(rel_);
     rel_cursor_ = rel_->emplace(low_id, Entry{0, std::make_unique<std::mutex>()}).first;
     ++rel_cursor_->second.counter_;
-    /// In above context, guards_lock_ should be active
+    /// In above context, guard_lock_ should be active
     /// Unlock guards lock here because the below steps have nothing to do with entries management
     ///        G u a r d
     ///        /   |    \
     /// [entry1, entry2, entry3 ...] ------> Above steps operate on this part
     ///            |
     ///          [...]         ------> Below steps operate on this part. No need of guards lock
-    guards_lock_.unlock();
+    guard_lock_.unlock();
     auto& entry_mutex = *rel_cursor_->second.mutex_;
     entry_lock_ = std::unique_lock<std::mutex>(entry_mutex);
     /// Do some stuff related to specified entry
@@ -84,7 +84,7 @@ BaseGuard<HighIDType, LowIDType>::BaseGuard(typename BaseGuard<HighIDType, LowID
 template <typename HighIDType, typename LowIDType>
 void
 BaseGuard<HighIDType, LowIDType>::OnNoWaiters() {
-    /// In context of active guards_lock_
+    /// In context of active guard_lock_
     entry_lock_.unlock();
     rel_->erase(rel_cursor_);
 }
@@ -92,7 +92,7 @@ BaseGuard<HighIDType, LowIDType>::OnNoWaiters() {
 template <typename HighIDType, typename LowIDType>
 void
 BaseGuard<HighIDType, LowIDType>::CleanEntries() {
-    guards_lock_.lock();
+    guard_lock_.lock();
     --rel_cursor_->second.counter_;
     if (!rel_cursor_->second.counter_) {
         OnNoWaiters();
