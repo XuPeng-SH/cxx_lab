@@ -22,7 +22,7 @@ class BaseGuard {
 
     BaseGuard(HighMutexPtr high_mutex, const HighIDType& high_id, RelationPtr rel,
             const LowIDType& low_id,
-            std::unique_lock<std::mutex> guards_lock = std::unique_lock<std::mutex>());
+            std::unique_lock<std::mutex> guards_lock);
 
     BaseGuard() = delete;
     BaseGuard(const BaseGuard&) = delete;
