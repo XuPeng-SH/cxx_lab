@@ -14,11 +14,12 @@ using namespace MyDB;
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-    std::unique_lock<std::mutex> guards_lock;
+    std::mutex m;
+    std::unique_lock<std::mutex> guards_lock(m);
     StrIDGuard::HighMutexPtr high_mutex;
     StrIDGuard::RelationPtr rel = std::make_shared<StrIDGuard::Relation>();
 
-    StrIDGuard guard(high_mutex, "", rel, "");
+    StrIDGuard guard(high_mutex, "", rel, "", std::move(guards_lock));
     /* StrIDGuard guard(high_mutex, "", rel, "", std::move(guards_lock)); */
     cout << guard.GetEntryCount("") << endl;
 
