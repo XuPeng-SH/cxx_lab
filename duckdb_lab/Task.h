@@ -5,20 +5,16 @@
 #include <memory>
 
 struct Task {
-    virtual void
-    Run() = 0;
-    virtual ~Task() {}
-};
-
-using TaskPtr = std::shared_ptr<Task>;
-
-struct DeliveryTask : public Task {
-    explicit DeliveryTask(const TpccContextPtr& context, RunnerPtr runner)
+    explicit Task(const TpccContextPtr& context, RunnerPtr runner)
         : context_(context), runner_(runner) {}
 
-    void
-    Run () override;
+    virtual void
+    Run();
+
+    virtual ~Task() {}
 
     TpccContextPtr context_;
     RunnerPtr runner_;
 };
+
+using TaskPtr = std::shared_ptr<Task>;

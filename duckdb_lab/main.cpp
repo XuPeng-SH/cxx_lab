@@ -68,6 +68,7 @@ struct A {
 
 DEFINE_int32(threads, 1, "specify pragma threads. default 1");
 DEFINE_int32(workers, 1, "specify worker threads");
+DEFINE_uint32(sf, 1, "specify sf");
 DEFINE_string(path, "/tmp/duckdb.tpcc", "db path");
 
 
@@ -76,8 +77,15 @@ int main(int argc, char** argv) {
     cout << "DBPATH: " << FLAGS_path << endl;
     cout << "WORKERS: " << FLAGS_workers << endl;
     cout << "THREADS: " << FLAGS_threads << endl;
+    cout << "SF: " << FLAGS_sf << endl;
 
-    auto factory = TpccFactory::Build();
+    TpccFactoryPtr factory;
+    {
+        auto sp = ScaleParameters::Build(FLAGS_sf);
+        auto settings = TpccSettings::Build(sp);
+        factory = TpccFactory::Build(settings);
+    }
+
     {
         /* auto settings = TpccSettings::Build(); */
         /* auto mocker = TpccMocker(factory->GetSettings()); */
@@ -106,10 +114,10 @@ int main(int argc, char** argv) {
     {
         auto executor_pool = std::make_shared<ThreadPool>(workers);
         {
-            for (auto i=0; i<10; ++i) {
+            for (auto i=0; i<1000; ++i) {
                 auto context = factory->NextContext();
-                auto task = std::make_shared<DeliveryTask>(context, runner);
-                executor_pool->enqueue(std::bind(&DeliveryTask::Run, task));
+                auto task = std::make_shared<Task>(context, runner);
+                executor_pool->enqueue(std::bind(&Task::Run, task));
             }
         }
     }

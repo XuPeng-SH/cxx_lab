@@ -23,6 +23,8 @@ using namespace duckdb;
 
 bool
 Driver::DoDelivery(TpccContextPtr& context) {
+    return true;
+    assert(context->type_ == ContextType::DELIVERY && context->delivery_ctx_);
     auto ctx = context->delivery_ctx_;
     auto start = chrono::high_resolution_clock::now();
     this->conn_->Query("START TRANSACTION");
@@ -66,4 +68,144 @@ Driver::DoDelivery(TpccContextPtr& context) {
     auto end = chrono::high_resolution_clock::now();
     cout << std::this_thread::get_id() << ". DoDelivery takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     return true;
+}
+
+bool
+Driver::DoNewOrder(TpccContextPtr& context) {
+    assert(context->type_ == ContextType::NEW_ORDER && context->new_order_ctx_);
+    auto ctx = context->new_order_ctx_;
+    std::cout << ctx->ToString("NO") << std::endl;
+    auto start = chrono::high_resolution_clock::now();
+    std::string query = "START TRANSACTION";
+    auto r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    std::vector<std::vector<Value>> items;
+    for (auto& i_id : ctx->i_ids) {
+        query = NEWORDER_GetItemInfo(i_id);
+        r1 = this->conn_->Query(query);
+        CHECK_ROLLBACK(r1);
+        items.push_back(r1->collection.GetRow(0));
+    }
+    // ----------------
+    // Collect Information from WAREHOUSE, DISTRICT, and CUSTOMER
+    // ----------------
+    query = NEWORDER_GetWarehouseTaxRate(ctx->w_id);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+    /* auto w_tax_val = r1->GetValue(0, 0); */
+
+    query = NEWORDER_GetDistrict(ctx->d_id, ctx->w_id);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+    /* auto d_tax_val = r1->GetValue(0, 0); */
+    auto d_next_o_id = r1->collection.GetValue(1, 0).GetValue<ID_TYPE>();
+    std::cout << "d_next_o_id = " << d_next_o_id << std::endl;
+
+    query = NEWORDER_GetCustomer(ctx->w_id, ctx->d_id, ctx->c_id);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+    /* auto c_discount_val = r1->GetValue(0, 0); */
+
+    // ----------------
+    // Insert Order Information
+    // ----------------
+    query = NEWORDER_IncrementNextOrderId(d_next_o_id + 1, ctx->d_id, ctx->w_id);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    query = NEWORDER_CreateOrder(d_next_o_id, ctx->d_id, ctx->w_id, ctx->c_id,ctx->o_entry_d,
+            NULL_CARRIER_ID, ctx->i_ids.size(), ctx->all_local);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    query = NEWORDER_CreateNewOrder(d_next_o_id, ctx->d_id, ctx->w_id);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    // ----------------
+    // Insert Order Item Information
+    // ----------------
+
+    float total = 0;
+    for (auto i = 0; i < ctx->i_ids.size(); ++i) {
+        auto ol_number = ctx->i_ids[i] + 1;
+        auto ol_supply_w_id = ctx->i_w_ids[i];
+        auto ol_i_id = ctx->i_ids[i];
+        auto ol_quantity = ctx->i_qtys[i];
+
+        auto& iteminfo = items[i];
+        auto i_name = iteminfo[1].GetValue<std::string>();
+        auto i_data = iteminfo[2].GetValue<std::string>();
+        auto i_price = iteminfo[0].GetValue<float>();
+
+        query = NEWORDER_GetStockInfo(ctx->d_id, ol_i_id, ol_supply_w_id);
+        r1 = this->conn_->Query(query);
+        CHECK_ROLLBACK(r1);
+        auto stock_info = r1->collection.GetRow(0);
+        if (stock_info.size() == 0) {
+            std::cout << "No STOCK record for (ol_i_id=" << ol_i_id << "ol_supply_w_id=";
+            std::cout << ol_supply_w_id << ")" << std::endl;
+            continue;
+        }
+
+        auto s_quantity = stock_info[0].GetValue<ID_TYPE>();
+        auto s_ytd = stock_info[2].GetValue<ID_TYPE>();
+        auto s_order_cnt = stock_info[3].GetValue<ID_TYPE>();
+        auto s_remote_cnt = stock_info[4].GetValue<ID_TYPE>();
+        auto s_data = stock_info[1].GetValue<std::string>();
+        auto s_dist_xx = stock_info[5].GetValue<std::string>();
+
+        // Update stock
+        s_ytd += ol_quantity;
+        if (s_quantity >= ol_quantity + 10) {
+            s_quantity = s_quantity - ol_quantity;
+        } else {
+            s_quantity = s_quantity + 91 - ol_quantity;
+        }
+        s_order_cnt += 1;
+
+        if (ol_supply_w_id != ctx->w_id) {
+            s_remote_cnt += 1;
+        }
+
+        query = NEWORDER_UpdateStock(s_quantity, s_ytd, s_order_cnt, s_remote_cnt, ol_i_id, ol_supply_w_id);
+        r1 = this->conn_->Query(query);
+        CHECK_ROLLBACK(r1);
+
+        std::string brand_generic = "G";
+        if ((i_data.find(ORIGINAL_STRING) != std::string::npos)
+                && (s_data.find(ORIGINAL_STRING) != std::string::npos)) {
+            brand_generic = "B";
+        }
+
+        // Transaction profile states to use "ol_quantity * i_price"
+        auto ol_amount = ol_quantity * i_price;
+        total += ol_amount;
+
+        query = NEWORDER_CreateOrderLine(d_next_o_id, ctx->d_id, ctx->w_id, ol_number, ol_i_id, ol_supply_w_id,
+                ctx->o_entry_d, ol_quantity, ol_amount, s_dist_xx);
+        r1 = this->conn_->Query(query);
+        CHECK_ROLLBACK(r1);
+    }
+
+    /* this->conn_->Query("ROLLBACK"); */
+    this->conn_->Query("COMMIT");
+    auto end = chrono::high_resolution_clock::now();
+    cout << std::this_thread::get_id() << ". DoNewOrder takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+    return true;
+}
+
+bool
+Driver::DoPayment(TpccContextPtr& ctx) {
+    return true;
+}
+bool
+Driver::DoOrderStatus(TpccContextPtr& ctx) { return true; }
+bool
+Driver::DoStockLevel(TpccContextPtr& ctx) { return true; }
+
+void
+Driver::ForceRollBack() {
+    this->conn_->Query("ROLLBACK");
 }

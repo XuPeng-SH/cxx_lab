@@ -91,11 +91,11 @@ NEWORDER_GetCustomer(ID_TYPE c_w_id, ID_TYPE c_d_id, ID_TYPE c_id) {
 }
 
 std::string
-NEWORDER_CreateOrder(ID_TYPE d_next_o_id, ID_TYPE d_id, ID_TYPE w_id, ID_TYPE c_id, ID_TYPE o_entry_d, ID_TYPE o_carrier_id,
-        ID_TYPE o_ol_cnt, ID_TYPE o_all_local) {
+NEWORDER_CreateOrder(ID_TYPE d_next_o_id, ID_TYPE d_id, ID_TYPE w_id, ID_TYPE c_id, const std::string& o_entry_d,
+        ID_TYPE o_carrier_id, ID_TYPE o_ol_cnt, ID_TYPE o_all_local) {
     std::stringstream ss;
     ss << "INSERT INTO ORDERS (O_ID, O_D_ID, O_W_ID, O_C_ID, O_ENTRY_D, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL) VALUES (";
-    ss << d_next_o_id << ", " << d_id << ", " << w_id << ", " << c_id << ", " << o_entry_d << ", ";
+    ss << d_next_o_id << ", " << d_id << ", " << w_id << ", " << c_id << ", '" << o_entry_d << "', ";
     ss << o_carrier_id << ", " << o_ol_cnt << ", " << o_all_local << ")";
     return std::move(ss.str());
 }
@@ -116,7 +116,7 @@ NEWORDER_GetItemInfo(ID_TYPE ol_i_id) {
 }
 
 std::string
-NEWORDER_StockInfo(ID_TYPE d_id, ID_TYPE ol_i_id, ID_TYPE ol_supply_w_id) {
+NEWORDER_GetStockInfo(ID_TYPE d_id, ID_TYPE ol_i_id, ID_TYPE ol_supply_w_id) {
     std::stringstream ss;
     ss << "SELECT S_QUANTITY, S_DATA, S_YTD, S_ORDER_CNT, S_REMOTE_CNT, S_DIST_";
     ss << std::left << std::setfill('0') << std::setw(2) << d_id;
@@ -134,13 +134,15 @@ NEWORDER_UpdateStock(ID_TYPE s_quantity, ID_TYPE s_ytd, ID_TYPE s_order_cnt, ID_
     return std::move(ss.str());
 }
 
+        /* query = NEWORDER_CreateOrderLine(d_next_o_id, ctx->d_id, ctx->w_id, ol_number, ol_i_id, ol_supply_w_id, */
+        /*         ctx->o_entry_d, ol_quantity, ol_amount, s_dist_xx); */
 std::string
 NEWORDER_CreateOrderLine(ID_TYPE o_id, ID_TYPE d_id, ID_TYPE w_id, ID_TYPE ol_number, ID_TYPE ol_i_id,
-        const std::string& ol_supply_w_id, ID_TYPE ol_quantity, ID_TYPE ol_amount, const std::string& ol_dist_info) {
+        ID_TYPE ol_supply_w_id, const std::string& o_entry_d, ID_TYPE ol_quantity, ID_TYPE ol_amount, const std::string& ol_dist_info) {
     std::stringstream ss;
     ss << "INSERT INTO ORDER_LINE (OL_O_ID, OL_D_ID, OL_W_ID, OL_NUMBER, OL_I_ID, OL_SUPPLY_W_ID, ";
-    ss << "OL_DELIVERY_D, OL_QUANTITY, OL_AMOUNT, OL_DIST_INFO) VALUES (" << o_id << ", " << d_id;
-    ss << w_id << ", " << ol_number << ", " << ol_i_id << ", " << ol_supply_w_id << ", " << ol_quantity;
-    ss << ", " << ol_amount << ", '" << ol_dist_info << "')";
+    ss << "OL_DELIVERY_D, OL_QUANTITY, OL_AMOUNT, OL_DIST_INFO) VALUES (" << o_id << ", " << d_id << ", ";
+    ss << w_id << ", " << ol_number << ", " << ol_i_id << ", " << ol_supply_w_id << ", " << o_entry_d << ", ";
+    ss << ol_quantity << ", " << ol_amount << ", '" << ol_dist_info << "')";
     return std::move(ss.str());
 }

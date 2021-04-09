@@ -2,6 +2,7 @@
 #include "types.h"
 #include <memory>
 #include <string>
+#include <sstream>
 
 enum class ContextType : uint8_t {
     INVALID = 0,
@@ -40,6 +41,18 @@ struct NewOrderContext {
     IDS_TYPE i_ids;
     IDS_TYPE i_w_ids;
     IDS_TYPE i_qtys;
+    bool all_local = true;
+
+    std::string
+    ToString(const std::string& prefix = "") const {
+        std::stringstream ss;
+        ss << "[NewOrderContext";
+        if (prefix != "") {
+            ss << "-" << prefix;
+        }
+        ss << "] " << "w_id=" << w_id << " d_id=" << d_id << " c_id= " << c_id;
+        return ss.str();
+    }
 };
 using NewOrderContextPtr = std::shared_ptr<NewOrderContext>;
 

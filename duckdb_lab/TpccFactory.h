@@ -41,11 +41,16 @@ struct TpccSettings {
 
     TpccSettings() = delete;
 
-    int stock_level_p_ = 4;
-    int delivery_p_ = 4;
-    int order_status_p_ = 4;
-    int payment_p_ = 43;
-    int new_order_p_ = 45;
+    /* int stock_level_p_ = 4; */
+    /* int delivery_p_ = 4; */
+    /* int order_status_p_ = 4; */
+    /* int payment_p_ = 43; */
+    /* int new_order_p_ = 45; */
+    int stock_level_p_ = 1;
+    int delivery_p_ = 17;
+    int order_status_p_ = 1;
+    int payment_p_ = 1;
+    int new_order_p_ = 80;
 
     mutable int sl_p_upper_ = 0;
     mutable int d_p_upper_ = 0;

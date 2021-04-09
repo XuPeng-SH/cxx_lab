@@ -15,6 +15,17 @@ class Driver {
 
      bool
      DoDelivery(TpccContextPtr& ctx);
+     bool
+     DoNewOrder(TpccContextPtr& ctx);
+     bool
+     DoPayment(TpccContextPtr& ctx);
+     bool
+     DoOrderStatus(TpccContextPtr& ctx);
+     bool
+     DoStockLevel(TpccContextPtr& ctx);
+
+     void
+     ForceRollBack();
 
  /* private: */
      std::shared_ptr<duckdb::Connection> conn_;

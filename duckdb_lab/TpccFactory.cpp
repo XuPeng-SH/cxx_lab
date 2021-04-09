@@ -44,12 +44,13 @@ ScaleParameters::Build(size_t scale_factor) {
 TpccContextPtr
 TpccFactory::NextContext() {
     auto ctx = std::make_shared<TpccContext>();
-    /* auto rand_val = RandomNumber<int>(1, 100); */
-    auto rand_val = settings_->GetDeliveryUpper() - 1;
+    auto rand_val = RandomNumber<int>(1, 100);
+    rand_val = settings_->GetPaymentUpper() + 1;
 
     if (rand_val <= settings_->GetStockLevelUpper()) {
         ctx->type_ = ContextType::STOCK_LEVEL;
     } else if (rand_val <= settings_->GetDeliveryUpper()) {
+        std::cout << "rand_val=" << rand_val << " upper=" << settings_->GetDeliveryUpper() << std::endl;
         ctx->type_ = ContextType::DELIVERY;
         ctx->delivery_ctx_ = std::make_shared<DeliveryContext>();
         ctx->delivery_ctx_->o_carrier_id = RandomNumber<int>(MIN_CARRIER_ID, MAX_CARRIER_ID);
@@ -80,6 +81,7 @@ TpccFactory::NextContext() {
                     }
                 }
                 ctx->new_order_ctx_->i_w_ids.push_back(w_id);
+                ctx->new_order_ctx_->all_local = false;
             } else {
                 ctx->new_order_ctx_->i_w_ids.push_back(ctx->new_order_ctx_->w_id);
             }
