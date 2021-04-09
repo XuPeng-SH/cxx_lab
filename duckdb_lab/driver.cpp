@@ -47,7 +47,6 @@ Driver::DoDelivery(TpccContextPtr& context) {
         query = DELIVERY_SumOLAmount(no_o_id_val.GetValue<ID_TYPE>(), d_id, ctx->w_id);
         r1 = this->conn_->Query(query);
         CHECK_ROLLBACK(r1);
-        continue;
         auto ol_total_val = r1->GetValue(0, 0);
         query = DELIVERY_DeleteNewOrder(d_id, ctx->w_id, no_o_id_val.GetValue<ID_TYPE>());
         r1 = this->conn_->Query(query);

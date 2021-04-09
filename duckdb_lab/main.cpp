@@ -106,9 +106,7 @@ int main(int argc, char** argv) {
     {
         auto executor_pool = std::make_shared<ThreadPool>(workers);
         {
-            /* auto context = std::make_shared<TpccContext>(); */
-            /* context->delivery_ctx_->ol_delivery_d = "1992-01-01 12:00:00"; */
-            for (auto i=0; i<100; ++i) {
+            for (auto i=0; i<10; ++i) {
                 auto context = factory->NextContext();
                 auto task = std::make_shared<DeliveryTask>(context, runner);
                 executor_pool->enqueue(std::bind(&DeliveryTask::Run, task));

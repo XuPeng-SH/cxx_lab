@@ -2,6 +2,7 @@
 #include <memory>
 #include <stdint.h>
 #include <stddef.h>
+#include <set>
 #include "Utils.h"
 #include "types.h"
 #include "Context.h"
@@ -103,6 +104,22 @@ struct TpccMocker {
     MockItemID() {
         return RNGenerator::GetInstance().Produce(RNGenerator::IDType::ITEM, 1,
                 settings_->sp_->items_);
+    }
+    IDS_TYPE
+    MockItemIDS(size_t n) {
+        IDS_TYPE ids;
+        std::set<ID_TYPE> id_set;
+        size_t size = 0;
+        while (ids.size() >= n) {
+            auto id = MockItemID();
+            size = id_set.size();
+            id_set.insert(id);
+            if (size == id_set.size()) {
+                continue;
+            }
+            ids.push_back(id);
+        }
+        return std::move(ids);
     }
 };
 

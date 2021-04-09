@@ -32,6 +32,14 @@ struct PaymentContext {
 using PaymentContextPtr = std::shared_ptr<PaymentContext>;
 
 struct NewOrderContext {
+    ID_TYPE w_id = 0;
+    ID_TYPE d_id = 0;
+    ID_TYPE c_id = 0;
+    ID_TYPE ol_cnt = 0;
+    std::string o_entry_d;
+    IDS_TYPE i_ids;
+    IDS_TYPE i_w_ids;
+    IDS_TYPE i_qtys;
 };
 using NewOrderContextPtr = std::shared_ptr<NewOrderContext>;
 

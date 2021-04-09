@@ -22,7 +22,7 @@ CurrentDateTimeString() {
     auto tm = *std::localtime(&t);
 
     std::stringstream ss;
-    ss << std::put_time(&tm, "%Y-%m-%d %H-%M-%S");
+    ss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
     return std::move(ss.str());
 }
 

@@ -61,6 +61,30 @@ TpccFactory::NextContext() {
         ctx->type_ = ContextType::PAYMENT;
     } else {
         ctx->type_ = ContextType::NEW_ORDER;
+        ctx->new_order_ctx_ = std::make_shared<NewOrderContext>();
+        ctx->new_order_ctx_->w_id = mocker_->MockWarehouseID();
+        ctx->new_order_ctx_->d_id = mocker_->MockDistrictID();
+        ctx->new_order_ctx_->c_id = mocker_->MockCustomerID();
+        ctx->new_order_ctx_->ol_cnt = RandomNumber<int>(MIN_OL_CNT, MAX_OL_CNT);
+        ctx->new_order_ctx_->o_entry_d = CurrentDateTimeString();
+
+        ctx->new_order_ctx_->i_ids = mocker_->MockItemIDS(ctx->new_order_ctx_->ol_cnt);
+        for (auto i = 0; i < ctx->new_order_ctx_->ol_cnt; ++i) {
+            int r = RandomNumber<int>(1, 100);
+            if ((r == 1) && (settings_->sp_->warehouses_ > 1)) {
+                ID_TYPE w_id;
+                while (true) {
+                    w_id = mocker_->MockWarehouseID();
+                    if (w_id != ctx->new_order_ctx_->w_id) {
+                        break;
+                    }
+                }
+                ctx->new_order_ctx_->i_w_ids.push_back(w_id);
+            } else {
+                ctx->new_order_ctx_->i_w_ids.push_back(ctx->new_order_ctx_->w_id);
+            }
+            ctx->new_order_ctx_->i_qtys.push_back(RandomNumber<ID_TYPE>(1, MAX_OL_QUANTITY));
+        }
     }
     return ctx;
 }
