@@ -14,11 +14,13 @@
 #include <sstream>
 #include <functional>
 #include <gflags/gflags.h>
+#include <ctime>
 
 #include "driver.h"
 #include "runner.h"
 #include "Task.h"
 #include "ThreadPool.h"
+#include "TpccFactory.h"
 
 using namespace std;
 
@@ -74,6 +76,18 @@ int main(int argc, char** argv) {
     cout << "DBPATH: " << FLAGS_path << endl;
     cout << "WORKERS: " << FLAGS_workers << endl;
     cout << "THREADS: " << FLAGS_threads << endl;
+
+    auto factory = TpccFactory::Build();
+    {
+        /* auto settings = TpccSettings::Build(); */
+        /* auto mocker = TpccMocker(factory->GetSettings()); */
+        auto mocker = factory->GetMocker();
+        cout << "customer id " << mocker->MockCustomerID() << endl;
+        cout << "item id " << mocker->MockCustomerID() << endl;
+        cout << "wh id " << mocker->MockWarehouseID() << endl;
+        cout << "district id " << mocker->MockDistrictID() << endl;
+    }
+
     auto db = std::make_shared<DuckDB>(FLAGS_path);
 
     int workers = FLAGS_workers;
@@ -92,10 +106,10 @@ int main(int argc, char** argv) {
     {
         auto executor_pool = std::make_shared<ThreadPool>(workers);
         {
-            DeliveryContext context;
-            context.ol_delivery_d = "1992-01-01 12:00:00";
-            for (auto i=0; i<200; ++i) {
-                context.w_id = 1;
+            /* auto context = std::make_shared<TpccContext>(); */
+            /* context->delivery_ctx_->ol_delivery_d = "1992-01-01 12:00:00"; */
+            for (auto i=0; i<100; ++i) {
+                auto context = factory->NextContext();
                 auto task = std::make_shared<DeliveryTask>(context, runner);
                 executor_pool->enqueue(std::bind(&DeliveryTask::Run, task));
             }

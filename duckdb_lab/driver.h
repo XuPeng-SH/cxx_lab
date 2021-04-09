@@ -14,7 +14,7 @@ class Driver {
      }
 
      bool
-     DoDelivery(DeliveryContext& ctx);
+     DoDelivery(TpccContextPtr& ctx);
 
  /* private: */
      std::shared_ptr<duckdb::Connection> conn_;

@@ -13,10 +13,12 @@ struct Task {
 using TaskPtr = std::shared_ptr<Task>;
 
 struct DeliveryTask : public Task {
-    explicit DeliveryTask(const DeliveryContext& context, RunnerPtr runner)
+    explicit DeliveryTask(const TpccContextPtr& context, RunnerPtr runner)
         : context_(context), runner_(runner) {}
-    DeliveryContext context_;
-    RunnerPtr runner_;
+
     void
     Run () override;
+
+    TpccContextPtr context_;
+    RunnerPtr runner_;
 };

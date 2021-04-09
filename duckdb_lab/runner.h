@@ -4,7 +4,6 @@
 #include <mutex>
 #include <iostream>
 #include "driver.h"
-#include <set>
 
 class Runner {
  public:
@@ -22,10 +21,6 @@ class Runner {
          auto ret = in_idle_.back();
          in_idle_.pop_back();
          /* in_use_.push_back(ret); */
-
-         /* std::cout << "InUse: " << in_use_.size(); */
-         /* std::cout << " InIdle: " << in_idle_.size() << std::endl; */
-         /* std::cout << " Got: " << (void*)(ret.get()) << std::endl; */
          return ret;
      }
 
@@ -36,15 +31,10 @@ class Runner {
          /* auto ret = in_use_.back(); */
          /* in_use_.pop_back(); */
          in_idle_.push_back(driver);
-         /* std::cout << "InUse: " << in_use_.size(); */
-         /* std::cout << " InIdle: " << in_idle_.size() << std::endl; */
-         /* std::cout << " Released: " << (void*)(ret.get()) << std::endl; */
      }
 
  protected:
      std::mutex mtx_;
-     /* std::set<DriverPtr> in_use_; */
-     /* std::set<DriverPtr> in_idle_; */
      std::vector<DriverPtr> in_use_;
      std::vector<DriverPtr> in_idle_;
 };

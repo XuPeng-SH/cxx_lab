@@ -1,0 +1,66 @@
+#include "TpccFactory.h"
+#include <assert.h>
+#include <memory>
+#include <utility>
+#include <iostream>
+#include "consts.h"
+
+bool
+TpccSettings::IsValid() const {
+    bool valid = true;
+    valid &= (stock_level_p_>= 0);
+    valid &= (delivery_p_>= 0);
+    valid &= (order_status_p_>= 0);
+    valid &= (payment_p_>= 0);
+    valid &= (new_order_p_>= 0);
+    valid &= (stock_level_p_ + delivery_p_ + order_status_p_ + payment_p_ + new_order_p_) == 100;
+    if (valid) {
+        sl_p_upper_ = stock_level_p_;
+        d_p_upper_ = sl_p_upper_ + delivery_p_;
+        os_p_upper_ = d_p_upper_ + order_status_p_;
+        p_p_upper_ = os_p_upper_ + payment_p_;
+    }
+    return valid;
+}
+
+TpccSettings::TpccSettings(ScaleParametersPtr sp) : sp_(sp) {
+}
+
+ScaleParametersPtr
+ScaleParameters::Build(size_t scale_factor) {
+    assert(scale_factor <= 10000 & scale_factor > 0);
+    auto sp = std::make_shared<ScaleParameters>();
+    sp->items_ = NUM_ITEMS;
+    sp->districts_per_wh_ = DISTRICTS_PER_WAREHOUSE;
+    sp->new_orders_per_district_ = INITIAL_NEW_ORDERS_PER_DISTRICT;
+    sp->customers_per_district_ = CUSTOMERS_PER_DISTRICT;
+    sp->warehouses_ = scale_factor;
+    sp->wh_start_ = 1;
+    sp->wh_end_ = sp->wh_start_ + sp->warehouses_ - 1;
+
+    return std::move(sp);
+}
+
+TpccContextPtr
+TpccFactory::NextContext() {
+    auto ctx = std::make_shared<TpccContext>();
+    /* auto rand_val = RandomNumber<int>(1, 100); */
+    auto rand_val = settings_->GetDeliveryUpper() - 1;
+
+    if (rand_val <= settings_->GetStockLevelUpper()) {
+        ctx->type_ = ContextType::STOCK_LEVEL;
+    } else if (rand_val <= settings_->GetDeliveryUpper()) {
+        ctx->type_ = ContextType::DELIVERY;
+        ctx->delivery_ctx_ = std::make_shared<DeliveryContext>();
+        ctx->delivery_ctx_->o_carrier_id = RandomNumber<int>(MIN_CARRIER_ID, MAX_CARRIER_ID);
+        ctx->delivery_ctx_->w_id = mocker_->MockWarehouseID();
+        ctx->delivery_ctx_->ol_delivery_d = CurrentDateTimeString();
+    } else if (rand_val <= settings_->GetOrderStatusUpper()) {
+        ctx->type_ = ContextType::ORDER_STATUS;
+    } else if (rand_val <= settings_->GetPaymentUpper()) {
+        ctx->type_ = ContextType::PAYMENT;
+    } else {
+        ctx->type_ = ContextType::NEW_ORDER;
+    }
+    return ctx;
+}

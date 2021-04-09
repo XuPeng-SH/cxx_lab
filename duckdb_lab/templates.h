@@ -36,9 +36,9 @@ DELIVERY_UpdateOrders(ID_TYPE o_carrier_id, ID_TYPE o_id, ID_TYPE o_d_id, ID_TYP
 }
 
 std::string
-DELIVERY_UpdateOrderLine(const std::string& ol_delivery_id, ID_TYPE ol_o_id, ID_TYPE ol_d_id, ID_TYPE ol_w_id) {
+DELIVERY_UpdateOrderLine(const std::string& ol_delivery_date, ID_TYPE ol_o_id, ID_TYPE ol_d_id, ID_TYPE ol_w_id) {
     std::stringstream ss;
-    ss << "UPDATE ORDER_LINE SET OL_DELIVERY_D = '" << ol_delivery_id << "' WHERE OL_O_ID = ";
+    ss << "UPDATE ORDER_LINE SET OL_DELIVERY_D = '" << ol_delivery_date << "' WHERE OL_O_ID = ";
     ss << ol_o_id << " AND OL_D_ID = " << ol_d_id << "  AND OL_W_ID = " << ol_w_id;
     return std::move(ss.str());
 }
