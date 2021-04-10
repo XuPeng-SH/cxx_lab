@@ -23,10 +23,8 @@ using namespace duckdb;
 
 bool
 Driver::DoDelivery(TpccContextPtr& context) {
-    return true;
     assert(context->type_ == ContextType::DELIVERY && context->delivery_ctx_);
     auto ctx = context->delivery_ctx_;
-    auto start = chrono::high_resolution_clock::now();
     this->conn_->Query("START TRANSACTION");
 
     for(ID_TYPE d_id = 1; d_id < DISTRICTS_PER_WAREHOUSE + 1; ++d_id) {
@@ -65,8 +63,6 @@ Driver::DoDelivery(TpccContextPtr& context) {
         CHECK_ROLLBACK(r1);
     }
     this->conn_->Query("COMMIT");
-    auto end = chrono::high_resolution_clock::now();
-    cout << std::this_thread::get_id() << ". DoDelivery takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     return true;
 }
 
@@ -74,8 +70,6 @@ bool
 Driver::DoNewOrder(TpccContextPtr& context) {
     assert(context->type_ == ContextType::NEW_ORDER && context->new_order_ctx_);
     auto ctx = context->new_order_ctx_;
-    std::cout << ctx->ToString("NO") << std::endl;
-    auto start = chrono::high_resolution_clock::now();
     std::string query = "START TRANSACTION";
     auto r1 = this->conn_->Query(query);
     CHECK_ROLLBACK(r1);
@@ -100,7 +94,6 @@ Driver::DoNewOrder(TpccContextPtr& context) {
     CHECK_ROLLBACK(r1);
     /* auto d_tax_val = r1->GetValue(0, 0); */
     auto d_next_o_id = r1->collection.GetValue(1, 0).GetValue<ID_TYPE>();
-    std::cout << "d_next_o_id = " << d_next_o_id << std::endl;
 
     query = NEWORDER_GetCustomer(ctx->w_id, ctx->d_id, ctx->c_id);
     r1 = this->conn_->Query(query);
@@ -191,8 +184,6 @@ Driver::DoNewOrder(TpccContextPtr& context) {
 
     /* this->conn_->Query("ROLLBACK"); */
     this->conn_->Query("COMMIT");
-    auto end = chrono::high_resolution_clock::now();
-    cout << std::this_thread::get_id() << ". DoNewOrder takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
     return true;
 }
 
@@ -201,7 +192,41 @@ Driver::DoPayment(TpccContextPtr& ctx) {
     return true;
 }
 bool
-Driver::DoOrderStatus(TpccContextPtr& ctx) { return true; }
+Driver::DoOrderStatus(TpccContextPtr& context) {
+    assert(context->type_ == ContextType::ORDER_STATUS && context->order_status_ctx_);
+    auto ctx = context->order_status_ctx_;
+    std::string query = "START TRANSACTION";
+    auto r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    if (ctx->c_last.empty()) {
+        query = ORDER_STATUS_GetCustomerByCustomerId(ctx->w_id, ctx->d_id, ctx->c_id);
+        r1 = this->conn_->Query(query);
+        CHECK_ROLLBACK(r1);
+    } else {
+        // Get the midpoint customer's id
+        query = ORDER_STATUS_GetCustomerByLastName(ctx->w_id, ctx->d_id, ctx->c_last);
+        r1 = this->conn_->Query(query);
+        CHECK_ROLLBACK(r1);
+        auto index = int((r1->collection.Count() - 1) / 2);
+        ctx->c_id = r1->collection.GetValue(0, index).GetValue<ID_TYPE>();
+    }
+
+    query = ORDER_STATUS_GetLastOrder(ctx->w_id, ctx->d_id, ctx->c_id);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    if (r1->collection.Count() > 0) {
+        auto o_id = r1->collection.GetValue(0, 0).GetValue<ID_TYPE>();
+        query = ORDER_STATUS_GetOrderLines(ctx->w_id, ctx->d_id, o_id);
+        r1 = this->conn_->Query(query);
+        CHECK_ROLLBACK(r1);
+    }
+
+    this->conn_->Query("COMMIT");
+    return true;
+}
+
 bool
 Driver::DoStockLevel(TpccContextPtr& ctx) { return true; }
 

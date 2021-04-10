@@ -134,8 +134,6 @@ NEWORDER_UpdateStock(ID_TYPE s_quantity, ID_TYPE s_ytd, ID_TYPE s_order_cnt, ID_
     return std::move(ss.str());
 }
 
-        /* query = NEWORDER_CreateOrderLine(d_next_o_id, ctx->d_id, ctx->w_id, ol_number, ol_i_id, ol_supply_w_id, */
-        /*         ctx->o_entry_d, ol_quantity, ol_amount, s_dist_xx); */
 std::string
 NEWORDER_CreateOrderLine(ID_TYPE o_id, ID_TYPE d_id, ID_TYPE w_id, ID_TYPE ol_number, ID_TYPE ol_i_id,
         ID_TYPE ol_supply_w_id, const std::string& o_entry_d, ID_TYPE ol_quantity, ID_TYPE ol_amount, const std::string& ol_dist_info) {
@@ -144,5 +142,38 @@ NEWORDER_CreateOrderLine(ID_TYPE o_id, ID_TYPE d_id, ID_TYPE w_id, ID_TYPE ol_nu
     ss << "OL_DELIVERY_D, OL_QUANTITY, OL_AMOUNT, OL_DIST_INFO) VALUES (" << o_id << ", " << d_id << ", ";
     ss << w_id << ", " << ol_number << ", " << ol_i_id << ", " << ol_supply_w_id << ", " << o_entry_d << ", ";
     ss << ol_quantity << ", " << ol_amount << ", '" << ol_dist_info << "')";
+    return std::move(ss.str());
+}
+
+
+std::string
+ORDER_STATUS_GetCustomerByCustomerId(ID_TYPE w_id, ID_TYPE d_id, ID_TYPE c_id) {
+    std::stringstream ss;
+    ss << "SELECT C_ID, C_FIRST, C_MIDDLE, C_LAST, C_BALANCE FROM CUSTOMER WHERE C_W_ID = ";
+    ss << w_id << " AND C_D_ID = " << d_id << " AND C_ID = " << c_id;
+    return std::move(ss.str());
+}
+
+std::string
+ORDER_STATUS_GetCustomerByLastName(ID_TYPE w_id, ID_TYPE d_id, const std::string& c_last) {
+    std::stringstream ss;
+    ss << "SELECT C_ID, C_FIRST, C_MIDDLE, C_LAST, C_BALANCE FROM CUSTOMER WHERE C_W_ID = ";
+    ss << w_id << " AND C_D_ID = " << d_id << " AND C_LAST = '" << c_last << "' ORDER BY C_FIRST";
+    return std::move(ss.str());
+}
+
+std::string
+ORDER_STATUS_GetLastOrder(ID_TYPE w_id, ID_TYPE d_id, ID_TYPE c_id) {
+    std::stringstream ss;
+    ss << "SELECT O_ID, O_CARRIER_ID, O_ENTRY_D FROM ORDERS WHERE O_W_ID = " << w_id;
+    ss << " AND O_D_ID = " << d_id << " AND O_C_ID = " << c_id << " ORDER BY O_ID DESC LIMIT 1";
+    return std::move(ss.str());
+}
+
+std::string
+ORDER_STATUS_GetOrderLines(ID_TYPE w_id, ID_TYPE d_id, ID_TYPE o_id) {
+    std::stringstream ss;
+    ss << "SELECT OL_SUPPLY_W_ID, OL_I_ID, OL_QUANTITY, OL_AMOUNT, OL_DELIVERY_D FROM ORDER_LINE WHERE OL_W_ID = ";
+    ss << w_id << " AND OL_D_ID = " << d_id << " AND OL_O_ID = " << o_id;
     return std::move(ss.str());
 }

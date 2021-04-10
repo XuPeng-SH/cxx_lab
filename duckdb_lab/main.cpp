@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
     {
         auto executor_pool = std::make_shared<ThreadPool>(workers);
         {
-            for (auto i=0; i<1000; ++i) {
+            for (auto i=0; i<100; ++i) {
                 auto context = factory->NextContext();
                 auto task = std::make_shared<Task>(context, runner);
                 executor_pool->enqueue(std::bind(&Task::Run, task));

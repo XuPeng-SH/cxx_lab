@@ -25,6 +25,10 @@ struct StockLevelContext {
 using StockLevelContextPtr = std::shared_ptr<StockLevelContext>;
 
 struct OrderStatusContext {
+    ID_TYPE c_id = 0;
+    ID_TYPE w_id = 0;
+    ID_TYPE d_id = 0;
+    std::string c_last;
 };
 using OrderStatusContextPtr = std::shared_ptr<OrderStatusContext>;
 
@@ -57,6 +61,15 @@ struct NewOrderContext {
 using NewOrderContextPtr = std::shared_ptr<NewOrderContext>;
 
 struct TpccContext {
+    std::string
+    TypeStr() const {
+        if (type_ == ContextType::DELIVERY) { return "DELIVERY"; }
+        else if (type_ == ContextType::NEW_ORDER) { return "NEW_ORDER"; }
+        else if (type_ == ContextType::ORDER_STATUS) { return "ORDER_STATUS"; }
+        else if (type_ == ContextType::PAYMENT) { return "PAYMENT"; }
+        else if (type_ == ContextType::STOCK_LEVEL) { return "STOCK_LEVEL"; }
+        else { return "INVALID"; }
+    }
     ContextType type_ = ContextType::INVALID;
     DeliveryContextPtr delivery_ctx_ = nullptr;
     StockLevelContextPtr stock_level_ctx_ = nullptr;

@@ -3,7 +3,12 @@
 #include <memory>
 #include <utility>
 #include <iostream>
+#include <vector>
 #include "consts.h"
+
+const std::vector<std::string> TpccMocker::SYLLABLES = std::vector<std::string>(
+        {"BAR", "OUGHT", "ABLE", "PRI", "PRES", "ESE", "ANTI", "CALLY", "ATION", "EING"}
+        );
 
 bool
 TpccSettings::IsValid() const {
@@ -45,12 +50,12 @@ TpccContextPtr
 TpccFactory::NextContext() {
     auto ctx = std::make_shared<TpccContext>();
     auto rand_val = RandomNumber<int>(1, 100);
-    rand_val = settings_->GetPaymentUpper() + 1;
+    /* rand_val = settings_->GetPaymentUpper() + 1; */
 
     if (rand_val <= settings_->GetStockLevelUpper()) {
         ctx->type_ = ContextType::STOCK_LEVEL;
     } else if (rand_val <= settings_->GetDeliveryUpper()) {
-        std::cout << "rand_val=" << rand_val << " upper=" << settings_->GetDeliveryUpper() << std::endl;
+        /* std::cout << "rand_val=" << rand_val << " upper=" << settings_->GetDeliveryUpper() << std::endl; */
         ctx->type_ = ContextType::DELIVERY;
         ctx->delivery_ctx_ = std::make_shared<DeliveryContext>();
         ctx->delivery_ctx_->o_carrier_id = RandomNumber<int>(MIN_CARRIER_ID, MAX_CARRIER_ID);
@@ -58,6 +63,15 @@ TpccFactory::NextContext() {
         ctx->delivery_ctx_->ol_delivery_d = CurrentDateTimeString();
     } else if (rand_val <= settings_->GetOrderStatusUpper()) {
         ctx->type_ = ContextType::ORDER_STATUS;
+        auto context = std::make_shared<OrderStatusContext>();
+        context->w_id = mocker_->MockWarehouseID();
+        context->d_id = mocker_->MockDistrictID();
+        if (RandomNumber<int>(1, 60) <= 60) {
+            context->c_last = mocker_->MockLastName();
+        } else {
+            context->c_id = mocker_->MockCustomerID();
+        }
+        ctx->order_status_ctx_ = context;
     } else if (rand_val <= settings_->GetPaymentUpper()) {
         ctx->type_ = ContextType::PAYMENT;
     } else {

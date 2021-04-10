@@ -1,8 +1,11 @@
 #pragma once
 #include <memory>
+#include <sstream>
 #include <stdint.h>
 #include <stddef.h>
 #include <set>
+#include <vector>
+#include <algorithm>
 #include "Utils.h"
 #include "types.h"
 #include "Context.h"
@@ -47,10 +50,10 @@ struct TpccSettings {
     /* int payment_p_ = 43; */
     /* int new_order_p_ = 45; */
     int stock_level_p_ = 1;
-    int delivery_p_ = 17;
-    int order_status_p_ = 1;
+    int delivery_p_ = 4;
+    int order_status_p_ = 50;
     int payment_p_ = 1;
-    int new_order_p_ = 80;
+    int new_order_p_ = 44;
 
     mutable int sl_p_upper_ = 0;
     mutable int d_p_upper_ = 0;
@@ -76,6 +79,8 @@ struct TpccSettings {
 struct TpccMocker;
 using TpccMockerPtr = std::shared_ptr<TpccMocker>;
 struct TpccMocker {
+    static const std::vector<std::string> SYLLABLES;
+
     TpccSettingsPtr settings_;
 
     explicit TpccMocker(TpccSettingsPtr settings) : settings_(settings) {}
@@ -99,7 +104,17 @@ struct TpccMocker {
     MockDistrictID() {
         return RandomNumber<ID_TYPE>(1, settings_->sp_->districts_per_wh_);
     }
-
+    std::string
+    MockLastName() {
+        auto end = std::min<int>(settings_->sp_->customers_per_district_ - 1, 999);
+        auto number = RNGenerator::GetInstance().Produce(RNGenerator::IDType::LAST_NAME, 0, end);
+        std::vector<int> indicies = { int(number/100), (int(number/10))%10, number%10 };
+        std::stringstream ss;
+        for (auto idx : indicies) {
+            ss << SYLLABLES[idx];
+        }
+        return ss.str();
+    }
     ID_TYPE
     MockCustomerID() {
         return RNGenerator::GetInstance().Produce(RNGenerator::IDType::CUSTOMER, 1,
