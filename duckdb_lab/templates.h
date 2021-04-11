@@ -117,10 +117,13 @@ NEWORDER_GetItemInfo(ID_TYPE ol_i_id) {
 
 std::string
 NEWORDER_GetStockInfo(ID_TYPE d_id, ID_TYPE ol_i_id, ID_TYPE ol_supply_w_id) {
+    std::ios init(NULL);
     std::stringstream ss;
+    init.copyfmt(ss);
     ss << "SELECT S_QUANTITY, S_DATA, S_YTD, S_ORDER_CNT, S_REMOTE_CNT, S_DIST_";
     ss << std::left << std::setfill('0') << std::setw(2) << d_id;
     ss << " FROM STOCK WHERE   S_I_ID = " << ol_i_id << " AND S_W_ID = " << ol_supply_w_id;
+    ss.copyfmt(init);
     return std::move(ss.str());
 }
 
@@ -175,5 +178,82 @@ ORDER_STATUS_GetOrderLines(ID_TYPE w_id, ID_TYPE d_id, ID_TYPE o_id) {
     std::stringstream ss;
     ss << "SELECT OL_SUPPLY_W_ID, OL_I_ID, OL_QUANTITY, OL_AMOUNT, OL_DELIVERY_D FROM ORDER_LINE WHERE OL_W_ID = ";
     ss << w_id << " AND OL_D_ID = " << d_id << " AND OL_O_ID = " << o_id;
+    return std::move(ss.str());
+}
+
+std::string
+PAYMENT_GetWarehouse(ID_TYPE w_id) {
+    std::stringstream ss;
+    ss << "SELECT W_NAME, W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP FROM WAREHOUSE WHERE W_ID = " << w_id;
+    return std::move(ss.str());
+}
+
+std::string
+PAYMENT_UpdateWarehouseBalance(float h_amount, ID_TYPE w_id) {
+    std::stringstream ss;
+    ss << "UPDATE WAREHOUSE SET W_YTD = W_YTD + " << h_amount << " WHERE W_ID = " << w_id;
+    return std::move(ss.str());
+}
+
+std::string
+PAYMENT_GetDistrict(ID_TYPE w_id, ID_TYPE d_id) {
+    std::stringstream ss;
+    ss << "SELECT D_NAME, D_STREET_1, D_STREET_2, D_CITY, D_STATE, D_ZIP FROM DISTRICT WHERE D_W_ID = ";
+    ss << w_id << " AND D_ID = " << d_id;
+    return std::move(ss.str());
+}
+
+std::string
+PAYMENT_UpdateDistrictBalance(float h_amount, ID_TYPE d_w_id, ID_TYPE d_id) {
+    std::stringstream ss;
+    ss << "UPDATE DISTRICT SET D_YTD = D_YTD + " << h_amount << " WHERE D_W_ID  = ";
+    ss << d_w_id << " AND D_ID = " << d_id;
+    return std::move(ss.str());
+}
+
+std::string
+PAYMENT_GetCustomerByCustomerId(ID_TYPE w_id, ID_TYPE d_id, ID_TYPE c_id) {
+    std::stringstream ss;
+    ss << "SELECT C_ID, C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2, C_CITY, C_STATE, C_ZIP, C_PHONE, C_SINCE, ";
+    ss << "C_CREDIT, C_CREDIT_LIM, C_DISCOUNT, C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_DATA FROM CUSTOMER WHERE C_W_ID = ";
+    ss << w_id << " AND C_D_ID = " << d_id << " AND C_ID = " << c_id;
+    return std::move(ss.str());
+}
+
+std::string
+PAYMENT_GetCustomerByLastName(ID_TYPE w_id, ID_TYPE d_id, const std::string& c_last) {
+    std::stringstream ss;
+    ss << "SELECT C_ID, C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2, C_CITY, C_STATE, C_ZIP, C_PHONE, C_SINCE, C_CREDIT, ";
+    ss << "C_CREDIT_LIM, C_DISCOUNT, C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_DATA FROM CUSTOMER WHERE C_W_ID = ";
+    ss << w_id << " AND C_D_ID = " << d_id << " AND C_LAST = '" << c_last << "' ORDER BY C_FIRST";
+    return std::move(ss.str());
+}
+
+std::string
+PAYMENT_UpdateBCCustomer(float c_balance, float c_ytd_payment, ID_TYPE c_payment_cnt, const std::string& c_date, ID_TYPE c_w_id,
+        ID_TYPE c_d_id, ID_TYPE c_id) {
+    std::stringstream ss;
+    ss << "UPDATE CUSTOMER SET C_BALANCE = " << c_balance << ", C_YTD_PAYMENT = " << c_ytd_payment;
+    ss << ", C_PAYMENT_CNT = " << c_payment_cnt << ", C_DATA = '" << c_date << "' WHERE C_W_ID = ";
+    ss << c_w_id << " AND C_D_ID = " << c_d_id << " AND C_ID = " << c_id;
+    return std::move(ss.str());
+}
+
+std::string
+PAYMENT_UpdateGCCustomer(float c_balance, float c_ytd_payment, ID_TYPE c_payment_cnt, ID_TYPE c_w_id,
+        ID_TYPE c_d_id, ID_TYPE c_id) {
+    std::stringstream ss;
+    ss << "UPDATE CUSTOMER SET C_BALANCE = " << c_balance << ", C_YTD_PAYMENT = " << c_ytd_payment;
+    ss << ", C_PAYMENT_CNT = " << c_payment_cnt << " WHERE C_W_ID = " << c_w_id << " AND C_D_ID = ";
+    ss << c_d_id << " AND C_ID = " << c_id;
+    return std::move(ss.str());
+}
+
+std::string
+PAYMENT_InsertHistory(ID_TYPE c_id, ID_TYPE c_d_id, ID_TYPE c_w_id, ID_TYPE d_id, ID_TYPE w_id,
+        const std::string& h_date, float h_amount, const std::string& h_data) {
+    std::stringstream ss;
+    ss << "INSERT INTO HISTORY VALUES (" << c_id << ", " << c_d_id << ", " << c_w_id << ", " << d_id;
+    ss << ", " << w_id << ", '" << h_date << "', " << h_amount << ", '" << h_data << "')";
     return std::move(ss.str());
 }

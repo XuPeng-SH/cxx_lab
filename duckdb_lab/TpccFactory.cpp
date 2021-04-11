@@ -74,6 +74,35 @@ TpccFactory::NextContext() {
         ctx->order_status_ctx_ = context;
     } else if (rand_val <= settings_->GetPaymentUpper()) {
         ctx->type_ = ContextType::PAYMENT;
+        auto context = std::make_shared<PaymentContext>();
+        context->w_id = mocker_->MockWarehouseID();
+        context->d_id = mocker_->MockDistrictID();
+        context->h_amount = mocker_->MockPaymentAmount(2);
+        context->h_date = CurrentDateTimeString();
+
+        if ((settings_->sp_->warehouses_ == 1) || (RandomNumber<int>(1, 100) <= 85)) {
+            context->c_w_id = context->w_id;
+            context->c_d_id = context->d_id;
+        } else {
+            // 15%: paying through another warehouse:
+            while (true) {
+                auto c_w_id = RandomNumber<int>(settings_->sp_->wh_start_, settings_->sp_->wh_start_);
+                if (c_w_id != context->w_id) {
+                    context->c_w_id = c_w_id;
+                    break;
+                }
+            }
+            context->c_d_id = mocker_->MockDistrictID();
+        }
+
+        if (RandomNumber<int>(1, 100) <= 0) {
+            // 60%: payment by last name
+            context->c_last = mocker_->MockLastName();
+        } else {
+            // 40%: payment by id
+            context->c_id = mocker_->MockCustomerID();
+        }
+        ctx->payment_ctx_ = context;
     } else {
         ctx->type_ = ContextType::NEW_ORDER;
         ctx->new_order_ctx_ = std::make_shared<NewOrderContext>();

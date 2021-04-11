@@ -1,19 +1,31 @@
 #pragma once
 
+#include <algorithm>
 #include <random>
 #include <mutex>
 #include <ctime>
 #include <sstream>
 #include <iomanip>
-
+#include <iostream>
+#include <mutex>
+#include <chrono>
 #include "types.h"
 
+/* template <typename T> */
+/* T RandomNumber(T start, T end) { */
+/*     std::random_device dev; */
+/*     std::mt19937 rng(dev()); */
+/*     std::uniform_int_distribution<std::mt19937::result_type> dist(start, end); */
+/*     return dist(rng); */
+/* } */
+
 template <typename T>
-T RandomNumber(T start, T end) {
-    std::random_device dev;
-    std::mt19937 rng(dev());
-    std::uniform_int_distribution<std::mt19937::result_type> dist(start, end);
-    return dist(rng);
+T RandomNumber(const T & start, const T & end) {
+    std::chrono::time_point<std::chrono::system_clock> now =
+    std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    auto micro = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+    return start + (micro % (end + 1 - start));
 }
 
 inline std::string

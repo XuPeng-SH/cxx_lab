@@ -6,9 +6,11 @@
 #include <set>
 #include <vector>
 #include <algorithm>
+#include <iostream>
 #include "Utils.h"
 #include "types.h"
 #include "Context.h"
+#include "consts.h"
 
 enum class TransactionType : uint8_t {
     INVALID = 0,
@@ -49,11 +51,11 @@ struct TpccSettings {
     /* int order_status_p_ = 4; */
     /* int payment_p_ = 43; */
     /* int new_order_p_ = 45; */
-    int stock_level_p_ = 1;
+    int stock_level_p_ = 4;
     int delivery_p_ = 4;
-    int order_status_p_ = 50;
-    int payment_p_ = 1;
-    int new_order_p_ = 44;
+    int order_status_p_ = 4;
+    int payment_p_ = 03;
+    int new_order_p_ = 85;
 
     mutable int sl_p_upper_ = 0;
     mutable int d_p_upper_ = 0;
@@ -93,6 +95,19 @@ struct TpccMocker {
             settings = TpccSettings::Build();
         }
         return std::make_shared<TpccMocker>(settings);
+    }
+    float
+    MockPaymentAmount(int decimal_places) {
+        assert(decimal_places > 0);
+        int multiplier = 1;
+        for (auto i = 0; i < decimal_places; ++ i) {
+            multiplier *= 10;
+        }
+
+        auto int_min = int(MIN_PAYMENT * multiplier + 0.5);
+        auto int_max = int(MAX_PAYMENT * multiplier + 0.5);
+
+        return RandomNumber<int>(int_min, int_max) / float(multiplier);
     }
 
     ID_TYPE

@@ -23,6 +23,7 @@ using namespace duckdb;
 
 bool
 Driver::DoDelivery(TpccContextPtr& context) {
+    /* return true; */
     assert(context->type_ == ContextType::DELIVERY && context->delivery_ctx_);
     auto ctx = context->delivery_ctx_;
     this->conn_->Query("START TRANSACTION");
@@ -68,6 +69,7 @@ Driver::DoDelivery(TpccContextPtr& context) {
 
 bool
 Driver::DoNewOrder(TpccContextPtr& context) {
+    /* return true; */
     assert(context->type_ == ContextType::NEW_ORDER && context->new_order_ctx_);
     auto ctx = context->new_order_ctx_;
     std::string query = "START TRANSACTION";
@@ -188,11 +190,92 @@ Driver::DoNewOrder(TpccContextPtr& context) {
 }
 
 bool
-Driver::DoPayment(TpccContextPtr& ctx) {
+Driver::DoPayment(TpccContextPtr& context) {
+    return true;
+    assert(context->type_ == ContextType::PAYMENT && context->payment_ctx_);
+    auto ctx = context->payment_ctx_;
+    std::string query = "START TRANSACTION";
+    auto r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    vector<Value> customer;
+    if (ctx->c_last.empty()) {
+        query = PAYMENT_GetCustomerByCustomerId(ctx->w_id, ctx->d_id, ctx->c_id);
+        /* auto start = chrono::high_resolution_clock::now(); */
+        r1 = this->conn_->Query(query);
+        CHECK_ROLLBACK(r1);
+        customer = r1->collection.GetRow(0);
+        /* auto end = chrono::high_resolution_clock::now(); */
+        /* std::cout << query << std::endl; */
+        /* std::cout << "THEREAD[" << std::this_thread::get_id() << "] YYYYYY(" << context->TypeStr() << ") TAKES "; */
+        /* std::cout << chrono::duration<double, std::milli>(end-start).count() << std::endl; */
+    } else {
+        query = PAYMENT_GetCustomerByLastName(ctx->w_id, ctx->d_id, ctx->c_last);
+        r1 = this->conn_->Query(query);
+        CHECK_ROLLBACK(r1);
+        auto index = int((r1->collection.Count() - 1) / 2);
+        customer = r1->collection.GetRow(index);
+        ctx->c_id = customer[0].GetValue<ID_TYPE>();
+    }
+    this->conn_->Query("COMMIT");
+    return true;
+
+    auto c_balance = customer[14].GetValue<float>() - ctx->h_amount;
+    auto c_ytd_payment = customer[15].GetValue<float>() + ctx->h_amount;
+    auto c_payment_cnt = customer[16].GetValue<int>() + 1;
+    auto c_data = customer[17].GetValue<std::string>();
+
+    query = PAYMENT_GetWarehouse(ctx->w_id);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+    auto warehouse = r1->collection.GetRow(0);
+
+    query = PAYMENT_GetDistrict(ctx->w_id, ctx->d_id);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+    auto district = r1->collection.GetRow(0);
+
+    query = PAYMENT_UpdateWarehouseBalance(ctx->h_amount, ctx->w_id);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    query = PAYMENT_UpdateDistrictBalance(ctx->h_amount, ctx->w_id, ctx->d_id);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    // Customer Credit Information
+    if (customer[11].GetValue<std::string>() == BAD_CREDIT) {
+        std::stringstream ss;
+        ss << ctx->c_id << " " << ctx->c_d_id << " " << ctx->d_id << " " << ctx->w_id << " " << ctx->h_amount;
+        c_data = std::string(ss.str()) + "|" + c_data;
+        if (c_data.size() > MAX_C_DATA) {
+            c_data = c_data.substr(0, MAX_C_DATA);
+        }
+
+        query = PAYMENT_UpdateBCCustomer(c_balance, c_ytd_payment, c_payment_cnt, c_data, ctx->c_w_id,
+                ctx->c_d_id, ctx->c_id);
+        r1 = this->conn_->Query(query);
+        CHECK_ROLLBACK(r1);
+    } else {
+        query = PAYMENT_UpdateGCCustomer(c_balance, c_ytd_payment, c_payment_cnt, ctx->c_w_id, ctx->c_d_id, ctx->c_id);
+        r1 = this->conn_->Query(query);
+        CHECK_ROLLBACK(r1);
+    }
+
+    // Concatenate w_name, four spaces, d_name
+    auto h_data = warehouse[0].GetValue<std::string>() + "    " + district[0].GetValue<std::string>();
+    // Create the history record */
+    query = PAYMENT_InsertHistory(ctx->c_id, ctx->c_d_id, ctx->c_w_id, ctx->d_id, ctx->w_id, ctx->h_date,
+            ctx->h_amount, h_data);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    this->conn_->Query("COMMIT");
     return true;
 }
 bool
 Driver::DoOrderStatus(TpccContextPtr& context) {
+    /* return true; */
     assert(context->type_ == ContextType::ORDER_STATUS && context->order_status_ctx_);
     auto ctx = context->order_status_ctx_;
     std::string query = "START TRANSACTION";

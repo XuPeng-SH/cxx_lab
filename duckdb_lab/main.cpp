@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <iostream>
 #include <thread>
 #include <unistd.h>
@@ -90,12 +91,7 @@ int main(int argc, char** argv) {
         /* auto settings = TpccSettings::Build(); */
         /* auto mocker = TpccMocker(factory->GetSettings()); */
         auto mocker = factory->GetMocker();
-        cout << "customer id " << mocker->MockCustomerID() << endl;
-        cout << "item id " << mocker->MockCustomerID() << endl;
-        cout << "wh id " << mocker->MockWarehouseID() << endl;
-        cout << "district id " << mocker->MockDistrictID() << endl;
     }
-
     auto db = std::make_shared<DuckDB>(FLAGS_path);
 
     int workers = FLAGS_workers;
@@ -103,8 +99,12 @@ int main(int argc, char** argv) {
     for(auto i = 0; i < workers; ++i)
     {
         auto con = std::make_shared<Connection>(*db);
-        if (FLAGS_threads > 1) {
+        if ((FLAGS_threads > 1) && (i == 0)) {
             con->Query(std::string("PRAGMA THREADS ") + std::to_string(FLAGS_threads));
+        }
+
+        if (i == 0) {
+            con->Query("CREATE INDEX IDX_CUSTOMER ON CUSTOMER (C_W_ID,C_D_ID,C_LAST);");
         }
         auto driver = std::make_shared<Driver>(con);
         driver->db_ = db;
@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
     {
         auto executor_pool = std::make_shared<ThreadPool>(workers);
         {
-            for (auto i=0; i<100; ++i) {
+            for (auto i=0; i<10; ++i) {
                 auto context = factory->NextContext();
                 auto task = std::make_shared<Task>(context, runner);
                 executor_pool->enqueue(std::bind(&Task::Run, task));
