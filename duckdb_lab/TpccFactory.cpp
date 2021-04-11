@@ -50,7 +50,6 @@ TpccContextPtr
 TpccFactory::NextContext() {
     auto ctx = std::make_shared<TpccContext>();
     auto rand_val = RandomNumber<int>(1, 100);
-    /* rand_val = settings_->GetPaymentUpper() + 1; */
 
     if (rand_val <= settings_->GetStockLevelUpper()) {
         ctx->type_ = ContextType::STOCK_LEVEL;
@@ -60,7 +59,6 @@ TpccFactory::NextContext() {
         context->threshold = RandomNumber<int>(MIN_STOCK_LEVEL_THRESHOLD, MAX_STOCK_LEVEL_THRESHOLD);
         ctx->stock_level_ctx_ = context;
     } else if (rand_val <= settings_->GetDeliveryUpper()) {
-        /* std::cout << "rand_val=" << rand_val << " upper=" << settings_->GetDeliveryUpper() << std::endl; */
         ctx->type_ = ContextType::DELIVERY;
         ctx->delivery_ctx_ = std::make_shared<DeliveryContext>();
         ctx->delivery_ctx_->o_carrier_id = RandomNumber<int>(MIN_CARRIER_ID, MAX_CARRIER_ID);
@@ -100,7 +98,7 @@ TpccFactory::NextContext() {
             context->c_d_id = mocker_->MockDistrictID();
         }
 
-        if (RandomNumber<int>(1, 100) <= 0) {
+        if (RandomNumber<int>(1, 100) <= 60) {
             // 60%: payment by last name
             context->c_last = mocker_->MockLastName();
         } else {

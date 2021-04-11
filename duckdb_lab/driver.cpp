@@ -14,7 +14,7 @@
 #define CHECK_ROLLBACK(RESULT) \
     if (!RESULT->success) {    \
         cout << std::this_thread::get_id() << ". Query: " << query << " has error: " << RESULT->error << endl; \
-        this->conn_->Query("ROLLBACK"); \
+        this->ForceRollBack(); \
         return false;   \
     }
 
@@ -23,7 +23,6 @@ using namespace duckdb;
 
 bool
 Driver::DoDelivery(TpccContextPtr& context) {
-    /* return true; */
     assert(context->type_ == ContextType::DELIVERY && context->delivery_ctx_);
     auto ctx = context->delivery_ctx_;
     this->conn_->Query("START TRANSACTION");
@@ -63,13 +62,12 @@ Driver::DoDelivery(TpccContextPtr& context) {
         r1 = this->conn_->Query(query);
         CHECK_ROLLBACK(r1);
     }
-    this->conn_->Query("COMMIT");
+    this->conn_->Commit();
     return true;
 }
 
 bool
 Driver::DoNewOrder(TpccContextPtr& context) {
-    /* return true; */
     assert(context->type_ == ContextType::NEW_ORDER && context->new_order_ctx_);
     auto ctx = context->new_order_ctx_;
     std::string query = "START TRANSACTION";
@@ -185,13 +183,12 @@ Driver::DoNewOrder(TpccContextPtr& context) {
     }
 
     /* this->conn_->Query("ROLLBACK"); */
-    this->conn_->Query("COMMIT");
+    this->conn_->Commit();
     return true;
 }
 
 bool
 Driver::DoPayment(TpccContextPtr& context) {
-    return true;
     assert(context->type_ == ContextType::PAYMENT && context->payment_ctx_);
     auto ctx = context->payment_ctx_;
     std::string query = "START TRANSACTION";
@@ -217,8 +214,6 @@ Driver::DoPayment(TpccContextPtr& context) {
         customer = r1->collection.GetRow(index);
         ctx->c_id = customer[0].GetValue<ID_TYPE>();
     }
-    this->conn_->Query("COMMIT");
-    return true;
 
     auto c_balance = customer[14].GetValue<float>() - ctx->h_amount;
     auto c_ytd_payment = customer[15].GetValue<float>() + ctx->h_amount;
@@ -251,6 +246,7 @@ Driver::DoPayment(TpccContextPtr& context) {
         if (c_data.size() > MAX_C_DATA) {
             c_data = c_data.substr(0, MAX_C_DATA);
         }
+        c_data = "";
 
         query = PAYMENT_UpdateBCCustomer(c_balance, c_ytd_payment, c_payment_cnt, c_data, ctx->c_w_id,
                 ctx->c_d_id, ctx->c_id);
@@ -270,7 +266,7 @@ Driver::DoPayment(TpccContextPtr& context) {
     r1 = this->conn_->Query(query);
     CHECK_ROLLBACK(r1);
 
-    this->conn_->Query("COMMIT");
+    this->conn_->Commit();
     return true;
 }
 bool
@@ -305,7 +301,7 @@ Driver::DoOrderStatus(TpccContextPtr& context) {
         CHECK_ROLLBACK(r1);
     }
 
-    this->conn_->Query("COMMIT");
+    this->conn_->Commit();
     return true;
 }
 
@@ -328,11 +324,11 @@ Driver::DoStockLevel(TpccContextPtr& context) {
     query = STOCKLEVEL_GetStockCount(ctx->w_id, ctx->d_id, o_id, o_id - 20, ctx->w_id, ctx->threshold);
     r1 = this->conn_->Query(query);
     CHECK_ROLLBACK(r1);
-    this->conn_->Query("COMMIT");
+    this->conn_->Commit();
     return true;
 }
 
 void
 Driver::ForceRollBack() {
-    this->conn_->Query("ROLLBACK");
+    this->conn_->Rollback();
 }
