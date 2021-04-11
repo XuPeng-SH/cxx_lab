@@ -21,6 +21,9 @@ struct DeliveryContext {
 using DeliveryContextPtr = std::shared_ptr<DeliveryContext>;
 
 struct StockLevelContext {
+    ID_TYPE w_id = 0;
+    ID_TYPE d_id = 0;
+    ID_TYPE threshold = 0;
 };
 using StockLevelContextPtr = std::shared_ptr<StockLevelContext>;
 

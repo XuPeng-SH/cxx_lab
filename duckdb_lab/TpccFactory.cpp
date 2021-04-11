@@ -54,6 +54,11 @@ TpccFactory::NextContext() {
 
     if (rand_val <= settings_->GetStockLevelUpper()) {
         ctx->type_ = ContextType::STOCK_LEVEL;
+        auto context = std::make_shared<StockLevelContext>();
+        context->w_id = mocker_->MockWarehouseID();
+        context->d_id = mocker_->MockDistrictID();
+        context->threshold = RandomNumber<int>(MIN_STOCK_LEVEL_THRESHOLD, MAX_STOCK_LEVEL_THRESHOLD);
+        ctx->stock_level_ctx_ = context;
     } else if (rand_val <= settings_->GetDeliveryUpper()) {
         /* std::cout << "rand_val=" << rand_val << " upper=" << settings_->GetDeliveryUpper() << std::endl; */
         ctx->type_ = ContextType::DELIVERY;

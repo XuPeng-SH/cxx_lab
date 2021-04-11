@@ -9,6 +9,7 @@
 #include <iostream>
 #include <mutex>
 #include <chrono>
+#include <vector>
 #include "types.h"
 
 /* template <typename T> */
@@ -18,15 +19,6 @@
 /*     std::uniform_int_distribution<std::mt19937::result_type> dist(start, end); */
 /*     return dist(rng); */
 /* } */
-
-template <typename T>
-T RandomNumber(const T & start, const T & end) {
-    std::chrono::time_point<std::chrono::system_clock> now =
-    std::chrono::system_clock::now();
-    auto duration = now.time_since_epoch();
-    auto micro = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-    return start + (micro % (end + 1 - start));
-}
 
 inline std::string
 CurrentDateTimeString() {
@@ -74,18 +66,24 @@ class SafeIDGenerator {
     SafeIDGenerator() = default;
     ~SafeIDGenerator() = default;
 
-    ID_TYPE
+    int64_t
     GetNextIDNumber();
 
     bool
-    GetNextIDNumbers(size_t n, IDS_TYPE& ids);
+    GetNextIDNumbers(size_t n, std::vector<int64_t>& ids);
 
  private:
     bool
-    NextIDNumbers(size_t n, IDS_TYPE& ids);
+    NextIDNumbers(size_t n, std::vector<int64_t>& ids);
 
     static constexpr size_t MAX_IDS_PER_MICRO = 1000;
 
     std::mutex mtx_;
     int64_t time_stamp_ms_ = 0;
 };
+
+template <typename T>
+T RandomNumber(const T & start, const T & end) {
+    auto count = SafeIDGenerator::GetInstance().GetNextIDNumber() / 1000;
+    return start + (count % (end + 1 - start));
+}

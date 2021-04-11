@@ -2,7 +2,7 @@
 #include <chrono>
 #include <assert.h>
 
-ID_TYPE
+int64_t
 SafeIDGenerator::GetNextIDNumber() {
     auto now = std::chrono::system_clock::now();
     auto micros = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
@@ -16,7 +16,7 @@ SafeIDGenerator::GetNextIDNumber() {
 }
 
 bool
-SafeIDGenerator::GetNextIDNumbers(size_t n, IDS_TYPE& ids) {
+SafeIDGenerator::GetNextIDNumbers(size_t n, std::vector<int64_t>& ids) {
     ids.clear();
     std::lock_guard<std::mutex> lock(mtx_);
     while (n > 0) {
@@ -38,7 +38,7 @@ SafeIDGenerator::GetNextIDNumbers(size_t n, IDS_TYPE& ids) {
 }
 
 bool
-SafeIDGenerator::NextIDNumbers(size_t n, IDS_TYPE& ids) {
+SafeIDGenerator::NextIDNumbers(size_t n, std::vector<int64_t>& ids) {
     if (n <= 0 || n > MAX_IDS_PER_MICRO) {
         std::string msg = "Invalid ID number: " + std::to_string(n);
         return false;

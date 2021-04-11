@@ -275,7 +275,6 @@ Driver::DoPayment(TpccContextPtr& context) {
 }
 bool
 Driver::DoOrderStatus(TpccContextPtr& context) {
-    /* return true; */
     assert(context->type_ == ContextType::ORDER_STATUS && context->order_status_ctx_);
     auto ctx = context->order_status_ctx_;
     std::string query = "START TRANSACTION";
@@ -311,7 +310,27 @@ Driver::DoOrderStatus(TpccContextPtr& context) {
 }
 
 bool
-Driver::DoStockLevel(TpccContextPtr& ctx) { return true; }
+Driver::DoStockLevel(TpccContextPtr& context) {
+    assert(context->type_ == ContextType::STOCK_LEVEL && context->stock_level_ctx_);
+    auto ctx = context->stock_level_ctx_;
+    std::string query = "START TRANSACTION";
+    auto r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    query = STOCKLEVEL_GetOid(ctx->w_id, ctx->d_id);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+
+    assert(r1->collection.Count() != 0);
+
+    auto o_id = r1->collection.GetValue(0, 0).GetValue<int>();
+
+    query = STOCKLEVEL_GetStockCount(ctx->w_id, ctx->d_id, o_id, o_id - 20, ctx->w_id, ctx->threshold);
+    r1 = this->conn_->Query(query);
+    CHECK_ROLLBACK(r1);
+    this->conn_->Query("COMMIT");
+    return true;
+}
 
 void
 Driver::ForceRollBack() {

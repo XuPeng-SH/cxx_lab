@@ -80,6 +80,10 @@ int main(int argc, char** argv) {
     cout << "THREADS: " << FLAGS_threads << endl;
     cout << "SF: " << FLAGS_sf << endl;
 
+    /* for (auto i = 0; i < 100; ++i) { */
+    /*     cout << RandomNumber<int>(1, 100) << endl; */
+    /* } */
+
     TpccFactoryPtr factory;
     {
         auto sp = ScaleParameters::Build(FLAGS_sf);
@@ -87,11 +91,6 @@ int main(int argc, char** argv) {
         factory = TpccFactory::Build(settings);
     }
 
-    {
-        /* auto settings = TpccSettings::Build(); */
-        /* auto mocker = TpccMocker(factory->GetSettings()); */
-        auto mocker = factory->GetMocker();
-    }
     auto db = std::make_shared<DuckDB>(FLAGS_path);
 
     int workers = FLAGS_workers;

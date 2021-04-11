@@ -257,3 +257,21 @@ PAYMENT_InsertHistory(ID_TYPE c_id, ID_TYPE c_d_id, ID_TYPE c_w_id, ID_TYPE d_id
     ss << ", " << w_id << ", '" << h_date << "', " << h_amount << ", '" << h_data << "')";
     return std::move(ss.str());
 }
+
+std::string
+STOCKLEVEL_GetOid(ID_TYPE w_id, ID_TYPE d_id) {
+    std::stringstream ss;
+    ss << "SELECT D_NEXT_O_ID FROM DISTRICT WHERE D_W_ID = " << w_id << " AND D_ID = " << d_id;
+    return std::move(ss.str());
+}
+
+std::string
+STOCKLEVEL_GetStockCount(ID_TYPE w_id, ID_TYPE d_id, ID_TYPE o_id, ID_TYPE o_id_min,
+        ID_TYPE s_w_id, ID_TYPE threshold) {
+    std::stringstream ss;
+    ss << "SELECT COUNT(DISTINCT(OL_I_ID)) FROM ORDER_LINE, STOCK ";
+    ss << "WHERE OL_W_ID = " << w_id << " AND OL_D_ID = " << d_id;
+    ss << " AND OL_O_ID < " << o_id << " AND OL_O_ID >= " << o_id_min;
+    ss << " AND S_W_ID = " << s_w_id << " AND S_I_ID = OL_I_ID AND S_QUANTITY < " << threshold;
+    return std::move(ss.str());
+}
