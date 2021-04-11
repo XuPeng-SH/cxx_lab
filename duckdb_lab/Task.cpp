@@ -30,11 +30,28 @@ Task::Run() {
         }
     } catch(std::exception& e) {
         std::cout << "catch error: " << e.what() << std::endl;
-        driver->ForceRollBack();
+        driver->ForceRollBack(this->context_);
     }
-    auto end = chrono::high_resolution_clock::now();
-    std::cout << "THEREAD[" << std::this_thread::get_id() << "] TASK(" << this->context_->TypeStr() << ") TAKES ";
-    std::cout << chrono::duration<double, std::milli>(end-start).count() << std::endl;
+    auto now = chrono::high_resolution_clock::now();
+    MetricEntry entry;
+    entry.is_commit_ = !this->context_->has_rollbacked_;
+    entry.ts_ = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
+    entry.exec_time_us_ = chrono::duration<double, std::micro>(now-start).count();
+    /* std::cout << "THEREAD[" << std::this_thread::get_id() << "] TASK(" << this->context_->TypeStr() << ") TAKES "; */
+    /* std::cout << ((float)entry.exec_time_us_ / 1000) << std::endl; */
+
+    if (this->context_->type_ == ContextType::DELIVERY) {
+        this->context_->collector_.RecordDeliveryEntry(std::move(entry));
+    } else if (this->context_->type_ == ContextType::NEW_ORDER) {
+        this->context_->collector_.RecordNewOrderEntry(std::move(entry));
+    } else if (this->context_->type_ == ContextType::ORDER_STATUS) {
+        this->context_->collector_.RecordOrderEntry(std::move(entry));
+    } else if (this->context_->type_ == ContextType::PAYMENT) {
+        this->context_->collector_.RecordDeliveryEntry(std::move(entry));
+    } else if (this->context_->type_ == ContextType::STOCK_LEVEL) {
+        this->context_->collector_.RecordStockLevelEntry(std::move(entry));
+    }
+
     /* std::cout << std::this_thread::get_id() << "[Release Connection] " << (void*)driver.get() << std::endl; */
     runner_->Release(driver);
 }

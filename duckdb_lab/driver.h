@@ -25,7 +25,7 @@ class Driver {
      DoStockLevel(TpccContextPtr& ctx);
 
      void
-     ForceRollBack();
+     ForceRollBack(TpccContextPtr&);
 
  /* private: */
      std::shared_ptr<duckdb::Connection> conn_;

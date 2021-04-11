@@ -22,6 +22,7 @@
 #include "Task.h"
 #include "ThreadPool.h"
 #include "TpccFactory.h"
+#include "Collector.h"
 
 using namespace std;
 
@@ -39,6 +40,8 @@ int main(int argc, char** argv) {
     cout << "WORKERS: " << FLAGS_workers << endl;
     cout << "THREADS: " << FLAGS_threads << endl;
     cout << "SF: " << FLAGS_sf << endl;
+
+    Collector cl;
 
     /* for (auto i = 0; i < 100; ++i) { */
     /*     cout << RandomNumber<int>(1, 100) << endl; */
@@ -101,7 +104,9 @@ int main(int argc, char** argv) {
         }
     }
     auto end = chrono::high_resolution_clock::now();
-    cout << std::this_thread::get_id() << "Test takes " << chrono::duration<double, std::milli>(end-start).count() << endl;
+    auto& collector = factory->GetCollector();
+    collector.RecordTotalTime(chrono::duration<double, std::micro>(end-start).count());
+    cout << collector.ToString() << endl;
 
     return 0;
 }

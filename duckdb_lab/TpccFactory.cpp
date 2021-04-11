@@ -48,7 +48,7 @@ ScaleParameters::Build(size_t scale_factor) {
 
 TpccContextPtr
 TpccFactory::NextContext() {
-    auto ctx = std::make_shared<TpccContext>();
+    auto ctx = std::make_shared<TpccContext>(metric_collector_);
     auto rand_val = RandomNumber<int>(1, 100);
 
     if (rand_val <= settings_->GetStockLevelUpper()) {

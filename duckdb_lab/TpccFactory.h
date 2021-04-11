@@ -11,6 +11,7 @@
 #include "types.h"
 #include "Context.h"
 #include "consts.h"
+#include "Collector.h"
 
 enum class TransactionType : uint8_t {
     INVALID = 0,
@@ -51,11 +52,11 @@ struct TpccSettings {
     /* int order_status_p_ = 4; */
     /* int payment_p_ = 43; */
     /* int new_order_p_ = 45; */
-    int stock_level_p_ = 0;
-    int delivery_p_ = 0;
-    int order_status_p_ = 0;
+    int stock_level_p_ = 4;
+    int delivery_p_ = 4;
+    int order_status_p_ = 4;
     int payment_p_ = 0;
-    int new_order_p_ = 100;
+    int new_order_p_ = 88;
 
     mutable int sl_p_upper_ = 0;
     mutable int d_p_upper_ = 0;
@@ -190,9 +191,15 @@ class TpccFactory {
          mocker_ = TpccMocker::Build(settings_);
      }
 
+     Collector&
+     GetCollector() {
+         return metric_collector_;
+     }
+
  protected:
      TpccFactory() = delete;
 
      TpccSettingsPtr settings_;
      TpccMockerPtr mocker_;
+     Collector metric_collector_;
 };

@@ -12,13 +12,13 @@
 #include <vector>
 #include "types.h"
 
-/* template <typename T> */
-/* T RandomNumber(T start, T end) { */
-/*     std::random_device dev; */
-/*     std::mt19937 rng(dev()); */
-/*     std::uniform_int_distribution<std::mt19937::result_type> dist(start, end); */
-/*     return dist(rng); */
-/* } */
+template <typename T>
+T RandomNumber(T start, T end) {
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist(start, end);
+    return dist(rng);
+}
 
 inline std::string
 CurrentDateTimeString() {
@@ -82,8 +82,8 @@ class SafeIDGenerator {
     int64_t time_stamp_ms_ = 0;
 };
 
-template <typename T>
-T RandomNumber(const T & start, const T & end) {
-    auto count = SafeIDGenerator::GetInstance().GetNextIDNumber() / 1000;
-    return start + (count % (end + 1 - start));
-}
+/* template <typename T> */
+/* T RandomNumber(const T & start, const T & end) { */
+/*     auto count = SafeIDGenerator::GetInstance().GetNextIDNumber() / 1000; */
+/*     return start + (count % (end + 1 - start)); */
+/* } */

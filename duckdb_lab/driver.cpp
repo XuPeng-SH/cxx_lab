@@ -14,7 +14,7 @@
 #define CHECK_ROLLBACK(RESULT) \
     if (!RESULT->success) {    \
         cout << std::this_thread::get_id() << ". Query: " << query << " has error: " << RESULT->error << endl; \
-        this->ForceRollBack(); \
+        this->ForceRollBack(context); \
         return false;   \
     }
 
@@ -329,6 +329,7 @@ Driver::DoStockLevel(TpccContextPtr& context) {
 }
 
 void
-Driver::ForceRollBack() {
+Driver::ForceRollBack(TpccContextPtr& context) {
     this->conn_->Rollback();
+    context->has_rollbacked_ = true;
 }

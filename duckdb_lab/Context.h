@@ -1,5 +1,6 @@
 #pragma once
 #include "types.h"
+#include "Collector.h"
 #include <memory>
 #include <string>
 #include <sstream>
@@ -87,5 +88,8 @@ struct TpccContext {
     OrderStatusContextPtr order_status_ctx_ = nullptr;
     PaymentContextPtr payment_ctx_ = nullptr;
     NewOrderContextPtr new_order_ctx_ = nullptr;
+    Collector& collector_;
+    bool has_rollbacked_ = false;
+    explicit TpccContext(Collector& collector) : collector_(collector) {}
 };
 using TpccContextPtr = std::shared_ptr<TpccContext>;
